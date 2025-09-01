@@ -1,3 +1,9 @@
+# program executable
+webserv
+
+#vscode
+.vscode
+
 # Prerequisites
 *.d
 
