@@ -20,26 +20,49 @@ void	Server::create() {
 	if (listen(server_fd, SOMAXCONN) < 0)	//give socket ability to receive connections
 		throw std::runtime_error("Error: listen");
 
+	fds.push_back({server_fd, POLLIN, 0});
+
 	std::cout << "Server listening on port " << port << "\n";
 }
 
 void	Server::run() {
 	while (true)
 	{
-		int client_fd = accept(server_fd, nullptr, nullptr); // 2nd argument: collect clients IP and port. 3rd argument tells size of the buffer of second argument
-		if (client_fd < 0)
-			throw std::runtime_error("Error: accept");
+		int ret = poll(fds.data(), fds.size(), -1);
+		if (ret < 0)
+			throw std::runtime_error("Error: poll");
 
-		std::cout << "Client connected\n" << std::endl;
-
-		char buffer[1024];
-		int bytes;
-		while ((bytes = recv(client_fd, buffer, sizeof(buffer), 0)) > 0) {	// send response when something is received
-			std::string response = "Nice talking to you!\n";
-			send(client_fd, response.c_str(), response.size(), 0);
+		for (size_t i = 0; i < fds.size(); ++i) {
+			if (fds[i].revents & POLLIN) {
+				if (fds[i].fd == server_fd) {
+					// new client
+					sockaddr_in client_addr{};
+					socklen_t addrlen = sizeof(client_addr);
+					int client_fd = accept(server_fd, (sockaddr*)&client_addr, &addrlen); // 2nd argument: collect clients IP and port. 3rd argument tells size of the buffer of second argument
+					if (client_fd >= 0) {
+						std::cout << "New client connected: "
+								<< inet_ntoa(client_addr.sin_addr) << ":"
+								<< ntohs(client_addr.sin_port) << "\n";
+						fds.push_back({client_fd, POLLIN, 0});
+					}
+					else
+						throw std::runtime_error("Error: accept");
+				}
+				else {
+				// Existing client sending data
+				char buffer[1024];
+				int bytes = recv(fds[i].fd, buffer, sizeof(buffer), 0);
+				if (bytes <= 0) {
+					std::cout << "Client disconnected\n";
+					close (fds[i].fd);
+					fds.erase(fds.begin() + i);
+					--i;
+				}
+				else
+					send(fds[i].fd, buffer, bytes, 0);
+				}
+			}
 		}
-		close(client_fd);
-		std::cout << "Client disconnected\n";
 	}
 	close(server_fd);
 }
