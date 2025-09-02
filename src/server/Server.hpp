@@ -5,7 +5,8 @@
 class Server {
 
 	private:
-
 	public:
-		int create();
+		int server_fd;
+		void	create();
+		void	run();
 };
