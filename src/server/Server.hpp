@@ -8,8 +8,8 @@ class Server {
 	private:
 	public:
 		int server_fd;
-		std::vector<pollfd> fds;
-		
+		std::vector<pollfd> fds; // store here server socked fd and every connected cliends fd
+
 		void	create();
 		void	run();
 };
