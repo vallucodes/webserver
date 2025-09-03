@@ -28,8 +28,7 @@ void	Server::create() {
 void	Server::run() {
 	while (true)
 	{
-		int ret = poll(fds.data(), fds.size(), -1);
-		if (ret < 0)
+		if(poll(fds.data(), fds.size(), POLL_TIME_OUT) < 0);
 			throw std::runtime_error("Error: poll");
 
 		for (size_t i = 0; i < fds.size(); ++i) {
