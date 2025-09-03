@@ -1,5 +1,6 @@
 #include "webserv.hpp"
 #include "server/Server.hpp"
+#include "server/Cluster.hpp"
 
 void	handle_sigint(int sig) {
 	(void)sig;
@@ -12,11 +13,11 @@ int main()
 {
 	signal(SIGINT, handle_sigint);
 
-	Server server;
-
+	Cluster cluster;
 	try {
-		server.create();
-		server.run();
+		cluster.config();
+		cluster.create();
+		cluster.run();
 
 	} catch (std::exception& e) {
 		std::cout << e.what() << std::endl;

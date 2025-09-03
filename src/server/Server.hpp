@@ -6,10 +6,15 @@
 class Server {
 
 	private:
+		int			_fd;
+		uint32_t	_address;
+		int			_port;
+
 	public:
-		int server_fd;
+		Server(uint32_t address, int port);
+		~Server() = default;
 		std::vector<pollfd> fds; // store here server socked fd and every connected cliends fd
 
 		void	create();
-		void	run();
+		int		getFd();
 };
