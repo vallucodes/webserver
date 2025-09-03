@@ -15,7 +15,7 @@ class Cluster {
 
 		std::vector<pollfd>			_fds;			// store here all servers sockets fd and every connected cliends fd
 		std::set<int>				_server_fds;	// only servers fds
-		std::map<int, std::string>	_client_buffer;	// storing client related reuqest
+		std::map<int, std::string>	_client_buffers;	// storing client related reuqest
 
 	public:
 

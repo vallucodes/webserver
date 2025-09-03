@@ -58,7 +58,14 @@ void	Cluster::run() {
 						--i;
 					}
 					else
-						send(_fds[i].fd, buffer, bytes, 0);			// call here the parser
+					{
+						_client_buffers[_fds[i].fd].append(buffer, bytes);
+						if (requestComplete(_client_buffers[_fds[i].fd]))
+						{
+							send(_fds[i].fd, buffer, bytes, 0);			// call here the parser
+							_client_buffers.erase(_fds[i].fd);
+						}
+					}
 				}
 			}
 		}
