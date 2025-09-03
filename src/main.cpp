@@ -1,11 +1,9 @@
 #include "webserv.hpp"
 #include "server/Server.hpp"
 
-int server_fd;
-
 void	handle_sigint(int sig) {
 	(void)sig;
-	close(server_fd);
+	// close(server.server_fd); // maybe handle later
 	printf("\nServer closed\n");
 	exit(0);
 }
@@ -16,28 +14,14 @@ int main()
 
 	Server server;
 
-	int server_fd = server.create();
+	try {
+		server.create();
+		server.run();
 
-	while (true)
-	{
-		int client_fd = accept(server_fd, nullptr, nullptr);
-		if (client_fd < 0)
-		{
-			perror("accept");
-			continue ;
-		}
-
-		std::cout << "Client connected\n" << std::endl;
-
-		char buffer[1024];
-		int bytes;
-		while ((bytes = recv(client_fd, buffer, sizeof(buffer), 0)) > 0) {
-			// Echo back what was received
-			send(client_fd, buffer, bytes, 0);
-		}
-		close(client_fd);
-		std::cout << "Client disconnected\n";
+	} catch (std::exception& e) {
+		std::cout << e.what() << std::endl;
 	}
-	close(server_fd);
 	return 0;
 }
+
+//connect to server: telnet 127.0.0.1 <port>
