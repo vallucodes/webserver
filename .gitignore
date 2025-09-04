@@ -1,7 +1,10 @@
 # program executable
 webserv
 
-#vscode
+# Tester build
+/build
+
+# Vscode settings
 .vscode
 
 # Prerequisites
