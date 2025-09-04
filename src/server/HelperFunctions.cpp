@@ -19,19 +19,19 @@ bool	requestComplete(const std::string& buffer, bool& status) {
 	size_t pos2 = buffer.find("\r\n\r\n");
 	if (pos2 == std::string::npos)
 	{
-		// std::cout << "header end not detected" << std::endl;
+		std::cout << "Header end not detected" << std::endl;
 		return false;
 	}
 	header_end = pos2 + 4;
 
-	// std::cout << "header end detected: " << std::endl;
-	// std::cout << pos2 << std::endl;
+	std::cout << "header end detected: " << std::endl;
+	std::cout << pos2 << std::endl;
 
 	size_t pos = buffer.find("\r\nTransfer-Encoding: chunked\r\n");
 	if (pos != std::string::npos && pos < header_end) // search for body and only after we found the header
 	{
 		pos = buffer.find("0\r\n\r\n");
-		if (pos == std::string::npos)
+		if (pos == std::string::npos || pos < header_end)
 			return false;
 		else
 			return true;

@@ -59,8 +59,8 @@ void	Cluster::run() {
 					else {
 						_client_buffers[_fds[i].fd].buffer.append(buffer, bytes);
 						ClientBuffer& client_data = _client_buffers[_fds[i].fd];
-						if (requestComplete(client_data.buffer, client_data.status)) {
-							send(_fds[i].fd, buffer, bytes, 0);					// call here the parser in future. Send now is just sending back same message to client
+						if (requestComplete(client_data.buffer, client_data.status)) {	// check if request is fully received
+							send(_fds[i].fd, buffer, bytes, 0);							// call here the parser in future. Send now is just sending back same message to client
 							_client_buffers.erase(_fds[i].fd);
 						}
 						if (client_data.status == false) {		// flag of invalid request is set

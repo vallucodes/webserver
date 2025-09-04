@@ -32,6 +32,18 @@ TEST(RequestCompleteTest, ReturnsTrueForValidChunkedRequest) {
 }
 
 // 4
+TEST(RequestCompleteTest, ReturnsFalseNoBody) {
+	bool status = true;
+	std::string chunked_req =
+		"GET / HTTP/1.1\r\n"
+		"Transfer-Encoding: chunked\r\n"
+		"4\r\nWiki\r\n"
+		"0\r\n\r\n";
+
+	EXPECT_FALSE(requestComplete(chunked_req, status));
+}
+
+// 5
 TEST(RequestCompleteTest, ReturnsFalseForShortBody) {
 	bool status = true;
 	std::string buffer =
@@ -43,7 +55,7 @@ TEST(RequestCompleteTest, ReturnsFalseForShortBody) {
 	EXPECT_FALSE(requestComplete(buffer, status));
 }
 
-// 5
+// 6
 TEST(RequestCompleteTest, ReturnsTrueForCorrectBodySize) {
 	bool status = true;
 	std::string buffer =
@@ -55,7 +67,7 @@ TEST(RequestCompleteTest, ReturnsTrueForCorrectBodySize) {
 	EXPECT_TRUE(requestComplete(buffer, status));
 }
 
-// 6
+// 7
 TEST(RequestCompleteTest, ReturnsFalseForBigBodySize) {
 	bool status = true;
 	std::string buffer =
@@ -68,7 +80,7 @@ TEST(RequestCompleteTest, ReturnsFalseForBigBodySize) {
 	EXPECT_FALSE(status);
 }
 
-// 7
+// 8
 TEST(RequestCompleteTest, ReturnsFalseForEmptyRequest) {
 	bool status = true;
 	std::string buffer = "";
