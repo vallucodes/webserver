@@ -13,12 +13,16 @@ class Cluster {
 	private:
 		std::vector<std::pair<uint32_t, int>> _addresses;  //move this to Config.hpp
 
-		std::vector<pollfd>			_fds;			// store here all servers sockets fd and every connected cliends fd
-		std::set<int>				_server_fds;	// only servers fds
-		std::map<int, std::string>	_client_buffers;	// storing client related reuqest
+		std::vector<pollfd>							_fds;				// store here all servers sockets fd and every connected cliends fd
+		std::set<int>								_server_fds;		// only servers fds
+
+		struct ClientBuffer {
+			std::string buffer;
+			bool status = 1;
+		};
+		std::map<int, ClientBuffer>	_client_buffers;	// storing client related reuqest, and bool is 1:valid, 0 invalid
 
 	public:
-
 
 		void	config();
 		void	create();

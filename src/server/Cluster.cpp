@@ -37,34 +37,41 @@ void	Cluster::run() {
 					sockaddr_in client_addr{};
 					socklen_t addrlen = sizeof(client_addr);
 					int client_fd = accept(_fds[i].fd, (sockaddr*)&client_addr, &addrlen); // 2nd argument: collect clients IP and port. 3rd argument tells size of the buffer of second argument
-					if (client_fd >= 0) {
-						std::cout << "New client connected: "
-								<< inet_ntoa(client_addr.sin_addr) << ":"
-								<< ntohs(client_addr.sin_port) << ". Assigned fd: "
-								<< client_fd << "\n";
-						_fds.push_back({client_fd, POLLIN, 0});
-					}
-					else
+					if (client_fd < 0)
 						throw std::runtime_error("Error: accept");
+					std::cout << "New client connected: "
+							<< inet_ntoa(client_addr.sin_addr) << ":"
+							<< ntohs(client_addr.sin_port) << ". Assigned fd: "
+							<< client_fd << "\n";
+					_fds.push_back({client_fd, POLLIN, 0});
 				}
 				else {
 					// Existing client sending data
 					char buffer[1024];
 					int bytes = recv(_fds[i].fd, buffer, sizeof(buffer), 0);
 					if (bytes <= 0) {
-						std::cout << "Client disconnected\n";
+						std::cout << "Client " << _fds[i].fd << " disconnected\n";
 						close (_fds[i].fd);
+						_client_buffers.erase(_fds[i].fd);
 						_fds.erase(_fds.begin() + i);
 						--i;
 					}
-					else
-					{
-						_client_buffers[_fds[i].fd].append(buffer, bytes);
-						if (requestComplete(_client_buffers[_fds[i].fd]))
-						{
-							send(_fds[i].fd, buffer, bytes, 0);			// call here the parser
+					else {
+						_client_buffers[_fds[i].fd].buffer.append(buffer, bytes);
+						ClientBuffer& client_data = _client_buffers[_fds[i].fd];
+						if (requestComplete(client_data.buffer, client_data.status)) {
+							send(_fds[i].fd, buffer, bytes, 0);					// call here the parser in future. Send now is just sending back same message to client
 							_client_buffers.erase(_fds[i].fd);
 						}
+						if (client_data.status == false) {		// flag of invalid request is set
+							// send response that payload is too large, 413
+							std::cout << "Client " << _fds[i].fd << " dropped by the server\n";
+							close (_fds[i].fd);
+							_client_buffers.erase(_fds[i].fd);
+							_fds.erase(_fds.begin() + i);
+							--i;
+						}
+
 					}
 				}
 			}
