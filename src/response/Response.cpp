@@ -1,23 +1,24 @@
 #include "Response.hpp"
 
-// setup default values
 Response::Response() {
-  _status = "200 OK"; // ? what is the default status ?
-  _headers = "";
+  _status = "200 OK"; // Default status
   _body = "";
 }
 
 Response::~Response() {}
 
-void Response::setStatus(std::string status) {
+void Response::setStatus(const std::string& status) {
   _status = status;
 }
 
-void Response::setHeaders(std::string headers) {
-  _headers = headers;
+void Response::setBody(const std::string& body) {
+  _body = body;
 }
 
-// should be template
-void Response::setBody(std::string body) {
-  _body = body;
+const std::string& Response::getStatus() const {
+  return _status;
+}
+
+const std::string& Response::getBody() const {
+  return _body;
 }
