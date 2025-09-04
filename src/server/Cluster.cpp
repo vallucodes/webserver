@@ -57,6 +57,8 @@ void	Cluster::run() {
 						--i;
 					}
 					else {
+						if (_client_buffers[_fds[i].fd].buffer.size() == 0)
+							_client_buffers[_fds[i].fd].start = std::chrono::high_resolution_clock::now();
 						_client_buffers[_fds[i].fd].buffer.append(buffer, bytes);
 						ClientBuffer& client_data = _client_buffers[_fds[i].fd];
 						if (requestComplete(client_data.buffer, client_data.status)) {	// check if request is fully received
@@ -65,24 +67,41 @@ void	Cluster::run() {
 						}
 						if (client_data.status == false) {		// flag of invalid request is set
 							// send response that payload is too large, 413
-							std::cout << "Client " << _fds[i].fd << " dropped by the server\n";
+							std::cout << "Client " << _fds[i].fd << " dropped by the server: Malformed request\n";
 							close (_fds[i].fd);
 							_client_buffers.erase(_fds[i].fd);
 							_fds.erase(_fds.begin() + i);
 							--i;
 						}
-
 					}
 				}
+			}
+			else {
+				checkForTimeouts();
 			}
 		}
 	}
 }
 
-const std::vector<std::pair<uint32_t, int>>& Cluster::getAddresses() const {  //move this to Config.hpp
+void	Cluster::checkForTimeouts() {
+	auto now = std::chrono::high_resolution_clock::now();
+	for (size_t i = 0; i < _fds.size(); ++i) {
+		auto elapsed = now - _client_buffers[_fds[i].fd].start;
+		auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count();
+		if (elapsed_ms > 5000)
+		{
+			std::cout << "Client " << _fds[i].fd << " dropped by the server: Timeout\n";
+			close (_fds[i].fd);
+			_client_buffers.erase(_fds[i].fd);
+			--i;
+		}
+	}
+}
+
+const	std::vector<std::pair<uint32_t, int>>& Cluster::getAddresses() const {  //move this to Config.hpp
 	return _addresses;
 }
 
-const std::set<int>& Cluster::getServerFds() const {
+const	std::set<int>& Cluster::getServerFds() const {
 	return _server_fds;
 }
