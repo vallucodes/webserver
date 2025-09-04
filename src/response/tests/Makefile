@@ -2,23 +2,30 @@ NAME		= test_response
 CXX			= c++
 CXXFLAGS	= -std=c++17 -Wall -Wextra -Werror
 
-SRC_DIR		= src_test/
-OBJ_DIR		= obj_test/
+SRC_DIR		= .
+OBJ_DIR		= obj/
+
+INCLUDES	= -I..
 
 HEADERS		= ../Response.hpp
 
-SRCS		= t_res_getters_setters.cpp \
+SRCS		= test_response.cpp \
 			../Response.cpp
 
-OBJS		= $(patsubst $(SRC_DIR)%.cpp,$(OBJ_DIR)%.o,$(SRCS))
+OBJS		= $(OBJ_DIR)/test_response.o \
+			$(OBJ_DIR)/Response.o
 
 all: $(NAME)
 
-$(NAME): $(OBJS) $(HEADERS)
-	$(CXX) $(CXXFLAGS) $(OBJS) $(INCLUDES) -o $(NAME)
+$(NAME): $(OBJS)
+	$(CXX) $(CXXFLAGS) $(OBJS) -o $(NAME)
 
-$(OBJ_DIR)%.o: $(SRC_DIR)%.cpp $(HEADERS)
-	@mkdir -p $(dir $@)
+$(OBJ_DIR)/test_response.o: test_response.cpp $(HEADERS)
+	@mkdir -p $(OBJ_DIR)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+
+$(OBJ_DIR)/Response.o: ../Response.cpp
+	@mkdir -p $(OBJ_DIR)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
 
 clean:
