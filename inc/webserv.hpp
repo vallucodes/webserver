@@ -7,8 +7,9 @@
 #include <unistd.h>
 
 
-#define TIME_OUT_POLL 100
-#define TIME_OUT_REQUEST 20000
+#define TIME_OUT_POLL		100
+#define TIME_OUT_REQUEST	20000
+#define MAX_CLIENTS			900
 
 #define CLIENT_DISCONNECT			" disconnected.\n"
 #define CLIENT_TIMEOUT				" dropped by the server: Timeout.\n"
