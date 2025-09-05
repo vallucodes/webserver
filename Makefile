@@ -1,15 +1,19 @@
 NAME		= webserv
 CXX			= c++
-CXXFLAGS	= -std=c++17 -Wall -Wextra -Werror
+CXXFLAGS	= -g -std=c++17 -Wall -Wextra #-Werror
 
 SRC_DIR		= src/
 OBJ_DIR		= obj/
 
 INCLUDES	= -I ./inc
 HEADERS		= inc/webserv.hpp \
+				src/server/HelperFunctions.hpp \
+				src/server/Cluster.hpp \
 				src/server/Server.hpp
 
 SRCS		= src/main.cpp \
+				src/server/HelperFunctions.cpp \
+				src/server/Cluster.cpp \
 				src/server/Server.cpp
 
 OBJS		= $(patsubst $(SRC_DIR)%.cpp,$(OBJ_DIR)%.o,$(SRCS))
