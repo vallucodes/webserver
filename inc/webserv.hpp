@@ -7,4 +7,5 @@
 #include <unistd.h>
 
 
-#define POLL_TIME_OUT 60
+#define TIME_OUT_POLL 100
+#define TIME_OUT_REQUEST 20000
