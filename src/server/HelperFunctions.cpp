@@ -7,6 +7,19 @@ bool	isServerSocket(int fd, const std::set<int>& server_fds) {
 	return false;
 }
 
+void	setSocketToNonBlockingMode(int sock) {
+	int flags = fcntl(sock, F_GETFL, 0);
+	if (flags == -1) {
+		close(sock);
+		// maybe more cleaning needed here
+		throw std::runtime_error("Error: fcntl get flags");
+	}
+	if (fcntl(sock, F_SETFL, flags | O_NONBLOCK) == -1) {
+		close(sock);
+		throw std::runtime_error("Error: fcntl set non-blocking");
+	}
+}
+
 bool	requestComplete(const std::string& buffer, bool& status) {
 	// std::cout << "Buffer to be parsed currently: " << std::endl;
 	// std::cout << buffer << std::endl;

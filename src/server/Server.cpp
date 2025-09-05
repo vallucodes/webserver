@@ -1,4 +1,5 @@
 #include "Server.hpp"
+#include "HelperFunctions.hpp"
 
 Server::Server(uint32_t address, int port) : _fd(-1), _address(address), _port(port) {}
 
@@ -7,8 +8,7 @@ void	Server::create() {
 	if (_fd < 0)
 		throw std::runtime_error("Error: Socket creation");
 
-	srand(time(0));
-	// int port = 1024 + rand() % (10000 - 1024 + 1);
+	setSocketToNonBlockingMode(_fd);
 
 	struct sockaddr_in addr;
 	addr.sin_family = AF_INET;			// Use internet protocol IPv4
