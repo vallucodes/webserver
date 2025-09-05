@@ -50,7 +50,7 @@ void	Cluster::handleNewClient(size_t i) {
 	if (client_fd < 0)
 		throw std::runtime_error("Error: accept");
 
-	// setSocketToNonBlockingMode(client_fd);
+	setSocketToNonBlockingMode(client_fd);
 
 	std::cout << "New client connected: "
 			<< inet_ntoa(client_addr.sin_addr) << ":"
