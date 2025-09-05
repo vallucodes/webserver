@@ -24,6 +24,10 @@ class Cluster {
 		};
 		std::map<int, ClientBuffer>	_client_buffers;	// storing client related reuqest, and bool is 1:valid, 0 invalid
 
+		void	handleNewClient(size_t i);
+		void	handleClientData(size_t& i);
+		void	dropClient(size_t& i, const std::string& msg);
+		void	processReceivedData(size_t& i, const char* buffer, int bytes);
 		void	checkForTimeouts();
 
 	public:
