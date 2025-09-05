@@ -18,11 +18,13 @@ class Cluster {
 		std::set<int>		_server_fds;		// only servers fds
 
 		struct ClientBuffer {
-			std::chrono::time_point<std::chrono::high_resolution_clock>	start;
+			std::chrono::time_point<std::chrono::high_resolution_clock>	start {};
 			std::string	buffer;
 			bool		status = 1;
 		};
 		std::map<int, ClientBuffer>	_client_buffers;	// storing client related reuqest, and bool is 1:valid, 0 invalid
+
+		void	checkForTimeouts();
 
 	public:
 
@@ -33,5 +35,5 @@ class Cluster {
 		const std::vector<std::pair<uint32_t, int>>& getAddresses() const; //move this to Config.hpp
 		const std::set<int>& getServerFds() const;
 
-		void	checkForTimeouts();
+
 };

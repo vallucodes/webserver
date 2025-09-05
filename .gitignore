@@ -3,6 +3,7 @@ webserv
 
 # Tester build
 /build
+/Testing/Temporary
 
 # Vscode settings
 .vscode

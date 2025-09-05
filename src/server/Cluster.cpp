@@ -27,7 +27,7 @@ void	Cluster::create() {
 void	Cluster::run() {
 	while (true)
 	{
-		if (poll(_fds.data(), _fds.size(), 0) < 0)
+		if (poll(_fds.data(), _fds.size(), TIME_OUT_POLL) < 0)
 			throw std::runtime_error("Error: poll");
 
 		for (size_t i = 0; i < _fds.size(); ++i) {
@@ -57,14 +57,16 @@ void	Cluster::run() {
 						--i;
 					}
 					else {
-						if (_client_buffers[_fds[i].fd].buffer.size() == 0)
-							_client_buffers[_fds[i].fd].start = std::chrono::high_resolution_clock::now();
 						_client_buffers[_fds[i].fd].buffer.append(buffer, bytes);
+						_client_buffers[_fds[i].fd].start = std::chrono::high_resolution_clock::now();
 						ClientBuffer& client_data = _client_buffers[_fds[i].fd];
+
 						if (requestComplete(client_data.buffer, client_data.status)) {	// check if request is fully received
 							send(_fds[i].fd, buffer, bytes, 0);							// call here the parser in future. Send now is just sending back same message to client
 							_client_buffers.erase(_fds[i].fd);
+							_client_buffers[_fds[i].fd].start = {};
 						}
+
 						if (client_data.status == false) {		// flag of invalid request is set
 							// send response that payload is too large, 413
 							std::cout << "Client " << _fds[i].fd << " dropped by the server: Malformed request\n";
@@ -86,13 +88,19 @@ void	Cluster::run() {
 void	Cluster::checkForTimeouts() {
 	auto now = std::chrono::high_resolution_clock::now();
 	for (size_t i = 0; i < _fds.size(); ++i) {
+		if (isSocketFd(_fds[i].fd, getServerFds()))
+			continue ;
+		if (_client_buffers[_fds[i].fd].start == std::chrono::high_resolution_clock::time_point{})
+			continue ;
 		auto elapsed = now - _client_buffers[_fds[i].fd].start;
 		auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count();
-		if (elapsed_ms > 5000)
+		// std::cout << "Elapsed time: " << elapsed_ms << "Buffer size: " << _client_buffers[_fds[i].fd].buffer.size() << std::endl;
+		if (elapsed_ms > TIME_OUT_REQUEST && _client_buffers[_fds[i].fd].buffer.size() > 0)
 		{
 			std::cout << "Client " << _fds[i].fd << " dropped by the server: Timeout\n";
 			close (_fds[i].fd);
 			_client_buffers.erase(_fds[i].fd);
+			_fds.erase(_fds.begin() + i);
 			--i;
 		}
 	}

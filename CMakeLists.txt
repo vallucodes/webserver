@@ -11,9 +11,10 @@ add_subdirectory(libs/gtest)
 enable_testing()
 
 # Add test executable(s)
-# add_executable(testtest test/test/test.cpp)
+# add_executable(<test name> <test/testFile.cpp> <file to be tested location>)
 add_executable(testRequestComplete test/requestComplete.cpp src/server/HelperFunctions.cpp)
 
+# Headers locations
 target_include_directories(testRequestComplete PRIVATE
   ${CMAKE_SOURCE_DIR}/src/server
   ${CMAKE_SOURCE_DIR}/inc
