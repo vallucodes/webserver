@@ -16,6 +16,7 @@ TEST(RequestCompleteTest, ReturnFalseIfNoHeaderEnd) {
 	std::string buffer = "GET / HTTP/1.1\r\nContent-Length: 10"; // no \r\n\r\n header end
 
 	EXPECT_FALSE(requestComplete(buffer, status));
+	EXPECT_TRUE(status);
 }
 
 // 3
@@ -29,6 +30,7 @@ TEST(RequestCompleteTest, ReturnTrueForValidChunkedRequest) {
 		"0\r\n\r\n";
 
 	EXPECT_TRUE(requestComplete(chunked_req, status));
+	EXPECT_TRUE(status);
 }
 
 // 4
@@ -41,6 +43,7 @@ TEST(RequestCompleteTest, ReturnFalseNoBody) {
 		"0\r\n\r\n";
 
 	EXPECT_FALSE(requestComplete(chunked_req, status));
+	EXPECT_TRUE(status);
 }
 
 // 5
@@ -53,6 +56,7 @@ TEST(RequestCompleteTest, ReturnFalseForShortBody) {
 		"12345";
 
 	EXPECT_FALSE(requestComplete(buffer, status));
+	EXPECT_TRUE(status);
 }
 
 // 6
@@ -65,6 +69,7 @@ TEST(RequestCompleteTest, ReturnTrueForCorrectBodySize) {
 		"12345";
 
 	EXPECT_TRUE(requestComplete(buffer, status));
+	EXPECT_TRUE(status);
 }
 
 // 7
@@ -86,6 +91,7 @@ TEST(RequestCompleteTest, ReturnFalseForEmptyRequest) {
 	std::string buffer = "";
 
 	EXPECT_FALSE(requestComplete(buffer, status));
+	EXPECT_TRUE(status);
 }
 
 //9
@@ -99,3 +105,17 @@ TEST(RequestCompleteTest, ReturnFalseNoContentLengthBodyExists) {
 	EXPECT_FALSE(requestComplete(buffer, status));
 	EXPECT_FALSE(status);
 }
+
+//10
+TEST(RequestCompleteTest, ReturnFalseCRLFCRLFInBodyStatusTrue) {
+	bool status = true;
+	std::string buffer =
+		"POST / HTTP/1.1\r\n"
+		"Content-Length: 500\r\n"
+		"\r\n"
+		"12345678910\r\n\r\n2134256";
+
+	EXPECT_FALSE(requestComplete(buffer, status));
+	EXPECT_TRUE(status);
+}
+// test for second \r\n\r\n in the body, should be valid

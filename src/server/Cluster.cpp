@@ -31,64 +31,72 @@ void	Cluster::run() {
 			throw std::runtime_error("Error: poll");
 
 		for (size_t i = 0; i < _fds.size(); ++i) {
-			if (_fds[i].revents & POLLIN) {								// check if there is data to read related to fd
-				if (isSocketFd(_fds[i].fd, getServerFds())) {			// check if fd is server or client
-					// new client
-					sockaddr_in client_addr{};
-					socklen_t addrlen = sizeof(client_addr);
-					int client_fd = accept(_fds[i].fd, (sockaddr*)&client_addr, &addrlen); // 2nd argument: collect clients IP and port. 3rd argument tells size of the buffer of second argument
-					if (client_fd < 0)
-						throw std::runtime_error("Error: accept");
-					std::cout << "New client connected: "
-							<< inet_ntoa(client_addr.sin_addr) << ":"
-							<< ntohs(client_addr.sin_port) << ". Assigned fd: "
-							<< client_fd << "\n";
-					_fds.push_back({client_fd, POLLIN, 0});
-				}
-				else {
-					// Existing client sending data
-					char buffer[1024];
-					int bytes = recv(_fds[i].fd, buffer, sizeof(buffer), 0);
-					if (bytes <= 0) {
-						std::cout << "Client " << _fds[i].fd << " disconnected\n";
-						close (_fds[i].fd);
-						_client_buffers.erase(_fds[i].fd);
-						_fds.erase(_fds.begin() + i);
-						--i;
-					}
-					else {
-						_client_buffers[_fds[i].fd].buffer.append(buffer, bytes);
-						_client_buffers[_fds[i].fd].start = std::chrono::high_resolution_clock::now();
-						ClientBuffer& client_data = _client_buffers[_fds[i].fd];
-
-						if (requestComplete(client_data.buffer, client_data.status)) {	// check if request is fully received
-							send(_fds[i].fd, buffer, bytes, 0);							// call here the parser in future. Send now is just sending back same message to client
-							_client_buffers.erase(_fds[i].fd);
-							_client_buffers[_fds[i].fd].start = {};
-						}
-
-						if (client_data.status == false) {		// flag of invalid request is set
-							// send response that payload is too large, 413
-							std::cout << "Client " << _fds[i].fd << " dropped by the server: Malformed request\n";
-							close (_fds[i].fd);
-							_client_buffers.erase(_fds[i].fd);
-							_fds.erase(_fds.begin() + i);
-							--i;
-						}
-					}
-				}
+			if (_fds[i].revents & POLLIN) {						// check if there is data to read related to fd
+				if (isServerSocket(_fds[i].fd, getServerFds()))	// check if fd is server or client
+					handleNewClient(i);
+				else
+					handleClientData(i);
 			}
-			else {
+			else
 				checkForTimeouts();
-			}
 		}
 	}
+}
+
+void	Cluster::handleNewClient(size_t i) {
+	sockaddr_in client_addr{};
+	socklen_t addrlen = sizeof(client_addr);
+	int client_fd = accept(_fds[i].fd, (sockaddr*)&client_addr, &addrlen); // 2nd argument: collect clients IP and port. 3rd argument tells size of the buffer of second argument
+	if (client_fd < 0)
+		throw std::runtime_error("Error: accept");
+
+	// setSocketToNonBlockingMode(client_fd);
+
+	std::cout << "New client connected: "
+			<< inet_ntoa(client_addr.sin_addr) << ":"
+			<< ntohs(client_addr.sin_port) << ". Assigned fd: "
+			<< client_fd << "\n";
+	_fds.push_back({client_fd, POLLIN, 0});
+}
+
+void	Cluster::handleClientData(size_t& i) {
+	char buffer[1024];
+	int bytes = recv(_fds[i].fd, buffer, sizeof(buffer), 0);
+	if (bytes <= 0)
+		dropClient(i, CLIENT_DISCONNECT);
+	else
+		processReceivedData(i, buffer, bytes);
+}
+
+void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
+	_client_buffers[_fds[i].fd].buffer.append(buffer, bytes);
+	_client_buffers[_fds[i].fd].start = std::chrono::high_resolution_clock::now();
+	ClientBuffer& client_data = _client_buffers[_fds[i].fd];
+
+	if (requestComplete(client_data.buffer, client_data.status)) {	// check if request is fully received
+		send(_fds[i].fd, buffer, bytes, 0);							// call here the parser in future. Send now is just sending back same message to client
+		_client_buffers.erase(_fds[i].fd);
+		_client_buffers[_fds[i].fd].start = {};
+	}
+
+	if (client_data.status == false) {		// flag of invalid request is set
+		// send response that payload is too large, 413
+		dropClient(i, CLIENT_MALFORMED_REQUEST);
+	}
+}
+
+void	Cluster::dropClient(size_t& i, const std::string& msg) {
+	std::cout << "Client " << _fds[i].fd << msg;
+	close (_fds[i].fd);
+	_client_buffers.erase(_fds[i].fd);
+	_fds.erase(_fds.begin() + i);
+	--i;
 }
 
 void	Cluster::checkForTimeouts() {
 	auto now = std::chrono::high_resolution_clock::now();
 	for (size_t i = 0; i < _fds.size(); ++i) {
-		if (isSocketFd(_fds[i].fd, getServerFds()))
+		if (isServerSocket(_fds[i].fd, getServerFds()))
 			continue ;
 		if (_client_buffers[_fds[i].fd].start == std::chrono::high_resolution_clock::time_point{})
 			continue ;
@@ -96,13 +104,7 @@ void	Cluster::checkForTimeouts() {
 		auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count();
 		// std::cout << "Elapsed time: " << elapsed_ms << "Buffer size: " << _client_buffers[_fds[i].fd].buffer.size() << std::endl;
 		if (elapsed_ms > TIME_OUT_REQUEST && _client_buffers[_fds[i].fd].buffer.size() > 0)
-		{
-			std::cout << "Client " << _fds[i].fd << " dropped by the server: Timeout\n";
-			close (_fds[i].fd);
-			_client_buffers.erase(_fds[i].fd);
-			_fds.erase(_fds.begin() + i);
-			--i;
-		}
+			dropClient(i, CLIENT_TIMEOUT);
 	}
 }
 
