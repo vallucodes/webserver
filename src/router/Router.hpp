@@ -5,17 +5,9 @@
 #include <string_view>
 #include <functional>
 
-#include "../response/Response.hpp"
+#include "Request.hpp"
+#include "Response.hpp"
 
-// Simple Request struct (fixed to return const std::string& for efficiency)
-struct Request {
-    std::string method;
-    std::string path;
-    std::string_view getMethod() const { return method; }
-    std::string_view getPath() const { return path; }
-};
-
-// Router class - Manages HTTP route mappings and request handling
 class Router {
   public:
     Router();
@@ -27,12 +19,10 @@ class Router {
     // Register a new route with specific HTTP method and path
     void addRoute(const std::string& method, const std::string& path, Handler handler);
 
-    // Helper methods for registering routes
+    // Register a new routes
     void get(const std::string& path, Handler handler);
     void post(const std::string& path, Handler handler);
     void del(const std::string& path, Handler handler);
-
-    // Process an incoming HTTP request and route it to appropriate handler
     void handleRequest(const Request& req, Response& res) const;
 
   private:
