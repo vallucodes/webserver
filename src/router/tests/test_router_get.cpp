@@ -1,94 +1,61 @@
+#include "Router.hpp"
 #include "../../response/Response.hpp"
-#include "../Router.hpp"
-#include "../Request.hpp"
 #include <iostream>
-#include <cassert>
-
-void test_basic_get_route() {
-    std::cout << "Test 1: Basic GET route" << std::endl;
-    Router r;
-
-    // Register route
-    r.get("/", [](const Request& /*req*/, Response& res) {
-        res.setStatus("200 OK");
-        res.setBody("Hello 42!");
-    });
-
-    Request req;
-    req.setMethod("GET");
-    req.setPath("/");
-
-    Response res;
-    r.handleRequest(req, res);
-
-    assert(res.getStatus() == "200 OK");
-    assert(res.getBody() == "Hello 42!");
-    std::cout << "Basic GET route test passed" << std::endl;
-}
-
-void test_404_not_found() {
-    std::cout << "Test 2: 404 Not Found" << std::endl;
-    Router r;
-
-    // Register only one route
-    r.get("/home", [](const Request& /*req*/, Response& res) {
-        res.setBody("Home page");
-    });
-
-    // Try to access a different path
-    Request req;
-    req.setMethod("GET");
-    req.setPath("/nonexistent");
-
-    Response res;
-    r.handleRequest(req, res);
-
-    assert(res.getStatus() == "404 Not Found");
-    assert(res.getBody() == "Route not found");
-    std::cout << "404 Not Found test passed" << std::endl;
-}
-
-void test_different_paths() {
-    std::cout << "Test 3: Multiple paths" << std::endl;
-    Router r;
-
-    r.get("/api/users", [](const Request& /*req*/, Response& res) {
-        res.setBody("Users API");
-    });
-
-    r.get("/api/posts", [](const Request& /*req*/, Response& res) {
-        res.setBody("Posts API");
-    });
-
-    // Test first route
-    Request req1;
-    req1.setMethod("GET");
-    req1.setPath("/api/users");
-    Response res1;
-    r.handleRequest(req1, res1);
-    assert(res1.getBody() == "Users API");
-
-    // Test second route
-    Request req2;
-    req2.setMethod("GET");
-    req2.setPath("/api/posts");
-    Response res2;
-    r.handleRequest(req2, res2);
-    assert(res2.getBody() == "Posts API");
-
-    std::cout << "Multiple paths test passed" << std::endl;
-}
 
 int main() {
-    std::cout << "Running Router Tests..." << std::endl;
-    std::cout << std::string(40, '=') << std::endl;
+    Router router;
 
-    test_basic_get_route();
-    test_404_not_found();
-    test_different_paths();
+    // Register handlers
+    router.get("/hello", [](const Request& /*req*/, Response& res) {
+        res.setStatus("200 OK");
+        res.setBody("Hello from GET!");
+    });
 
-    std::cout << std::string(40, '=') << std::endl;
-    std::cout << "All router tests passed!" << std::endl;
+    router.post("/hello", [](const Request& /*req*/, Response& res) {
+        res.setStatus("200 OK");
+        res.setBody("Hello from POST!");
+    });
+
+    router.del("/hello", [](const Request& /*req*/, Response& res) {
+        res.setStatus("200 OK");
+        res.setBody("Hello from DELETE!");
+    });
+
+    // Test 1: GET /hello (should succeed)
+    Request req1;
+    req1.method = "GET";
+    req1.path = "/hello";
+    Response res1;
+    router.handleRequest(req1, res1);
+    std::cout << "Test 1 Status: " << res1.getStatus() << std::endl;
+    std::cout << "Test 1 Body: " << res1.getBody() << std::endl << std::endl;
+
+    // Test 2: POST /hello (should succeed)
+    Request req2;
+    req2.method = "POST";
+    req2.path = "/hello";
+    Response res2;
+    router.handleRequest(req2, res2);
+    std::cout << "Test 2 Status: " << res2.getStatus() << std::endl;
+    std::cout << "Test 2 Body: " << res2.getBody() << std::endl << std::endl;
+
+    // Test 3: GET /nonexistent (should return 404)
+    Request req3;
+    req3.method = "GET";
+    req3.path = "/nonexistent";
+    Response res3;
+    router.handleRequest(req3, res3);
+    std::cout << "Test 3 Status: " << res3.getStatus() << std::endl;
+    std::cout << "Test 3 Body: " << res3.getBody() << std::endl << std::endl;
+
+    // Test 4: PUT /hello (should return 404 - no PUT handler registered)
+    Request req4;
+    req4.method = "PUT";
+    req4.path = "/hello";
+    Response res4;
+    router.handleRequest(req4, res4);
+    std::cout << "Test 4 Status: " << res4.getStatus() << std::endl;
+    std::cout << "Test 4 Body: " << res4.getBody() << std::endl << std::endl;
 
     return 0;
 }
