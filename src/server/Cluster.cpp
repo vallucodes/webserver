@@ -2,6 +2,9 @@
 #include "Server.hpp"
 
 void	Cluster::config() {
+
+	_max_clients = getMaxClients(); // shouldn allow to run a server if number is way too small
+	std::cout << "Max clients: " << _max_clients << std::endl;
 	srand(time(0));
 
 	std::string addr1 = "127.0.0.1";
@@ -19,7 +22,7 @@ void	Cluster::create() {
 	{
 		Server serv(entry.first, entry.second);
 		serv.create();
-		_fds.push_back({serv.getFd(), POLLIN, 0});
+		_fds.push_back({serv.getFd(), POLLIN | POLLOUT, 0});
 		_server_fds.insert(serv.getFd());
 	}
 }
@@ -35,7 +38,10 @@ void	Cluster::run() {
 				if (isServerSocket(_fds[i].fd, getServerFds()))	// check if fd is server or client
 					handleNewClient(i);
 				else
-					handleClientData(i);
+					handleClientInData(i);
+			}
+			else if (_fds[i].revents & POLLOUT) {
+				sendPendingData(i);
 			}
 			else
 				checkForTimeouts();
@@ -44,9 +50,14 @@ void	Cluster::run() {
 }
 
 void	Cluster::handleNewClient(size_t i) {
+	if (_fds.size() >= _max_clients) {
+		// std::cout << "Server busy: can't accept new clients\n";
+		return ;
+	}
 	sockaddr_in client_addr{};
 	socklen_t addrlen = sizeof(client_addr);
 	int client_fd = accept(_fds[i].fd, (sockaddr*)&client_addr, &addrlen); // 2nd argument: collect clients IP and port. 3rd argument tells size of the buffer of second argument
+	std::cout << "Currently active clients: " << _fds.size() - getServerFds().size() << "\n";
 	if (client_fd < 0)
 		throw std::runtime_error("Error: accept");
 
@@ -56,10 +67,10 @@ void	Cluster::handleNewClient(size_t i) {
 			<< inet_ntoa(client_addr.sin_addr) << ":"
 			<< ntohs(client_addr.sin_port) << ". Assigned fd: "
 			<< client_fd << "\n";
-	_fds.push_back({client_fd, POLLIN, 0});
+	_fds.push_back({client_fd, POLLIN | POLLOUT, 0});
 }
 
-void	Cluster::handleClientData(size_t& i) {
+void	Cluster::handleClientInData(size_t& i) {
 	char buffer[1024];
 	int bytes = recv(_fds[i].fd, buffer, sizeof(buffer), 0);
 	if (bytes <= 0)
@@ -71,17 +82,39 @@ void	Cluster::handleClientData(size_t& i) {
 void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 	_client_buffers[_fds[i].fd].buffer.append(buffer, bytes);
 	_client_buffers[_fds[i].fd].start = std::chrono::high_resolution_clock::now();
-	ClientBuffer& client_data = _client_buffers[_fds[i].fd];
+	ClientRequestState& client_state = _client_buffers[_fds[i].fd];
 
-	if (requestComplete(client_data.buffer, client_data.status)) {	// check if request is fully received
-		send(_fds[i].fd, buffer, bytes, 0);							// call here the parser in future. Send now is just sending back same message to client
-		_client_buffers.erase(_fds[i].fd);
-		_client_buffers[_fds[i].fd].start = {};
+	if (requestComplete(client_state.buffer, client_state.data_validity)) {	// check if request is fully received
+		// call here the parser in future. Send now is just sending back same message to client
+		client_state.response =
+			"HTTP/1.1 200 OK\r\n"
+			"Content-Length: 2\r\n"
+			"Connection: keep-alive\r\n"
+			"Content-Type: text/plain\r\n"
+			"\r\n"
+			"OK";
+		client_state.buffer.clear();
+		client_state.start = {};
+		client_state.waiting_response = true;
 	}
 
-	if (client_data.status == false) {		// flag of invalid request is set
+	if (client_state.data_validity == false) {		// flag of invalid request is set
 		// send response that payload is too large, 413
 		dropClient(i, CLIENT_MALFORMED_REQUEST);
+	}
+}
+
+void	Cluster::sendPendingData(size_t i) { // some issue here possily, siege behaves weird
+	// --- Send minimal HTTP response ---
+	ClientRequestState& client_state = _client_buffers[_fds[i].fd];
+
+	if (client_state.waiting_response == true) {
+		std::cout << "Sending data to: " << _fds[i].fd << std::endl;
+		ssize_t sent = send(_fds[i].fd, client_state.response.c_str(), client_state.response.size(), 0);
+		if (sent > 0) {
+			client_state.response.clear(); // response fully sent
+			client_state.waiting_response = false;
+		}
 	}
 }
 
@@ -91,6 +124,7 @@ void	Cluster::dropClient(size_t& i, const std::string& msg) {
 	_client_buffers.erase(_fds[i].fd);
 	_fds.erase(_fds.begin() + i);
 	--i;
+	// std::cout << "Currently active clients: " << _fds.size() - getServerFds().size() << "\n";
 }
 
 void	Cluster::checkForTimeouts() {

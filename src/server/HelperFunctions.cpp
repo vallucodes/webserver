@@ -20,11 +20,11 @@ void	setSocketToNonBlockingMode(int sock) {
 	}
 }
 
-bool	requestComplete(const std::string& buffer, bool& status) {
+bool	requestComplete(const std::string& buffer, bool& data_validity) {
 	// std::cout << "Buffer to be parsed currently: " << std::endl;
 	// std::cout << buffer << std::endl;
 	if (buffer.size() > 2097152) {
-		status = false;
+		data_validity = false;
 		return false;
 	}
 
@@ -63,16 +63,31 @@ bool	requestComplete(const std::string& buffer, bool& status) {
 			return false;
 		else {
 			// std::cout << "body received as too big" << std::endl;
-			status = false;
+			data_validity = false;
 			return false;
 		}
 	}
 	else if (body_curr_len > 0) {
 		// std::cout << "Body received after no length given" << std::endl;
-		status = false;
+		data_validity = false;
 		return false;
 	}
 	else {
-		return false;
+		return true;
 	}
+}
+
+// after parsing config, should be checked that max amount of clients there should be less than max.
+// Or handled somehow, this is just temp fix. Its finding systems max fds and using that - 10.
+uint64_t	getMaxClients() {
+	struct rlimit rl;
+	if (getrlimit(RLIMIT_NOFILE, &rl) != 0)
+		throw std::runtime_error("Error: getrlimit");
+
+	// Reserve some FDs for standard I/O, listening socket, etc.
+	uint64_t reserved_fds = 10;
+	uint64_t max_clients = rl.rlim_cur - reserved_fds;
+	if (max_clients < 1)
+		max_clients = 1;
+	return max_clients;
 }
