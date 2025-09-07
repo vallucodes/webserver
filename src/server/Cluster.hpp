@@ -18,13 +18,14 @@ class Cluster {
 		std::vector<pollfd>	_fds;				// store here all servers sockets fd and every connected cliends fd
 		std::set<int>		_server_fds;		// only servers fds
 
-		struct ClientBuffer {
+		struct ClientRequestState {
 			std::chrono::time_point<std::chrono::high_resolution_clock>	start {};
 			std::string	buffer;
 			std::string	response;
-			bool		status = 1;
+			bool		data_validity = 1;
+			bool		waiting_response = 0; // later can be removed if check that response field has anything, send that
 		};
-		std::map<int, ClientBuffer>	_client_buffers;	// storing client related reuqest, and bool is 1:valid, 0 invalid
+		std::map<int, ClientRequestState>	_client_buffers;	// storing client related reuqest, and bool is 1:valid, 0 invalid
 
 		void	handleNewClient(size_t i);
 		void	handleClientInData(size_t& i);
@@ -39,7 +40,6 @@ class Cluster {
 		void	create();
 		void	run();
 
-		const std::vector<std::pair<uint32_t, int>>& getAddresses() const; //move this to Config.hpp
-		const std::set<int>& getServerFds() const;
-
+		const std::vector<std::pair<uint32_t, int>>&	getAddresses() const; //move this to Config.hpp
+		const std::set<int>&	getServerFds() const;
 };

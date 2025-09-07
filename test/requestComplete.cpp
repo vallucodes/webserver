@@ -118,4 +118,14 @@ TEST(RequestCompleteTest, ReturnFalseCRLFCRLFInBodyStatusTrue) {
 	EXPECT_FALSE(requestComplete(buffer, status));
 	EXPECT_TRUE(status);
 }
-// test for second \r\n\r\n in the body, should be valid
+
+//11
+TEST(RequestCompleteTest, ReturnTrueOnlyHeader) {
+	bool status = true;
+	std::string buffer =
+		"POST / HTTP/1.1\r\n"
+		"\r\n";
+
+	EXPECT_TRUE(requestComplete(buffer, status));
+	EXPECT_TRUE(status);
+}

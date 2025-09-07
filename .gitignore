@@ -2,8 +2,8 @@
 webserv
 
 # Tester build
-/build
-/Testing/Temporary
+build/
+Testing/
 
 # Vscode settings
 .vscode

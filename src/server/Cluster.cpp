@@ -41,8 +41,6 @@ void	Cluster::run() {
 					handleClientInData(i);
 			}
 			else if (_fds[i].revents & POLLOUT) {
-				std::cout << "Sending data to: " << _fds[i].fd << std::endl;
-				// send pending data for this client
 				sendPendingData(i);
 			}
 			else
@@ -84,23 +82,23 @@ void	Cluster::handleClientInData(size_t& i) {
 void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 	_client_buffers[_fds[i].fd].buffer.append(buffer, bytes);
 	_client_buffers[_fds[i].fd].start = std::chrono::high_resolution_clock::now();
-	ClientBuffer& client_data = _client_buffers[_fds[i].fd];
+	ClientRequestState& client_state = _client_buffers[_fds[i].fd];
 
-	if (requestComplete(client_data.buffer, client_data.status)) {	// check if request is fully received
+	if (requestComplete(client_state.buffer, client_state.data_validity)) {	// check if request is fully received
 		// call here the parser in future. Send now is just sending back same message to client
-		client_data.response =
+		client_state.response =
 			"HTTP/1.1 200 OK\r\n"
 			"Content-Length: 2\r\n"
 			"Connection: keep-alive\r\n"
 			"Content-Type: text/plain\r\n"
 			"\r\n"
 			"OK";
-		ClientBuffer& buf = _client_buffers[_fds[i].fd];
-		buf.buffer.clear(); // go through this with debugger, does it correctly erases data in buffer?
-		buf.start = {};
+		client_state.buffer.clear();
+		client_state.start = {};
+		client_state.waiting_response = true;
 	}
 
-	if (client_data.status == false) {		// flag of invalid request is set
+	if (client_state.data_validity == false) {		// flag of invalid request is set
 		// send response that payload is too large, 413
 		dropClient(i, CLIENT_MALFORMED_REQUEST);
 	}
@@ -108,12 +106,14 @@ void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 
 void	Cluster::sendPendingData(size_t i) { // some issue here possily, siege behaves weird
 	// --- Send minimal HTTP response ---
-	ClientBuffer& client_data = _client_buffers[_fds[i].fd];
+	ClientRequestState& client_state = _client_buffers[_fds[i].fd];
 
-	if (!client_data.response.empty()) {
-		ssize_t sent = send(_fds[i].fd, client_data.response.c_str(), client_data.response.size(), 0);
+	if (client_state.waiting_response == true) {
+		std::cout << "Sending data to: " << _fds[i].fd << std::endl;
+		ssize_t sent = send(_fds[i].fd, client_state.response.c_str(), client_state.response.size(), 0);
 		if (sent > 0) {
-			client_data.response.clear(); // response fully sent
+			client_state.response.clear(); // response fully sent
+			client_state.waiting_response = false;
 		}
 	}
 }
@@ -124,7 +124,7 @@ void	Cluster::dropClient(size_t& i, const std::string& msg) {
 	_client_buffers.erase(_fds[i].fd);
 	_fds.erase(_fds.begin() + i);
 	--i;
-	std::cout << "Currently active clients: " << _fds.size() - getServerFds().size() << "\n";
+	// std::cout << "Currently active clients: " << _fds.size() - getServerFds().size() << "\n";
 }
 
 void	Cluster::checkForTimeouts() {
