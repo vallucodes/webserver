@@ -79,6 +79,18 @@ void	Cluster::handleClientInData(size_t& i) {
 		processReceivedData(i, buffer, bytes);
 }
 
+#include <fstream>
+std::string readFileToString(const std::string& filename) {
+	std::ifstream file(filename);
+	if (!file) {
+		throw std::runtime_error("Could not open file: " + filename);
+	}
+
+	std::ostringstream buffer;
+	buffer << file.rdbuf();  // read whole file into buffer
+	return buffer.str();
+}
+
 void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 	_client_buffers[_fds[i].fd].buffer.append(buffer, bytes);
 	_client_buffers[_fds[i].fd].start = std::chrono::high_resolution_clock::now();
@@ -86,13 +98,14 @@ void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 
 	if (requestComplete(client_state.buffer, client_state.data_validity)) {	// check if request is fully received
 		// call here the parser in future. Send now is just sending back same message to client
+		std::string body = readFileToString("www/index.html");
 		client_state.response =
 			"HTTP/1.1 200 OK\r\n"
-			"Content-Length: 2\r\n"
-			"Connection: keep-alive\r\n"
-			"Content-Type: text/plain\r\n"
-			"\r\n"
-			"OK";
+			"Content-Type: text/html; charset=UTF-8\r\n"
+			"Content-Length: " + std::to_string(body.size()) + "\r\n"
+			"\r\n";
+
+		client_state.response.append(body);
 		client_state.buffer.clear();
 		client_state.start = {};
 		client_state.waiting_response = true;
