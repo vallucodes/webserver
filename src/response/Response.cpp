@@ -1,7 +1,7 @@
 #include "Response.hpp"
 
 Response::Response() {
-  _status = "200 OK"; // Default status
+  _status = "";
 }
 
 Response::~Response() {}
