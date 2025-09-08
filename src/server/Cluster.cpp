@@ -38,14 +38,12 @@ void	Cluster::run() {
 				if (isServerSocket(_fds[i].fd, getServerFds()))	// check if fd is server or client
 					handleNewClient(i);
 				else
-					handleClientInData(i);
+					handleClientInData(i); // if client sends data before getting response, drop him for malformed request
 			}
-			else if (_fds[i].revents & POLLOUT) {
-				sendPendingData(i);
-			}
-			else
-				checkForTimeouts();
+			// if (_fds[i].revents & POLLOUT)
+			// 	sendPendingData(i);
 		}
+		checkForTimeouts(); // add timeout check for sending data
 	}
 }
 
@@ -93,7 +91,7 @@ std::string readFileToString(const std::string& filename) {
 
 void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 	_client_buffers[_fds[i].fd].buffer.append(buffer, bytes);
-	_client_buffers[_fds[i].fd].start = std::chrono::high_resolution_clock::now();
+	_client_buffers[_fds[i].fd].receive_start = std::chrono::high_resolution_clock::now();
 	ClientRequestState& client_state = _client_buffers[_fds[i].fd];
 
 	if (requestComplete(client_state.buffer, client_state.data_validity)) {	// check if request is fully received
@@ -107,7 +105,8 @@ void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 
 		client_state.response.append(body);
 		client_state.buffer.clear();
-		client_state.start = {};
+		client_state.receive_start = {};
+		client_state.send_start = std::chrono::high_resolution_clock::now(); //this should be moved to the response part of code
 		client_state.waiting_response = true;
 	}
 
@@ -117,17 +116,21 @@ void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 	}
 }
 
-void	Cluster::sendPendingData(size_t i) { // some issue here possily, siege behaves weird
+void	Cluster::sendPendingData(size_t& i) {
 	// --- Send minimal HTTP response ---
 	ClientRequestState& client_state = _client_buffers[_fds[i].fd];
+	if (!client_state.response.size())
+		return ;
 
 	if (client_state.waiting_response == true) {
 		std::cout << "Sending data to: " << _fds[i].fd << std::endl;
 		ssize_t sent = send(_fds[i].fd, client_state.response.c_str(), client_state.response.size(), 0);
-		if (sent > 0) {
+		if (sent >= 0) {
 			client_state.response.clear(); // response fully sent
 			client_state.waiting_response = false;
 		}
+		// else if (sent < 0)
+			// dropClient(i, CLIENT_SEND_ERROR);
 	}
 }
 
@@ -145,12 +148,18 @@ void	Cluster::checkForTimeouts() {
 	for (size_t i = 0; i < _fds.size(); ++i) {
 		if (isServerSocket(_fds[i].fd, getServerFds()))
 			continue ;
-		if (_client_buffers[_fds[i].fd].start == std::chrono::high_resolution_clock::time_point{})
+		if (_client_buffers[_fds[i].fd].receive_start == std::chrono::high_resolution_clock::time_point{} &&
+		_client_buffers[_fds[i].fd].send_start == std::chrono::high_resolution_clock::time_point{})
 			continue ;
-		auto elapsed = now - _client_buffers[_fds[i].fd].start;
+		auto elapsed = now - _client_buffers[_fds[i].fd].receive_start;
 		auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count();
-		// std::cout << "Elapsed time: " << elapsed_ms << "Buffer size: " << _client_buffers[_fds[i].fd].buffer.size() << std::endl;
 		if (elapsed_ms > TIME_OUT_REQUEST && _client_buffers[_fds[i].fd].buffer.size() > 0)
+			dropClient(i, CLIENT_TIMEOUT);
+
+		// this doesnt works for some reason at the momnet, check with GDB
+		elapsed = now - _client_buffers[_fds[i].fd].send_start;
+		elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count();
+		if (elapsed_ms > TIME_OUT_RESPONSE && _client_buffers[_fds[i].fd].buffer.size() > 0)
 			dropClient(i, CLIENT_TIMEOUT);
 	}
 }

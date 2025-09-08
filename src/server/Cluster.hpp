@@ -19,7 +19,8 @@ class Cluster {
 		std::set<int>		_server_fds;		// only servers fds
 
 		struct ClientRequestState {
-			std::chrono::time_point<std::chrono::high_resolution_clock>	start {};
+			std::chrono::time_point<std::chrono::high_resolution_clock>	receive_start {};
+			std::chrono::time_point<std::chrono::high_resolution_clock>	send_start {};
 			std::string	buffer;
 			std::string	response;
 			bool		data_validity = 1;
@@ -29,7 +30,7 @@ class Cluster {
 
 		void	handleNewClient(size_t i);
 		void	handleClientInData(size_t& i);
-		void	sendPendingData(size_t i);
+		void	sendPendingData(size_t& i);
 		void	dropClient(size_t& i, const std::string& msg);
 		void	processReceivedData(size_t& i, const char* buffer, int bytes);
 		void	checkForTimeouts();

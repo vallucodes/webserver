@@ -13,9 +13,9 @@ void	Server::create() {
 	struct sockaddr_in addr;
 	addr.sin_family = AF_INET;			// Use internet protocol IPv4
 	addr.sin_port = htons(_port);		// set port to listen to
-	addr.sin_addr.s_addr = _address;	// listen to all availabe interfaces
+	addr.sin_addr.s_addr = _address;	// listen to specified address
 
-	if (bind(_fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) < 0) {	// bind IP address to a existing socket
+	if (bind(_fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) < 0) {	// bind IP address to an existing socket
 		close (_fd);
 		throw std::runtime_error("Error: bind");
 	}
@@ -27,6 +27,6 @@ void	Server::create() {
 	std::cout << "Server created: Host[" << inet_ntoa(inaddr) << "] Port:[" << _port << "]\n";
 }
 
-int		Server::getFd() {
+int	Server::getFd() {
 	return _fd;
 }
