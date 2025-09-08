@@ -40,10 +40,10 @@ void	Cluster::run() {
 				else
 					handleClientInData(i); // if client sends data before getting response, drop him for malformed request
 			}
-			// if (_fds[i].revents & POLLOUT)
-			// 	sendPendingData(i);
+			if (_fds[i].revents & POLLOUT)
+				sendPendingData(i);
 		}
-		checkForTimeouts(); // add timeout check for sending data
+		checkForTimeouts();
 	}
 }
 
@@ -65,7 +65,7 @@ void	Cluster::handleNewClient(size_t i) {
 			<< inet_ntoa(client_addr.sin_addr) << ":"
 			<< ntohs(client_addr.sin_port) << ". Assigned fd: "
 			<< client_fd << "\n";
-	_fds.push_back({client_fd, POLLIN | POLLOUT, 0});
+	_fds.push_back({client_fd, POLLIN, 0});
 }
 
 void	Cluster::handleClientInData(size_t& i) {
@@ -94,7 +94,7 @@ void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 	_client_buffers[_fds[i].fd].receive_start = std::chrono::high_resolution_clock::now();
 	ClientRequestState& client_state = _client_buffers[_fds[i].fd];
 
-	if (requestComplete(client_state.buffer, client_state.data_validity)) {	// check if request is fully received
+	if (requestComplete(client_state.buffer, client_state.data_validity)) {
 		// call here the parser in future. Send now is just sending back same message to client
 		std::string body = readFileToString("www/index.html");
 		client_state.response =
@@ -106,6 +106,7 @@ void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 		client_state.response.append(body);
 		client_state.buffer.clear();
 		client_state.receive_start = {};
+		_fds[i].events |= POLLOUT;
 		client_state.send_start = std::chrono::high_resolution_clock::now(); //this should be moved to the response part of code
 		client_state.waiting_response = true;
 	}
@@ -127,10 +128,13 @@ void	Cluster::sendPendingData(size_t& i) {
 		ssize_t sent = send(_fds[i].fd, client_state.response.c_str(), client_state.response.size(), 0);
 		if (sent >= 0) {
 			client_state.response.clear(); // response fully sent
+			_fds[i].events &= ~POLLOUT;
+			// _fds[i].events |= POLLIN;
+			client_state.send_start = std::chrono::high_resolution_clock::time_point{};
 			client_state.waiting_response = false;
 		}
-		// else if (sent < 0)
-			// dropClient(i, CLIENT_SEND_ERROR);
+		else if (sent < 0)
+			dropClient(i, CLIENT_SEND_ERROR);
 	}
 }
 
@@ -151,15 +155,15 @@ void	Cluster::checkForTimeouts() {
 		if (_client_buffers[_fds[i].fd].receive_start == std::chrono::high_resolution_clock::time_point{} &&
 		_client_buffers[_fds[i].fd].send_start == std::chrono::high_resolution_clock::time_point{})
 			continue ;
+
 		auto elapsed = now - _client_buffers[_fds[i].fd].receive_start;
 		auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count();
 		if (elapsed_ms > TIME_OUT_REQUEST && _client_buffers[_fds[i].fd].buffer.size() > 0)
 			dropClient(i, CLIENT_TIMEOUT);
 
-		// this doesnt works for some reason at the momnet, check with GDB
 		elapsed = now - _client_buffers[_fds[i].fd].send_start;
 		elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count();
-		if (elapsed_ms > TIME_OUT_RESPONSE && _client_buffers[_fds[i].fd].buffer.size() > 0)
+		if (elapsed_ms > TIME_OUT_RESPONSE && _client_buffers[_fds[i].fd].response.size() > 0)
 			dropClient(i, CLIENT_TIMEOUT);
 	}
 }

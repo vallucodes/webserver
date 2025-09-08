@@ -4,7 +4,7 @@ import socket
 import time
 
 HOST = '127.0.0.1'
-PORT = 2052
+PORT = 7551
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.connect((HOST, PORT))
