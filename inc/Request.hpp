@@ -10,4 +10,4 @@ class Request : public AMessage {
     virtual std::string getMessageType() const override;
 };
 
-
+Request createRequest(const std::string& httpString);
