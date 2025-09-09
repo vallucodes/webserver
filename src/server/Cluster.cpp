@@ -1,5 +1,20 @@
+#include "../../inc/webserv.hpp"
 #include "Cluster.hpp"
 #include "Server.hpp"
+#include "../router/Router.hpp"
+#include "../router/handlers/Handlers.hpp"
+#include "../request/Request.hpp"
+#include "../response/Response.hpp"
+#include <sstream>
+
+// for tests only
+Cluster::Cluster() {
+	// Register the main page handler for GET requests
+	_router.addRoute("GET", "/", getMainPageHandler);
+	_router.addRoute("GET", "/index.html", getMainPageHandler);
+	_router.addRoute("GET", "/home.html", getMainPageHandler);
+}
+// end tests only
 
 void	Cluster::config() {
 
@@ -77,16 +92,14 @@ void	Cluster::handleClientInData(size_t& i) {
 		processReceivedData(i, buffer, bytes);
 }
 
-#include <fstream>
-std::string readFileToString(const std::string& filename) {
-	std::ifstream file(filename);
-	if (!file) {
-		throw std::runtime_error("Could not open file: " + filename);
-	}
 
-	std::ostringstream buffer;
-	buffer << file.rdbuf();  // read whole file into buffer
-	return buffer.str();
+// Convert Response object to HTTP string
+std::string responseToString(const Response& res) {
+    std::string responseStr = "HTTP/1.1 " + std::string(res.getStatus()) + "\r\n";
+    responseStr += res.getAllHeaders();
+    responseStr += "\r\n";
+    responseStr += std::string(res.getBody());
+    return responseStr;
 }
 
 void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
@@ -95,15 +108,26 @@ void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 	ClientRequestState& client_state = _client_buffers[_fds[i].fd];
 
 	if (requestComplete(client_state.buffer, client_state.data_validity)) {
-		// call here the parser in future. Send now is just sending back same message to client
-		std::string body = readFileToString("www/index.html");
-		client_state.response =
-			"HTTP/1.1 200 OK\r\n"
-			"Content-Type: text/html; charset=UTF-8\r\n"
-			"Content-Length: " + std::to_string(body.size()) + "\r\n"
-			"\r\n";
+		// Extract the actual path from the HTTP request
+		std::string path = "/";
+		size_t first_space = client_state.buffer.find(" ");
+		size_t second_space = client_state.buffer.find(" ", first_space + 1);
+		if (first_space != std::string::npos && second_space != std::string::npos) {
+			path = client_state.buffer.substr(first_space + 1, second_space - first_space - 1);
+		}
 
-		client_state.response.append(body);
+		Request req;
+		req.setMethod("GET");
+		req.setPath(path);
+		Response res;
+		// end test
+
+		// Handle the request using the router
+		_router.handleRequest(req, res);
+
+		// Convert response to HTTP string format
+		client_state.response = responseToString(res);
+
 		client_state.buffer.clear();
 		client_state.receive_start = {};
 		_fds[i].events |= POLLOUT;

@@ -8,6 +8,7 @@
 
 #include "webserv.hpp"
 #include "HelperFunctions.hpp"
+#include "../router/Router.hpp"
 
 class Cluster {
 
@@ -17,6 +18,7 @@ class Cluster {
 		uint64_t			_max_clients;
 		std::vector<pollfd>	_fds;				// store here all servers sockets fd and every connected cliends fd
 		std::set<int>		_server_fds;		// only servers fds
+		Router				_router;			// HTTP router for handling requests
 
 		struct ClientRequestState {
 			std::chrono::time_point<std::chrono::high_resolution_clock>	receive_start {};
@@ -36,7 +38,7 @@ class Cluster {
 		void	checkForTimeouts();
 
 	public:
-
+		Cluster();
 		void	config();
 		void	create();
 		void	run();

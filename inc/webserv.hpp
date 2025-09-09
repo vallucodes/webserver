@@ -1,3 +1,6 @@
+#ifndef WEBSERV_HPP
+#define WEBSERV_HPP
+
 #include <iostream>
 #include <string>
 
@@ -10,6 +13,20 @@
 // Utility function declarations
 std::string readFileToString(const std::string& filename);
 
+// Utility function implementation
+#include <fstream>
+#include <sstream>
+
+inline std::string readFileToString(const std::string& filename) {
+    std::ifstream file(filename);
+    if (!file) {
+        throw std::runtime_error("Could not open file: " + filename);
+    }
+
+    std::ostringstream buffer;
+    buffer << file.rdbuf();
+    return buffer.str();
+}
 
 #define TIME_OUT_POLL		100
 #define TIME_OUT_REQUEST	2000000
@@ -20,3 +37,5 @@ std::string readFileToString(const std::string& filename);
 #define CLIENT_TIMEOUT				" dropped by the server: Timeout.\n"
 #define CLIENT_MALFORMED_REQUEST	" dropped by the server: Malformed request.\n"
 #define CLIENT_SEND_ERROR			" dropped by the server: send() failed.\n"
+
+#endif // WEBSERV_HPP

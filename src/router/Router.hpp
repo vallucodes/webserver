@@ -27,14 +27,14 @@ namespace http {
 
 // Error page file paths namespace
 namespace error_page {
-  const std::string ERROR_PAGE_NOT_FOUND_404 = "../../../www/errors/not_found_404.html";
-  const std::string ERROR_PAGE_METHOD_NOT_ALLOWED_405 = "../../../www/errors/method_not_allowed_405.html";
-  const std::string ERROR_PAGE_INTERNAL_SERVER_ERROR_500 = "../../../www/errors/internal_server_error_500.html";
+  const std::string ERROR_PAGE_NOT_FOUND_404 = "www/errors/not_found_404.html";
+  const std::string ERROR_PAGE_METHOD_NOT_ALLOWED_405 = "www/errors/method_not_allowed_405.html";
+  const std::string ERROR_PAGE_INTERNAL_SERVER_ERROR_500 = "www/errors/internal_server_error_500.html";
 }
 
 // Default file paths namespace
 namespace page_file {
-  const std::string INDEX_HTML = "../../../www/index.html";
+  const std::string INDEX_HTML = "www/index.html";
 }
 // Router class - Manages HTTP route mappings and request handling (global, no namespace)
 class Router {
