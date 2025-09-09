@@ -39,11 +39,10 @@ void isValidProtocol(std::string_view protocol){
             throw std::runtime_error("Invalid HTTP protocol");
 }
 
-bool validateRequestLineFormat(const Request& req){
+void validateRequestLineFormat(const Request& req){
     isValidMethod(req.getMethod());
     isValidRequestTarget(req.getMethod(), req.getPath());
     isValidProtocol(req.getHttpVersion());
-    return true;
 }
 
 void parseHeader(Request& req, const std::string_view& headerLines){
@@ -71,8 +70,8 @@ Request Parser::parseRequest(const std::string& httpString) {
     std::string_view firstLine = sv.substr(0, pos);
     std::string firstLineStr(firstLine);
     parseRequestLineFormat(req, firstLineStr);
-    if (validateRequestLineFormat(req) != 0)
-        //do something
+    validateRequestLineFormat(req);
+    
 
     //Parse headers
     size_t posEndHeader = sv.find("\r\n\r\n");
