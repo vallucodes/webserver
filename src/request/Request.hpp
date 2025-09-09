@@ -8,6 +8,5 @@ class Request : public AMessage {
     ~Request(void);
 
     virtual std::string getMessageType() const override;
+    void print() const;
 };
-
-
