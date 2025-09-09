@@ -2,7 +2,8 @@
 
 #include <string>
 #include <iostream>
-#include "AMessage.hpp"
+#include "../message/AMessage.hpp"
+#include "../request/Request.hpp"
 
 class Response: public AMessage {
   public:
@@ -14,7 +15,6 @@ class Response: public AMessage {
     std::string_view getStatus() const;
 
     void setStatus(const std::string& status);
-
   private:
     std::string _status;
 };

@@ -1,11 +1,16 @@
 #pragma once
 
 #include <iostream>
-#include "Request.hpp"
+#include <sstream>
+#include <unordered_set>
+#include "../request/Request.hpp"
+#include "../response/Response.hpp"
 
 class Parser{
     private:
-        Request createRequest(const std::string& httpString);
     public:
-       const std::string& createResponse( const std::string& request );
+        static Request parseRequest(const std::string& httpString);
+        static std::string serializeResponse(const Response& response);
 };
+
+std::string trim(std::string_view sv);

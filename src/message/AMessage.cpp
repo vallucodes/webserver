@@ -1,10 +1,8 @@
 #include "AMessage.hpp"
 
-AMessage::AMessage(void) {
-    _method = "";
-    _path = "";
-    _body = "";
-}
+AMessage::AMessage()
+    : _method(), _path(), _body(), _httpVersion(), _headers()
+{}
 
 AMessage::~AMessage(void) {}
 
