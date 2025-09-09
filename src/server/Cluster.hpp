@@ -14,10 +14,11 @@ class Cluster {
 	private:
 		std::vector<std::pair<uint32_t, int>> _addresses;  //move this to Config.hpp
 
-		uint64_t			_max_clients;
-		uint64_t			_max_body_size;
-		std::vector<pollfd>	_fds;				// store here all servers sockets fd and every connected cliends fd
-		std::set<int>		_server_fds;		// only servers fds
+		uint64_t				_max_clients;
+		uint64_t				_max_body_size;
+		std::vector<pollfd>		_fds;				// store here all servers sockets fd and every connected cliends fd
+		std::set<int>			_server_fds;		// only servers fds
+		std::map<int, Server>	_servers;
 
 		struct ClientRequestState {
 			std::chrono::time_point<std::chrono::high_resolution_clock>	receive_start {};

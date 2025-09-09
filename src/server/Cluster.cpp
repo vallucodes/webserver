@@ -22,9 +22,9 @@ void	Cluster::create() {
 	for (const std::pair<uint32_t, int>& entry : _addresses)
 	{
 		Server serv(entry.first, entry.second);
-		serv.create();
-		_fds.push_back({serv.getFd(), POLLIN | POLLOUT, 0});
-		_server_fds.insert(serv.getFd());
+		int fd = serv.create();
+		_fds.push_back({fd, POLLIN | POLLOUT, 0});
+		_server_fds.insert(fd);
 	}
 }
 
