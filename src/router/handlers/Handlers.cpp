@@ -64,6 +64,12 @@ void getMainPageHandler(const Request& req, Response& res) {
     try {
         // Extract and validate file path
         std::string_view filePathView = req.getPath();
+        if (filePathView == "/" ||
+            filePathView == "/home.html" ||
+            filePathView == "/index.html") {
+
+            filePathView = page_file::INDEX_HTML;
+        }
         if (filePathView.empty()) {
             setErrorResponse(res, http::NOT_FOUND_404);
             return;

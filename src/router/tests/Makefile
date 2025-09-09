@@ -24,20 +24,12 @@ COMMON_OBJS	= $(OBJ_DIR)/Router.o \
 			$(OBJ_DIR)/utils.o
 
 # Individual test executables
-TEST_ROUTER_GET		= test_router_get
-TEST_ADD_ROUTE		= test_addRoute
+TEST_ADD_ROUTE		= test_addRoute		# main.cpp
 
-all: $(TEST_ROUTER_GET) $(TEST_ADD_ROUTE)
-
-$(TEST_ROUTER_GET): $(OBJ_DIR)/test_router_get.o $(COMMON_OBJS)
-	$(CXX) $(CXXFLAGS) $^ -o $@
+all: $(TEST_ADD_ROUTE)
 
 $(TEST_ADD_ROUTE): $(OBJ_DIR)/test_addRoute.o $(COMMON_OBJS)
 	$(CXX) $(CXXFLAGS) $^ -o $@
-
-$(OBJ_DIR)/test_router_get.o: test_router_get.cpp $(HEADERS)
-	@mkdir -p $(OBJ_DIR)
-	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
 
 $(OBJ_DIR)/test_addRoute.o: test_addRoute.cpp $(HEADERS)
 	@mkdir -p $(OBJ_DIR)
@@ -71,12 +63,12 @@ clean:
 	rm -rf $(OBJ_DIR)
 
 fclean: clean
-	rm -f $(TEST_ROUTER_GET) $(TEST_ADD_ROUTE)
+	rm -f $(TEST_ADD_ROUTE)
 
 re: fclean all
 
-run: $(TEST_ROUTER_GET)
-	./$(TEST_ROUTER_GET)
+run: $(TEST_ADD_ROUTE)
+	./$(TEST_ADD_ROUTE)
 
 run_addroute: $(TEST_ADD_ROUTE)
 	./$(TEST_ADD_ROUTE)
