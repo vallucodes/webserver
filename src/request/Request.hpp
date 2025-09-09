@@ -1,6 +1,6 @@
 #pragma once
 
-#include "AMessage.hpp"
+#include "../message/AMessage.hpp"
 
 class Request : public AMessage {
   public:

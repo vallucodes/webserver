@@ -1,10 +1,14 @@
 #include <iostream>
+#include <string>
 
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
 #include <signal.h>
 #include <unistd.h>
+
+// Utility function declarations
+std::string readFileToString(const std::string& filename);
 
 
 #define TIME_OUT_POLL		100

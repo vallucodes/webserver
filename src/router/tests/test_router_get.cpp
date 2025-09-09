@@ -1,6 +1,6 @@
-#include "Router.hpp"
-#include "Request.hpp"
-#include "Response.hpp"
+#include "../Router.hpp"
+#include "../../request/Request.hpp"
+#include "../../response/Response.hpp"
 #include <iostream>
 
 int main() {
