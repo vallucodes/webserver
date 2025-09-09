@@ -14,6 +14,7 @@ void	Cluster::config() {
 
 	_addresses.push_back({inet_addr(addr1.c_str()), port1});
 	_addresses.push_back({inet_addr(addr2.c_str()), port2});
+	_max_body_size = 10000000;
 }
 
 void	Cluster::create() {
@@ -55,7 +56,6 @@ void	Cluster::handleNewClient(size_t i) {
 	sockaddr_in client_addr{};
 	socklen_t addrlen = sizeof(client_addr);
 	int client_fd = accept(_fds[i].fd, (sockaddr*)&client_addr, &addrlen); // 2nd argument: collect clients IP and port. 3rd argument tells size of the buffer of second argument
-	std::cout << "Currently active clients: " << _fds.size() - getServerFds().size() << "\n";
 	if (client_fd < 0)
 		throw std::runtime_error("Error: accept");
 
@@ -69,7 +69,7 @@ void	Cluster::handleNewClient(size_t i) {
 }
 
 void	Cluster::handleClientInData(size_t& i) {
-	char buffer[1024];
+	char buffer[4096];
 	int bytes = recv(_fds[i].fd, buffer, sizeof(buffer), 0);
 	if (bytes <= 0)
 		dropClient(i, CLIENT_DISCONNECT);
@@ -94,7 +94,7 @@ void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 	_client_buffers[_fds[i].fd].receive_start = std::chrono::high_resolution_clock::now();
 	ClientRequestState& client_state = _client_buffers[_fds[i].fd];
 
-	if (requestComplete(client_state.buffer, client_state.data_validity)) {
+	if (requestComplete(client_state.buffer, client_state.data_validity, _max_body_size)) {
 		// call here the parser in future. Send now is just sending back same message to client
 		std::string body = readFileToString("www/index.html");
 		client_state.response =
@@ -111,7 +111,7 @@ void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 		client_state.waiting_response = true;
 	}
 
-	if (client_state.data_validity == false) {		// flag of invalid request is set
+	if (client_state.data_validity == false) {
 		// send response that payload is too large, 413
 		dropClient(i, CLIENT_MALFORMED_REQUEST);
 	}
@@ -125,11 +125,10 @@ void	Cluster::sendPendingData(size_t& i) {
 
 	if (client_state.waiting_response == true) {
 		std::cout << "Sending data to: " << _fds[i].fd << std::endl;
-		ssize_t sent = send(_fds[i].fd, client_state.response.c_str(), client_state.response.size(), 0);
+		ssize_t sent = send(_fds[i].fd, client_state.response.c_str(), client_state.response.size(), 0); // this needs to be chuncked in future
 		if (sent >= 0) {
 			client_state.response.clear(); // response fully sent
 			_fds[i].events &= ~POLLOUT;
-			// _fds[i].events |= POLLIN;
 			client_state.send_start = std::chrono::high_resolution_clock::time_point{};
 			client_state.waiting_response = false;
 		}
@@ -158,11 +157,13 @@ void	Cluster::checkForTimeouts() {
 
 		auto elapsed = now - _client_buffers[_fds[i].fd].receive_start;
 		auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count();
+		// std::cout << "Timeout checker request:" << elapsed_ms << std::endl;
 		if (elapsed_ms > TIME_OUT_REQUEST && _client_buffers[_fds[i].fd].buffer.size() > 0)
 			dropClient(i, CLIENT_TIMEOUT);
 
 		elapsed = now - _client_buffers[_fds[i].fd].send_start;
 		elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count();
+		// std::cout << "Timeout checker response:" << elapsed_ms << std::endl;
 		if (elapsed_ms > TIME_OUT_RESPONSE && _client_buffers[_fds[i].fd].response.size() > 0)
 			dropClient(i, CLIENT_TIMEOUT);
 	}

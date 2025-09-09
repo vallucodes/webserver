@@ -1,12 +1,14 @@
 #include <gtest/gtest.h>
 #include "../src/server/HelperFunctions.hpp"  // adjust path if needed
 
+#define MAX_BODY_SIZE 10000000
+
 // 1
 TEST(RequestCompleteTest, ReturnFalseForLargeBuffer) {
 	bool status = true;
-	std::string large_buffer(3 * 1024 * 1024, 'a'); // 3MB buffer
+	std::string large_buffer(11 * 1024 * 1024, 'a'); // 11MB buffer
 
-	EXPECT_FALSE(requestComplete(large_buffer, status));
+	EXPECT_FALSE(requestComplete(large_buffer, status, MAX_BODY_SIZE));
 	EXPECT_FALSE(status);
 }
 
@@ -15,7 +17,7 @@ TEST(RequestCompleteTest, ReturnFalseIfNoHeaderEnd) {
 	bool status = true;
 	std::string buffer = "GET / HTTP/1.1\r\nContent-Length: 10"; // no \r\n\r\n header end
 
-	EXPECT_FALSE(requestComplete(buffer, status));
+	EXPECT_FALSE(requestComplete(buffer, status, MAX_BODY_SIZE));
 	EXPECT_TRUE(status);
 }
 
@@ -29,7 +31,7 @@ TEST(RequestCompleteTest, ReturnTrueForValidChunkedRequest) {
 		"4\r\nWiki\r\n"
 		"0\r\n\r\n";
 
-	EXPECT_TRUE(requestComplete(chunked_req, status));
+	EXPECT_TRUE(requestComplete(chunked_req, status, MAX_BODY_SIZE));
 	EXPECT_TRUE(status);
 }
 
@@ -42,7 +44,7 @@ TEST(RequestCompleteTest, ReturnFalseNoBody) {
 		"4\r\nWiki\r\n"
 		"0\r\n\r\n";
 
-	EXPECT_FALSE(requestComplete(chunked_req, status));
+	EXPECT_FALSE(requestComplete(chunked_req, status, MAX_BODY_SIZE));
 	EXPECT_TRUE(status);
 }
 
@@ -55,7 +57,7 @@ TEST(RequestCompleteTest, ReturnFalseForShortBody) {
 		"\r\n"
 		"12345";
 
-	EXPECT_FALSE(requestComplete(buffer, status));
+	EXPECT_FALSE(requestComplete(buffer, status, MAX_BODY_SIZE));
 	EXPECT_TRUE(status);
 }
 
@@ -68,7 +70,7 @@ TEST(RequestCompleteTest, ReturnTrueForCorrectBodySize) {
 		"\r\n"
 		"12345";
 
-	EXPECT_TRUE(requestComplete(buffer, status));
+	EXPECT_TRUE(requestComplete(buffer, status, MAX_BODY_SIZE));
 	EXPECT_TRUE(status);
 }
 
@@ -81,7 +83,7 @@ TEST(RequestCompleteTest, ReturnFalseForBigBodySize) {
 		"\r\n"
 		"12345678910";
 
-	EXPECT_FALSE(requestComplete(buffer, status));
+	EXPECT_FALSE(requestComplete(buffer, status, MAX_BODY_SIZE));
 	EXPECT_FALSE(status);
 }
 
@@ -90,7 +92,7 @@ TEST(RequestCompleteTest, ReturnFalseForEmptyRequest) {
 	bool status = true;
 	std::string buffer = "";
 
-	EXPECT_FALSE(requestComplete(buffer, status));
+	EXPECT_FALSE(requestComplete(buffer, status, MAX_BODY_SIZE));
 	EXPECT_TRUE(status);
 }
 
@@ -102,7 +104,7 @@ TEST(RequestCompleteTest, ReturnFalseNoContentLengthBodyExists) {
 		"\r\n"
 		"12345678910";
 
-	EXPECT_FALSE(requestComplete(buffer, status));
+	EXPECT_FALSE(requestComplete(buffer, status, MAX_BODY_SIZE));
 	EXPECT_FALSE(status);
 }
 
@@ -115,7 +117,7 @@ TEST(RequestCompleteTest, ReturnFalseCRLFCRLFInBodyStatusTrue) {
 		"\r\n"
 		"12345678910\r\n\r\n2134256";
 
-	EXPECT_FALSE(requestComplete(buffer, status));
+	EXPECT_FALSE(requestComplete(buffer, status, MAX_BODY_SIZE));
 	EXPECT_TRUE(status);
 }
 
@@ -126,6 +128,6 @@ TEST(RequestCompleteTest, ReturnTrueOnlyHeader) {
 		"POST / HTTP/1.1\r\n"
 		"\r\n";
 
-	EXPECT_TRUE(requestComplete(buffer, status));
+	EXPECT_TRUE(requestComplete(buffer, status, MAX_BODY_SIZE));
 	EXPECT_TRUE(status);
 }
