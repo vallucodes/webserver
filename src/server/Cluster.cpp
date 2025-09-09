@@ -13,6 +13,11 @@ Cluster::Cluster() {
 	_router.addRoute("GET", "/", getMainPageHandler);
 	_router.addRoute("GET", "/index.html", getMainPageHandler);
 	_router.addRoute("GET", "/home.html", getMainPageHandler);
+
+	// Register static file handler for images and other assets
+	_router.addRoute("GET", "/imgs/lhaas.png", getStaticFileHandler);
+	_router.addRoute("GET", "/imgs/vlopatin.png", getStaticFileHandler);
+	_router.addRoute("GET", "/imgs/imunaev-.png", getStaticFileHandler);
 }
 // end tests only
 

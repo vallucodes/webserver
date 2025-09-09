@@ -59,6 +59,29 @@ void setSuccessResponse(Response& res, const std::string& content, const std::st
     res.setBody(content);
 }
 
+// Static file handler - serves any file from www directory
+void getStaticFileHandler(const Request& req, Response& res) {
+    try {
+        // Extract file path from request
+        std::string_view pathView = req.getPath();
+        std::string filePath = "www" + std::string(pathView);
+
+        // Attempt to read the requested file
+        std::string fileContent = readFileToString(filePath);
+
+        // Determine content type and send success response
+        std::string contentType = getContentType(filePath);
+        setSuccessResponse(res, fileContent, contentType);
+
+    } catch (const std::runtime_error& e) {
+        // File not found or read error
+        setErrorResponse(res, http::NOT_FOUND_404);
+    } catch (const std::exception& e) {
+        // Unexpected error
+        setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
+    }
+}
+
 // Main page handler - serves requested file or returns appropriate error
 void getMainPageHandler(const Request& req, Response& res) {
     try {

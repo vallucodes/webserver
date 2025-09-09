@@ -4,8 +4,72 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Static Site</title>
+    <style>
+        body {
+            text-align: center; /* centers heading and gallery */
+            font-family: Arial, sans-serif;
+            background-color: #fdfdf5; /* milk background */
+            margin: 0;
+            padding: 0;
+        }
+
+        h1 {
+            margin-top: 20px;
+        }
+
+        .gallery {
+            display: flex;
+            justify-content: center; /* center the row */
+            gap: 20px; /* space between images */
+            margin-top: 20px;
+        }
+
+        .gallery img {
+            width: 500px;
+            height: 200px;
+            object-fit: cover; /* crops to square without distortion */
+            border-radius: 8px; /* optional rounded corners */
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2); /* optional shadow */
+        }
+
+        .description {
+            max-width: 800px;
+            margin: 30px auto;
+            padding: 20px;
+            background: #ffffffcc; /* slightly transparent white */
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            text-align: left;
+            line-height: 1.6;
+        }
+    </style>
 </head>
 <body>
-    <h1>Wellcome to the site!</h1>
+    <h1>Webserver Project</h1>
+
+    <div class="gallery">
+        <img src="imgs/imunaev-.png" alt="First image">
+        <img src="imgs/vlopatin.png" alt="Second image">
+        <img src="imgs/lhaas.png" alt="Third image">
+    </div>
+
+    <div class="description">
+        <h2>About the Webserver Project</h2>
+        <p>
+            This project is a custom C++ webserver built from scratch as part of
+            the Hive Helsinki curriculum. The goal is to understand how HTTP works
+            under the hood by implementing request parsing, response handling, routing,
+            and static file serving without relying on external frameworks.
+        </p>
+        <p>
+            Key features include:
+        </p>
+        <ul>
+            <li>Support for multiple clients using non-blocking I/O</li>
+            <li>Serving static HTML, CSS, and images</li>
+            <li>Custom request parser and response builder</li>
+            <li>Error handling and status codes (200, 404, etc.)</li>
+        </ul>
+    </div>
 </body>
 </html>

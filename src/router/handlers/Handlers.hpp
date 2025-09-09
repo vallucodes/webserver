@@ -8,3 +8,4 @@
 // Function declarations
 std::string readFileToString(const std::string& filename);
 void getMainPageHandler(const Request& req, Response& res);
+void getStaticFileHandler(const Request& req, Response& res);
