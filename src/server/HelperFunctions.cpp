@@ -20,10 +20,10 @@ void	setSocketToNonBlockingMode(int sock) {
 	}
 }
 
-bool	requestComplete(const std::string& buffer, bool& data_validity) {
+bool	requestComplete(const std::string& buffer, bool& data_validity, uint64_t _max_client_body_size) {
 	// std::cout << "Buffer to be parsed currently: " << std::endl;
 	// std::cout << buffer << std::endl;
-	if (buffer.size() > 2097152) {
+	if (buffer.size() > MAX_BUFFER_SIZE) {
 		data_validity = false;
 		return false;
 	}
@@ -40,6 +40,11 @@ bool	requestComplete(const std::string& buffer, bool& data_validity) {
 	// std::cout << "header end detected: " << std::endl;
 	// std::cout << pos2 << std::endl;
 
+	if (buffer.size() - header_end > _max_client_body_size) {
+		data_validity = false;
+		return false;
+	}
+
 	size_t pos = buffer.find("\r\nTransfer-Encoding: chunked\r\n");
 	if (pos != std::string::npos && pos < header_end) // search for body and only after we found the header
 	{
@@ -52,7 +57,7 @@ bool	requestComplete(const std::string& buffer, bool& data_validity) {
 
 	size_t body_curr_len = buffer.size() - header_end;
 	std::smatch match;
-	if (std::regex_search(buffer, match, std::regex(R"(Content-Length:\s*(\d+)\r?\n)"))) {
+	if (std::regex_search(buffer, match, std::regex(R"(Content-Length:\s*(\d+)\r?\n)"))) { // might be issue that this is in body
 		size_t body_expected_len = std::stoul(match[1].str());
 		if (body_curr_len == body_expected_len)
 		{
@@ -73,6 +78,7 @@ bool	requestComplete(const std::string& buffer, bool& data_validity) {
 		return false;
 	}
 	else {
+		// std::cout << "only header received" << std::endl;
 		return true;
 	}
 }
