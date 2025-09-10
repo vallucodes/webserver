@@ -20,7 +20,7 @@ void	setSocketToNonBlockingMode(int sock) {
 	}
 }
 
-bool	requestComplete(const std::string& buffer, bool& data_validity, uint64_t _max_client_body_size) {
+bool	requestComplete(const std::string& buffer, bool& data_validity) {
 	// std::cout << "Buffer to be parsed currently: " << std::endl;
 	// std::cout << buffer << std::endl;
 	if (buffer.size() > MAX_BUFFER_SIZE) {
@@ -40,10 +40,10 @@ bool	requestComplete(const std::string& buffer, bool& data_validity, uint64_t _m
 	// std::cout << "header end detected: " << std::endl;
 	// std::cout << pos2 << std::endl;
 
-	if (buffer.size() - header_end > _max_client_body_size) {
-		data_validity = false;
-		return false;
-	}
+	// if (buffer.size() - header_end > _max_client_body_size) {
+	// 	data_validity = false;
+	// 	return false;
+	// }
 
 	size_t pos = buffer.find("\r\nTransfer-Encoding: chunked\r\n");
 	if (pos != std::string::npos && pos < header_end) // search for body and only after we found the header
@@ -97,3 +97,6 @@ uint64_t	getMaxClients() {
 		max_clients = 1;
 	return max_clients;
 }
+
+
+

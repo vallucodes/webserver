@@ -1,27 +1,24 @@
 #include "Cluster.hpp"
-#include "Server.hpp"
+#include "devHelpers.hpp"
+#include "../config/Config.hpp"
+#include <arpa/inet.h>
 
-void	Cluster::config() {
+void	Cluster::config(const std::string& config_file) {
 
-	_max_clients = getMaxClients(); // shouldn allow to run a server if number is way too small
-	std::cout << "Max clients: " << _max_clients << std::endl;
-	srand(time(0));
+	Config config;
 
-	std::string addr1 = "127.0.0.1";
-	std::string addr2 = "127.0.0.1";
-	int port1 = 1024 + rand() % (10000 - 1024 + 1);
-	int port2 = 1024 + rand() % (10000 - 1024 + 1);
+	_configs = config.parse(config_file);
 
-	_addresses.push_back({inet_addr(addr1.c_str()), port1});
-	_addresses.push_back({inet_addr(addr2.c_str()), port2});
-	_max_body_size = 10000000;
+	_max_clients = 100;
+
+	printAllConfigs(_configs);
 }
 
 void	Cluster::create() {
 	std::cout << "Initializing servers...\n";
-	for (const std::pair<uint32_t, int>& entry : _addresses)
+	for (size_t i = 0; i < _configs.size(); ++i)
 	{
-		Server serv(entry.first, entry.second);
+		Server serv = _configs[i];
 		int fd = serv.create();
 		_fds.push_back({fd, POLLIN | POLLOUT, 0});
 		_server_fds.insert(fd);
@@ -94,7 +91,7 @@ void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 	_client_buffers[_fds[i].fd].receive_start = std::chrono::high_resolution_clock::now();
 	ClientRequestState& client_state = _client_buffers[_fds[i].fd];
 
-	if (requestComplete(client_state.buffer, client_state.data_validity, _max_body_size)) {
+	if (requestComplete(client_state.buffer, client_state.data_validity)) {
 		// call here the parser in future. Send now is just sending back same message to client
 		std::string body = readFileToString("www/index.html");
 		client_state.response =
@@ -167,10 +164,6 @@ void	Cluster::checkForTimeouts() {
 		if (elapsed_ms > TIME_OUT_RESPONSE && _client_buffers[_fds[i].fd].response.size() > 0)
 			dropClient(i, CLIENT_TIMEOUT);
 	}
-}
-
-const	std::vector<std::pair<uint32_t, int>>& Cluster::getAddresses() const {  //move this to Config.hpp
-	return _addresses;
 }
 
 const	std::set<int>& Cluster::getServerFds() const {

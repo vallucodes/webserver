@@ -5,6 +5,6 @@
 #include "Cluster.hpp"
 
 bool		isServerSocket(int fd, const std::set<int>& server_fds);
-bool		requestComplete(const std::string& buffer, bool& data_validity, uint64_t _max_client_body_size);
+bool		requestComplete(const std::string& buffer, bool& data_validity);
 void		setSocketToNonBlockingMode(int fd);
 uint64_t	getMaxClients();
