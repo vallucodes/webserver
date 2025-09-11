@@ -15,10 +15,11 @@ class Cluster {
 
 	private:
 		uint64_t				_max_clients;
-		std::vector<pollfd>		_fds;				// servers and clients fds
+		std::vector<pollfd>		_fds;				// servers and clients fds list for poll()
 		std::set<int>			_server_fds;		// only servers fds
 		std::vector<Server>		_configs;			// parsed configs
-		std::map<int, Server*>	_servers;			// fd and related config to sent it later to parser
+		std::map<int, Server*>	_servers;			// fd of server and related config
+		std::map<int, Server*>	_clients;			// fd of client and related config
 
 		struct ClientRequestState {
 			std::chrono::time_point<std::chrono::high_resolution_clock>	receive_start {};

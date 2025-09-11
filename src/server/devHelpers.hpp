@@ -2,3 +2,4 @@
 #include <iostream>
 
 void	printAllConfigs(std::vector<Server> cfg);
+void	printServerConfig(Server conf);

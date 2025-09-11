@@ -19,38 +19,41 @@ std::vector<Server>	Config::parse(const std::string& config) {
 
 	std::string line;
 	while (std::getline(cfg, line)) {
-		// std::cout << line << std::endl;
+		std::cout << line << std::endl;
 		if (line.find("server {") != std::string::npos){
-			serv = Server();
-			inServer = true;
-			continue ;
+			Server serv;
+			while (std::getline(cfg, line)) {
+				std::cout << line << std::endl;
+				if (line.find("}") != std::string::npos) {
+					servs.push_back(serv);
+					break ;
+				}
+				extractPort(serv, line);
+				extractAddress(serv, line);
+				extractMaxBodySize(serv, line);
+				extractName(serv, line);
+				extractRoot(serv, line);
+				extractIndex(serv, line);
+				extractErrorPage(serv, line);
+				if (line.find("location ") != std::string::npos) {
+					Location loc;
+					while (std::getline(cfg, line)) {
+						std::cout << line << std::endl;
+						if (line.find("}") != std::string::npos) {
+							serv.setLocation(loc);
+							break ;
+						}
+						extractAllowedMethods(loc, line);
+						extractIndexLoc(loc, line);
+						extractAutoindex(loc, line);
+						extractCgiPath(loc, line);
+						extractCgiExt(loc, line);
+						extractUploadPath(loc, line);
+					}
+				}
+			}
 		}
-
-		if (line.find("location ") != std::string::npos) { // change this to regex to catch wrong "{
-			inLocation = true;
-			continue ;
-		}
-
-		if (line.find("}") != std::string::npos && inLocation) {
-			inLocation = false;
-			continue ;
-		}
-
-		if (line.find("}") != std::string::npos && inServer && !inLocation) {
-			servs.push_back(serv);
-			inServer = false;
-			continue ;
-		}
-
-		if (!inServer)
-			continue ;
-
-		extractPort(serv, line);
-		extractAddress(serv, line);
-		extractMaxBodySize(serv, line);
-		extractName(serv, line);
 	}
-
 	return servs;
 }
 
@@ -94,7 +97,115 @@ void	Config::extractName(Server& serv, const std::string& line) {
 	std::smatch	match;
 	if (std::regex_search(line, match, re))
 	{
-		std::cout << "name found: " << match[1] << std::endl;
+		// std::cout << "serv name found: " << match[1] << std::endl;
 		serv.setName(match[1]);
+	}
+}
+
+void	Config::extractRoot(Server& serv, const std::string& line) {
+	std::regex	re("root\\s+(\\S+)$");
+	std::smatch	match;
+	if (std::regex_search(line, match, re))
+	{
+		// std::cout << "root found: " << match[1] << std::endl;
+		serv.setRoot(match[1]);
+	}
+}
+
+void	Config::extractIndex(Server& serv, const std::string& line) {
+	std::regex	re("index\\s+(\\S+)$");
+	std::smatch	match;
+	if (std::regex_search(line, match, re))
+	{
+		// std::cout << "index found: " << match[1] << std::endl;
+		serv.setIndex(match[1]);
+	}
+}
+
+void	Config::extractErrorPage(Server& serv, const std::string& line) {
+	std::regex	re("error_page\\s+(\\S+)\\s+(\\S+)$");
+	std::smatch	match;
+	int error_index = std::stoi(match[1]);
+	if (std::regex_search(line, match, re))
+	{
+		// std::cout << "error pages found: " << match[1] << std::endl;
+		// std::cout << "error pages found: " << match[2] << std::endl;
+		serv.setErrorPage(error_index, match[2]);
+	}
+}
+
+
+void	Config::extractAllowedMethods(Location& loc, const std::string& line) {
+	std::regex	re("allow_methods\\s+(.+)$");
+	std::smatch	match;
+	if (std::regex_search(line, match, re))
+	{
+		std::istringstream iss(match[1]);
+		std::string token;
+		std::vector<std::string> methods;
+		while (iss >> token)
+			methods.push_back(token);
+		// std::cout << "allowed mehods found: " << match[1] << std::endl;
+		loc.allowed_methods = methods;
+	}
+}
+
+void	Config::extractIndexLoc(Location& loc, const std::string& line) {
+	std::regex	re("index\\s+(\\S+)$");
+	std::smatch	match;
+	if (std::regex_search(line, match, re))
+	{
+		// std::cout << "index found: " << match[1] << std::endl;
+		loc.index = match[1];
+	}
+}
+
+void	Config::extractAutoindex(Location& loc, const std::string& line) {
+	std::regex	re("autoindex\\s+(\\S+)$");
+	std::smatch	match;
+	if (std::regex_search(line, match, re))
+	{
+		// std::cout << "autoindex found: " << match[1] << std::endl;
+		if (match[1] == "on")
+			loc.autoindex = true;
+		else if (match[1] == "off")
+			loc.autoindex = false;
+		else
+			throw std::runtime_error("Wrong formatting of autoindex");
+	}
+}
+
+void	Config::extractCgiPath(Location& loc, const std::string& line) {
+	std::regex	re("cgi_path\\s+(\\S+)$");
+	std::smatch	match;
+	if (std::regex_search(line, match, re))
+	{
+		// std::cout << "cgi_path found: " << match[1] << std::endl;
+		loc.cgi_path = match[1];
+	}
+}
+
+void	Config::extractCgiExt(Location& loc, const std::string& line) {
+	std::regex	re("cgi_ext\\s+(.+)$");
+	std::smatch	match;
+	if (std::regex_search(line, match, re))
+	{
+		std::istringstream iss(match[1]);
+		std::string token;
+		std::vector<std::string> types;
+		while (iss >> token)
+			types.push_back(token);
+		// std::cout << "allowed mehods found: " << match[1] << std::endl;
+		loc.cgi_ext = types;
+	}
+}
+
+void	Config::extractUploadPath(Location& loc, const std::string& line) {
+	std::regex	re("upload_to\\s+(\\S+)$");
+	std::smatch	match;
+	if (std::regex_search(line, match, re))
+	{
+		// std::cout << "cgi_path found: " << match[1] << std::endl;
+		loc.upload_path = match[1];
 	}
 }

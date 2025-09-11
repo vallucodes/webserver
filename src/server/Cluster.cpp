@@ -22,6 +22,7 @@ void	Cluster::create() {
 		int fd = serv.create();
 		_fds.push_back({fd, POLLIN | POLLOUT, 0});
 		_server_fds.insert(fd);
+		_servers[fd] = &_configs[i];
 	}
 }
 
@@ -63,6 +64,7 @@ void	Cluster::handleNewClient(size_t i) {
 			<< ntohs(client_addr.sin_port) << ". Assigned fd: "
 			<< client_fd << "\n";
 	_fds.push_back({client_fd, POLLIN, 0});
+	_clients[client_fd] = _servers[_fds[i].fd];
 }
 
 void	Cluster::handleClientInData(size_t& i) {
@@ -93,6 +95,8 @@ void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 
 	if (requestComplete(client_state.buffer, client_state.data_validity)) {
 		// call here the parser in future. Send now is just sending back same message to client
+		printServerConfig(*_clients[_fds[i].fd]); // this is simulating what will be sent to parser later
+
 		std::string body = readFileToString("www/index.html");
 		client_state.response =
 			"HTTP/1.1 200 OK\r\n"
