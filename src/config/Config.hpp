@@ -16,6 +16,7 @@ class Config {
 		void	extractIndex(Server& serv, const std::string& line);
 		void	extractErrorPage(Server& serv, const std::string& line);
 
+		void	extractLocation(Location& loc, const std::string& line);
 		void	extractAllowedMethods(Location& loc, const std::string& line);
 		void	extractIndexLoc(Location& loc, const std::string& line);
 		void	extractAutoindex(Location& loc, const std::string& line);

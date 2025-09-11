@@ -10,20 +10,16 @@ std::vector<Server>	Config::parse(const std::string& config) {
 
 	std::cout << config << std::endl;
 	std::ifstream cfg(config);
-	if (!cfg.is_open()) {
+	if (!cfg.is_open())
 		throw std::runtime_error("Error: could not open config file.");
-	}
-
-	bool inServer = false;
-	bool inLocation = false;
 
 	std::string line;
 	while (std::getline(cfg, line)) {
-		std::cout << line << std::endl;
+		// std::cout << line << std::endl;
 		if (line.find("server {") != std::string::npos){
 			Server serv;
 			while (std::getline(cfg, line)) {
-				std::cout << line << std::endl;
+				// std::cout << line << std::endl;
 				if (line.find("}") != std::string::npos) {
 					servs.push_back(serv);
 					break ;
@@ -37,8 +33,9 @@ std::vector<Server>	Config::parse(const std::string& config) {
 				extractErrorPage(serv, line);
 				if (line.find("location ") != std::string::npos) {
 					Location loc;
+					extractLocation(loc, line);
 					while (std::getline(cfg, line)) {
-						std::cout << line << std::endl;
+						// std::cout << line << std::endl;
 						if (line.find("}") != std::string::npos) {
 							serv.setLocation(loc);
 							break ;
@@ -125,15 +122,24 @@ void	Config::extractIndex(Server& serv, const std::string& line) {
 void	Config::extractErrorPage(Server& serv, const std::string& line) {
 	std::regex	re("error_page\\s+(\\S+)\\s+(\\S+)$");
 	std::smatch	match;
-	int error_index = std::stoi(match[1]);
 	if (std::regex_search(line, match, re))
 	{
+		int error_index = std::stoi(match[1]);
 		// std::cout << "error pages found: " << match[1] << std::endl;
 		// std::cout << "error pages found: " << match[2] << std::endl;
 		serv.setErrorPage(error_index, match[2]);
 	}
 }
 
+void	Config::extractLocation(Location& loc, const std::string& line) {
+	std::regex	re("location\\s+(\\S+)\\s*\\{$");
+	std::smatch	match;
+	if (std::regex_search(line, match, re))
+	{
+		// std::cout << "location found: " << match[1] << std::endl;
+		loc.location = match[1];
+	}
+}
 
 void	Config::extractAllowedMethods(Location& loc, const std::string& line) {
 	std::regex	re("allow_methods\\s+(.+)$");

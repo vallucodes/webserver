@@ -6,6 +6,7 @@
 
 struct Location
 {
+	std::string					location;
 	std::vector<std::string>	allowed_methods;
 	std::string					index;
 	bool						autoindex;
