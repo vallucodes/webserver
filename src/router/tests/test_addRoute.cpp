@@ -2,18 +2,25 @@
 #include "../handlers/Handlers.hpp"
 #include <iostream>
 #include <string>
+#include <unistd.h>
 
 // Bring HTTP constants into scope
 using namespace http;
 
 int main() {
-    std::cout << "=== Testing Router::addRoute() with getStaticPage ===" << std::endl;
+    std::cout << "=== Testing Router::addRoute() with getPage ===" << std::endl;
+
+    // Change to project root directory so file paths work correctly
+    if (chdir("../../..") != 0) {
+        std::cerr << "ERROR: Could not change to project root directory" << std::endl;
+        return 1;
+    }
 
     Router router;
 
-    // Test 1: Add route using addRoute() method with getStaticPage
-    std::cout << "Test 1: Adding route '/' using addRoute() with getStaticPage" << std::endl;
-    router.addRoute("GET", "/", getStaticPage);
+    // Test 1: Add route using addRoute() method with getPage
+    std::cout << "Test 1: Adding route '/' using addRoute() with getPage" << std::endl;
+    router.addRoute("GET", "/", get);
 
     // Test 2: Create a request to the registered route
     Request req;

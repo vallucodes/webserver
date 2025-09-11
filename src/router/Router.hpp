@@ -30,11 +30,18 @@ namespace error_page {
   const std::string ERROR_PAGE_NOT_FOUND_404 = "www/errors/not_found_404.html";
   const std::string ERROR_PAGE_METHOD_NOT_ALLOWED_405 = "www/errors/method_not_allowed_405.html";
   const std::string ERROR_PAGE_INTERNAL_SERVER_ERROR_500 = "www/errors/internal_server_error_500.html";
-}
 
+}
 // Default file paths namespace
-namespace page_file {
+namespace page {
+
+  const std::string WWW = "www";
+  const std::string ROOT_HTML = "/";
+  const std::string INDEX_HTML_PATH = "/index.html";
   const std::string INDEX_HTML = "www/index.html";
+  const std::string UPLOAD_HTML = "www/upload.html";
+  const std::string UPLOAD_ERROR_HTML = "www/upload_error.html";
+  const std::string UPLOAD_SUCCESS_HTML = "www/upload_success.html";
 }
 // Router class - Manages HTTP route mappings and request handling (global, no namespace)
 class Router {
@@ -48,13 +55,11 @@ class Router {
     // void setupRouter(someConfigData& data);
     void setupRouter();
 
+    // Debug method to list all routes
+    void listRoutes() const;
+
     // Register a new route with specific HTTP method and path
     void addRoute(std::string_view method, std::string_view path, Handler handler);
-
-    // Helper methods for registering routes
-    // void get(std::string_view path, Handler handler);
-    // void post(std::string_view path, Handler handler);
-    // void del(std::string_view path, Handler handler);
 
     // Process an incoming HTTP request and route it to appropriate handler
     void handleRequest(const Request& req, Response& res) const;

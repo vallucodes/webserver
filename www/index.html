@@ -42,10 +42,74 @@
             text-align: left;
             line-height: 1.6;
         }
+
+        .form-section {
+            max-width: 600px;
+            margin: 40px auto;
+            padding: 30px;
+            background: #ffffffcc;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            text-align: left;
+        }
+
+        .form-section h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #2e7d32;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #2e7d32;
+            box-shadow: 0 0 5px rgba(46, 125, 50, 0.3);
+        }
+
+        button[type="submit"] {
+            background: #2e7d32;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        button[type="submit"]:hover {
+            background: #1b5e20;
+        }
     </style>
 </head>
 <body>
     <h1>Webserver Project</h1>
+
+    <div style="text-align: center; margin: 30px 0;">
+        <a href="/upload.html" style="display: inline-block; padding: 15px 30px; background: linear-gradient(135deg, #2e7d32, #4caf50); color: white; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 18px; transition: all 0.3s; box-shadow: 0 4px 15px rgba(46, 125, 50, 0.3);">📤 Submit File</a>
+    </div>
 
     <div class="gallery">
         <img src="imgs/imunaev-.png" alt="First image">
@@ -69,6 +133,9 @@
             <li>Serving static HTML, CSS, and images</li>
             <li>Custom request parser and response builder</li>
             <li>Error handling and status codes (200, 404, etc.)</li>
+            <li>POST request handling with form submissions</li>
+            <li><strong>File upload system with 1MB size limit</strong></li>
+            <li>Multipart form-data processing</li>
         </ul>
     </div>
 </body>

@@ -25,13 +25,21 @@ COMMON_OBJS	= $(OBJ_DIR)/Router.o \
 
 # Individual test executables
 TEST_ADD_ROUTE		= test_addRoute		# main.cpp
+TEST_UPLOAD		= test_upload		# test_upload.cpp
 
-all: $(TEST_ADD_ROUTE)
+all: $(TEST_ADD_ROUTE) $(TEST_UPLOAD)
 
 $(TEST_ADD_ROUTE): $(OBJ_DIR)/test_addRoute.o $(COMMON_OBJS)
 	$(CXX) $(CXXFLAGS) $^ -o $@
 
+$(TEST_UPLOAD): $(OBJ_DIR)/test_upload.o $(COMMON_OBJS)
+	$(CXX) $(CXXFLAGS) $^ -o $@
+
 $(OBJ_DIR)/test_addRoute.o: test_addRoute.cpp $(HEADERS)
+	@mkdir -p $(OBJ_DIR)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+
+$(OBJ_DIR)/test_upload.o: test_upload.cpp $(HEADERS)
 	@mkdir -p $(OBJ_DIR)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
 
@@ -63,7 +71,7 @@ clean:
 	rm -rf $(OBJ_DIR)
 
 fclean: clean
-	rm -f $(TEST_ADD_ROUTE)
+	rm -f $(TEST_ADD_ROUTE) $(TEST_UPLOAD)
 
 re: fclean all
 
@@ -73,4 +81,7 @@ run: $(TEST_ADD_ROUTE)
 run_addroute: $(TEST_ADD_ROUTE)
 	./$(TEST_ADD_ROUTE)
 
-.PHONY: all clean fclean re run run_addroute
+run_upload: $(TEST_UPLOAD)
+	./$(TEST_UPLOAD)
+
+.PHONY: all clean fclean re run run_addroute run_upload

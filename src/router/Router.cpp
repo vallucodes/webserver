@@ -1,3 +1,4 @@
+#include "../../inc/webserv.hpp"
 #include "Router.hpp"
 #include "handlers/Handlers.hpp"
 
@@ -6,30 +7,41 @@
 Router::Router() {}
 Router::~Router() {}
 
+// Debug method to list all routes
+void Router::listRoutes() const {
+    std::cout << "Available routes:" << std::endl;
+    for (const auto& path_pair : _routes) {
+        std::cout << "  " << path_pair.first << " -> ";
+        for (const auto& method_pair : path_pair.second) {
+            std::cout << method_pair.first << " ";
+        }
+        std::cout << std::endl;
+    }
+}
+
 void Router::setupRouter() {
-    addRoute("GET", "/", getStaticPage);
-	addRoute("GET", "/index.html", getStaticPage);
-    
-	addRoute("GET", "/imgs/lhaas.png", getStaticFile);
-	addRoute("GET", "/imgs/vlopatin.png", getStaticFile);
-	addRoute("GET", "/imgs/imunaev-.png", getStaticFile);
+    addRoute("GET", "/", get);
+	addRoute("GET", "/index.html", get);
+	// addRoute("GET", "/upload.html", submitFile);
+	addRoute("GET", "/upload.html", get);
+	addRoute("GET", "/upload_error.html", get);
+	addRoute("GET", "/upload_success.html", get);
+
+	addRoute("GET", "/imgs/lhaas.png", get);
+	addRoute("GET", "/imgs/vlopatin.png", get);
+	addRoute("GET", "/imgs/imunaev-.png", get);
+
+	// Upload route - handles file uploads
+	addRoute("POST", "/upload", post);
+
+
+	// Debug: List all available routes
+	listRoutes();
 }
 
 void Router::addRoute(std::string_view method, std::string_view path, Handler handler) {
     _routes[std::string(path)][std::string(method)] = std::move(handler);
 }
-
-// void Router::get(std::string_view path, Handler handler) {
-//     addRoute("GET", path, std::move(handler));
-// }
-
-// void Router::post(std::string_view path, Handler handler) {
-//     addRoute("POST", path, std::move(handler));
-// }
-
-// void Router::del(std::string_view path, Handler handler) {
-//     addRoute("DELETE", path, std::move(handler));
-// }
 
 const Router::Handler* Router::findHandler(const std::string& method, const std::string& path) const {
     auto path_it = _routes.find(path);
@@ -76,6 +88,22 @@ void Router::handleRequest(const Request& req, Response& res) const {
     std::string method(method_view);
     std::string path(path_view);
 
+    // Debug logging
+    std::cout << "Request: " << method << " " << path << std::endl;
+
+    // Normalize path - remove query parameters and fragments
+    size_t query_pos = path.find('?');
+    if (query_pos != std::string::npos) {
+        path = path.substr(0, query_pos);
+        std::cout << "Normalized path (removed query): " << path << std::endl;
+    }
+
+    size_t fragment_pos = path.find('#');
+    if (fragment_pos != std::string::npos) {
+        path = path.substr(0, fragment_pos);
+        std::cout << "Normalized path (removed fragment): " << path << std::endl;
+    }
+
     if (const Handler* h = findHandler(method, path)) {
         try {
             (*h)(req, res);
@@ -89,47 +117,19 @@ void Router::handleRequest(const Request& req, Response& res) const {
     auto path_it = _routes.find(path);
     if (path_it != _routes.end()) {
         // Path exists but method not allowed
+        std::cout << "Path '" << path << "' exists but method '" << method << "' is not allowed" << std::endl;
+        std::cout << "Allowed methods for '" << path << "': ";
+        for (const auto& method_pair : path_it->second) {
+            std::cout << method_pair.first << " ";
+        }
+        std::cout << std::endl;
         setErrorResponse(res, http::METHOD_NOT_ALLOWED_405);
     } else {
         // Path not found
+        std::cout << "Path '" << path << "' not found in routes" << std::endl;
         setErrorResponse(res, http::NOT_FOUND_404);
     }
 }
-
-
-// Handler createHandler(const std::string& method, const std::string& path, const LocationConfig& loc) {
-//     if (!loc.root.empty() && method == "GET") {
-//         return [root = loc.root](const Request& req, Response& res) {
-//             res.setStatus(HTTP_STATUS_OK_200);
-//             res.setBody("Serving GET from " + root + req.uri);
-//         };
-//     } else if (!loc.cgi_path.empty() && method == "POST") {
-//         return [cgiPath = loc.cgi_path](const Request& req, Response& res) {
-//             res.setStatus(HTTP_STATUS_OK_200);
-//             res.setBody("CGI POST response");
-//         };
-//     }
-//     return [](const Request&, Response& res) {
-//         res.setStatus(HTTP_STATUS_NOT_FOUND_404);
-//         res.setHeader("Content-Type", "text/html");
-//         res.setHeader("Content-Length", std::to_string(getDefaultErrorPage(HTTP_STATUS_NOT_FOUND_404).length()));
-//         res.setHeader("Connection", "close");
-//         res.setBody(getDefaultErrorPage(HTTP_STATUS_NOT_FOUND_404));
-//     };
-// }
-
-
-
-// TODO: Define LocationConfig type and implement handler creation logic
-// Router::Handler testHandler;
-
-// Router::Handler createHandler() {
-//     Router::Handler testHandler;
-//     return Router::getStaticPage();
-// }
-
-// testHandler = createHandler();
-
 
 
 
