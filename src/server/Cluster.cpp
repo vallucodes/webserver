@@ -7,21 +7,16 @@
 #include "../response/Response.hpp"
 #include <sstream>
 
-// for tests only
-Cluster::Cluster() {
-	// Register the main page handler for GET requests
-	_router.addRoute("GET", "/", getMainPageHandler);
-	_router.addRoute("GET", "/index.html", getMainPageHandler);
-	_router.addRoute("GET", "/home.html", getMainPageHandler);
 
-	// Register static file handler for images and other assets
-	_router.addRoute("GET", "/imgs/lhaas.png", getStaticFileHandler);
-	_router.addRoute("GET", "/imgs/vlopatin.png", getStaticFileHandler);
-	_router.addRoute("GET", "/imgs/imunaev-.png", getStaticFileHandler);
-}
-// end tests only
+Cluster::Cluster() {}
 
 void	Cluster::config() {
+
+	// Register all riutes here after configuration is parsed
+	// _router.setupRouter(someConfigData& data);
+	_router.setupRouter(); // dummy hardcoded function
+	// end of setup Router
+
 
 	_max_clients = getMaxClients(); // shouldn allow to run a server if number is way too small
 	std::cout << "Max clients: " << _max_clients << std::endl;

@@ -6,21 +6,29 @@
 Router::Router() {}
 Router::~Router() {}
 
+void Router::setupRouter() {
+    addRoute("GET", "/", getMainPageHandler);
+	addRoute("GET", "/index.html", getMainPageHandler);
+	addRoute("GET", "/imgs/lhaas.png", getStaticFileHandler);
+	addRoute("GET", "/imgs/vlopatin.png", getStaticFileHandler);
+	addRoute("GET", "/imgs/imunaev-.png", getStaticFileHandler);
+}
+
 void Router::addRoute(std::string_view method, std::string_view path, Handler handler) {
     _routes[std::string(path)][std::string(method)] = std::move(handler);
 }
 
-void Router::get(std::string_view path, Handler handler) {
-    addRoute("GET", path, std::move(handler));
-}
+// void Router::get(std::string_view path, Handler handler) {
+//     addRoute("GET", path, std::move(handler));
+// }
 
-void Router::post(std::string_view path, Handler handler) {
-    addRoute("POST", path, std::move(handler));
-}
+// void Router::post(std::string_view path, Handler handler) {
+//     addRoute("POST", path, std::move(handler));
+// }
 
-void Router::del(std::string_view path, Handler handler) {
-    addRoute("DELETE", path, std::move(handler));
-}
+// void Router::del(std::string_view path, Handler handler) {
+//     addRoute("DELETE", path, std::move(handler));
+// }
 
 const Router::Handler* Router::findHandler(const std::string& method, const std::string& path) const {
     auto path_it = _routes.find(path);

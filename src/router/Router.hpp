@@ -45,13 +45,16 @@ class Router {
     // Type alias for route handler functions
     using Handler = std::function<void(const Request&, Response&)>;
 
+    // void setupRouter(someConfigData& data);
+    void setupRouter();
+
     // Register a new route with specific HTTP method and path
     void addRoute(std::string_view method, std::string_view path, Handler handler);
 
     // Helper methods for registering routes
-    void get(std::string_view path, Handler handler);
-    void post(std::string_view path, Handler handler);
-    void del(std::string_view path, Handler handler);
+    // void get(std::string_view path, Handler handler);
+    // void post(std::string_view path, Handler handler);
+    // void del(std::string_view path, Handler handler);
 
     // Process an incoming HTTP request and route it to appropriate handler
     void handleRequest(const Request& req, Response& res) const;
