@@ -60,7 +60,7 @@ void setSuccessResponse(Response& res, const std::string& content, const std::st
 }
 
 // Static file handler - serves any file from www directory
-void getStaticFileHandler(const Request& req, Response& res) {
+void getStaticFile(const Request& req, Response& res) {
     try {
         // Extract file path from request
         std::string_view pathView = req.getPath();
@@ -82,8 +82,8 @@ void getStaticFileHandler(const Request& req, Response& res) {
     }
 }
 
-// Main page handler - serves requested file or returns appropriate error
-void getMainPageHandler(const Request& req, Response& res) {
+//
+void getStaticPage(const Request& req, Response& res) {
     try {
         // Extract and validate file path
         std::string_view filePathView = req.getPath();

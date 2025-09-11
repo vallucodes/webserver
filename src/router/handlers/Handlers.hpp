@@ -7,5 +7,5 @@
 
 // Function declarations
 std::string readFileToString(const std::string& filename);
-void getMainPageHandler(const Request& req, Response& res);
-void getStaticFileHandler(const Request& req, Response& res);
+void getStaticPage(const Request& req, Response& res);
+void getStaticFile(const Request& req, Response& res);

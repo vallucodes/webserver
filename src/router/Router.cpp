@@ -7,11 +7,12 @@ Router::Router() {}
 Router::~Router() {}
 
 void Router::setupRouter() {
-    addRoute("GET", "/", getMainPageHandler);
-	addRoute("GET", "/index.html", getMainPageHandler);
-	addRoute("GET", "/imgs/lhaas.png", getStaticFileHandler);
-	addRoute("GET", "/imgs/vlopatin.png", getStaticFileHandler);
-	addRoute("GET", "/imgs/imunaev-.png", getStaticFileHandler);
+    addRoute("GET", "/", getStaticPage);
+	addRoute("GET", "/index.html", getStaticPage);
+    
+	addRoute("GET", "/imgs/lhaas.png", getStaticFile);
+	addRoute("GET", "/imgs/vlopatin.png", getStaticFile);
+	addRoute("GET", "/imgs/imunaev-.png", getStaticFile);
 }
 
 void Router::addRoute(std::string_view method, std::string_view path, Handler handler) {
@@ -124,7 +125,7 @@ void Router::handleRequest(const Request& req, Response& res) const {
 
 // Router::Handler createHandler() {
 //     Router::Handler testHandler;
-//     return Router::getMainPageHandler();
+//     return Router::getStaticPage();
 // }
 
 // testHandler = createHandler();

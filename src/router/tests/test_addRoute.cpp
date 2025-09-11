@@ -7,13 +7,13 @@
 using namespace http;
 
 int main() {
-    std::cout << "=== Testing Router::addRoute() with getMainPageHandler ===" << std::endl;
+    std::cout << "=== Testing Router::addRoute() with getStaticPage ===" << std::endl;
 
     Router router;
 
-    // Test 1: Add route using addRoute() method with getMainPageHandler
-    std::cout << "Test 1: Adding route '/' using addRoute() with getMainPageHandler" << std::endl;
-    router.addRoute("GET", "/", getMainPageHandler);
+    // Test 1: Add route using addRoute() method with getStaticPage
+    std::cout << "Test 1: Adding route '/' using addRoute() with getStaticPage" << std::endl;
+    router.addRoute("GET", "/", getStaticPage);
 
     // Test 2: Create a request to the registered route
     Request req;

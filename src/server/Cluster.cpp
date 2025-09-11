@@ -11,13 +11,6 @@
 Cluster::Cluster() {}
 
 void	Cluster::config() {
-
-	// Register all riutes here after configuration is parsed
-	// _router.setupRouter(someConfigData& data);
-	_router.setupRouter(); // dummy hardcoded function
-	// end of setup Router
-
-
 	_max_clients = getMaxClients(); // shouldn allow to run a server if number is way too small
 	std::cout << "Max clients: " << _max_clients << std::endl;
 	srand(time(0));
@@ -29,6 +22,12 @@ void	Cluster::config() {
 
 	_addresses.push_back({inet_addr(addr1.c_str()), port1});
 	_addresses.push_back({inet_addr(addr2.c_str()), port2});
+
+	// ***** Router setup section *****
+	// TODO: add here setupRouter function after configuration is parsed
+	// _router.setupRouter(someConfigData& data);
+	_router.setupRouter(); // dummy hardcoded function
+	// ***** end of Router setup section *****
 }
 
 void	Cluster::create() {
@@ -116,14 +115,15 @@ void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 			path = client_state.buffer.substr(first_space + 1, second_space - first_space - 1);
 		}
 
+		// test fill out request
 		Request req;
 		req.setMethod("GET");
 		req.setPath(path);
-		Response res;
-		// end test
+		// end of test fill out request
 
+		Response res;
 		// Handle the request using the router
-		_router.handleRequest(req, res);
+		_router.handleRequest(req, res); // correct
 
 		// Convert response to HTTP string format
 		client_state.response = responseToString(res);
