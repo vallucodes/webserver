@@ -9,6 +9,9 @@ using namespace http;
 #include <filesystem>
 #include <cctype>
 
+// Determine the MIME content type based on file extension
+// @param filename The filename to analyze
+// @return MIME type string (e.g., "text/html", "image/png")
 std::string getContentType(const std::string& filename) {
     size_t dotPos = filename.find_last_of('.');
     if (dotPos != std::string::npos) {
@@ -47,19 +50,30 @@ const std::string CONNECTION_CLOSE = "close";
 const std::string CONTENT_TYPE_HTML = "text/html";
 
 // Helper functions for response formatting
+
+// Set common HTTP headers for responses (Content-Type, Content-Length, Connection)
+// @param res Response object to configure
+// @param contentType MIME type for the response content
+// @param contentLength Size of the response body in bytes
 void setCommonHeaders(Response& res, const std::string& contentType, size_t contentLength) {
     res.setHeader("Content-Type", contentType);
     res.setHeader("Content-Length", std::to_string(contentLength));
     res.setHeader("Connection", CONNECTION_CLOSE);
 }
 
+// Configure a complete successful HTTP response with status, headers, and body
+// @param res Response object to configure
+// @param content The response body content
+// @param contentType MIME type for the response content
 void setSuccessResponse(Response& res, const std::string& content, const std::string& contentType) {
     res.setStatus(http::STATUS_OK_200);
     setCommonHeaders(res, contentType, content.length());
     res.setBody(content);
 }
 
-// Generic static content handler - handles all static files and pages
+// Handle GET requests for static files and pages
+// @param req The incoming HTTP request
+// @param res The response object to populate
 void get(const Request& req, Response& res) {
     try {
         // Extract and validate file path
@@ -92,7 +106,9 @@ void get(const Request& req, Response& res) {
     }
 }
 
-// File upload handler - processes multipart/form-data file uploads
+// Handle POST requests for file uploads
+// @param req The incoming HTTP request containing multipart/form-data
+// @param res The response object to populate
 void post(const Request& req, Response& res) {
     try {
         std::string_view body = req.getBody();
@@ -245,7 +261,9 @@ void post(const Request& req, Response& res) {
     }
 }
 
-// File deletion handler - deletes files from uploads directory
+// Handle DELETE requests for removing uploaded files
+// @param req The incoming HTTP request with file path in URL
+// @param res The response object to populate
 void del(const Request& req, Response& res) {
     try {
         // Extract filename from URL path (e.g., /uploads/filename.txt -> filename.txt)
@@ -280,7 +298,7 @@ void del(const Request& req, Response& res) {
         }
 
         // Construct full file path
-        std::string filePath = "www/uploads/" + filename;
+        std::string filePath = page::WWW + "/uploads/" + filename;
 
         // Check if file exists before attempting deletion
         if (!std::filesystem::exists(filePath)) {

@@ -53,22 +53,33 @@ class Router {
     using Handler = std::function<void(const Request&, Response&)>;
 
     // void setupRouter(someConfigData& data);
+    // Initialize the router with default routes for static files and upload endpoints
     void setupRouter();
 
     // Debug method to list all routes
     void listRoutes() const;
 
     // Register a new route with specific HTTP method and path
+    // @param method HTTP method (GET, POST, etc.)
+    // @param path URL path to match
+    // @param handler Function to handle requests for this route
     void addRoute(std::string_view method, std::string_view path, Handler handler);
 
     // Process an incoming HTTP request and route it to appropriate handler
+    // @param req The incoming HTTP request
+    // @param res The response object to populate
     void handleRequest(const Request& req, Response& res) const;
 
     // Default error page generator
+    // @param status HTTP status code
+    // @return HTML content for the error page
     static std::string getDefaultErrorPage(int status);
 
   private:
     // Find the handler function for a given method and path
+    // @param method HTTP method to match
+    // @param path URL path to match
+    // @return Pointer to handler function or nullptr if not found
     const Handler* findHandler(const std::string& method, const std::string& path) const;
 
     // Internal storage for route mappings
@@ -76,4 +87,8 @@ class Router {
 };
 
 // Utility functions for error handling
+
+// Set up a complete error response with appropriate status, headers, and body
+// @param res Response object to configure
+// @param status HTTP status code for the error
 void setErrorResponse(Response& res, int status);

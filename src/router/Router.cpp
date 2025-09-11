@@ -2,9 +2,8 @@
 #include "Router.hpp"
 #include "handlers/Handlers.hpp"
 
-// using namespace http;
-
 Router::Router() {}
+
 Router::~Router() {}
 
 // Debug method to list all routes
@@ -19,10 +18,10 @@ void Router::listRoutes() const {
     }
 }
 
+// Initialize the router with default routes for static files and upload endpoints
 void Router::setupRouter() {
     addRoute("GET", "/", get);
 	addRoute("GET", "/index.html", get);
-	// addRoute("GET", "/upload.html", submitFile);
 	addRoute("GET", "/upload.html", get);
 	addRoute("GET", "/upload_error.html", get);
 	addRoute("GET", "/upload_success.html", get);
@@ -34,15 +33,22 @@ void Router::setupRouter() {
 	// Upload route - handles file uploads
 	addRoute("POST", "/uploads", post);
 
-
 	// Debug: List all available routes
 	listRoutes();
 }
 
+// Register a new route with specific HTTP method and path
+// @param method HTTP method (GET, POST, etc.)
+// @param path URL path to match
+// @param handler Function to handle requests for this route
 void Router::addRoute(std::string_view method, std::string_view path, Handler handler) {
     _routes[std::string(path)][std::string(method)] = std::move(handler);
 }
 
+// Find the handler function for a given method and path
+// @param method HTTP method to match
+// @param path URL path to match
+// @return Pointer to handler function or nullptr if not found
 const Router::Handler* Router::findHandler(const std::string& method, const std::string& path) const {
     // First try exact match
     auto path_it = _routes.find(path);
@@ -70,6 +76,9 @@ const Router::Handler* Router::findHandler(const std::string& method, const std:
     return nullptr;
 }
 
+// Default error page generator
+// @param status HTTP status code
+// @return HTML content for the error page
 std::string Router::getDefaultErrorPage(int status) {
     switch (status) {
         case http::NOT_FOUND_404:
@@ -83,6 +92,9 @@ std::string Router::getDefaultErrorPage(int status) {
     }
 }
 
+// Set up a complete error response with appropriate status, headers, and body
+// @param res Response object to configure
+// @param status HTTP status code for the error
 void setErrorResponse(Response& res, int status){
     if (status == http::NOT_FOUND_404) {
         res.setStatus(http::STATUS_NOT_FOUND_404);
@@ -97,6 +109,9 @@ void setErrorResponse(Response& res, int status){
     res.setBody(Router::getDefaultErrorPage(status));
 }
 
+// Process an incoming HTTP request and route it to appropriate handler
+// @param req The incoming HTTP request
+// @param res The response object to populate
 void Router::handleRequest(const Request& req, Response& res) const {
     std::string_view method_view = req.getMethod();
     std::string_view path_view = req.getPath();
