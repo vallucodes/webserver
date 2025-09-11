@@ -1,395 +1,102 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Submit File - Webserver Project</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f0f8ff;
-            margin: 0;
-            padding: 20px;
-            text-align: center;
-        }
-
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            background: white;
-            padding: 40px;
-            border-radius: 15px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-        }
-
-        h1 {
-            color: #2e7d32;
-            margin-bottom: 10px;
-        }
-
-        .subtitle {
-            color: #666;
-            margin-bottom: 30px;
-            font-size: 16px;
-        }
-
-        .upload-form {
-            margin-bottom: 30px;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-            text-align: left;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: bold;
-            color: #333;
-        }
-
-        .file-input-wrapper {
-            position: relative;
-            display: inline-block;
-            width: 100%;
-            margin-bottom: 15px;
-        }
-
-        .file-input {
-            display: none;
-        }
-
-        .file-input-label {
-            display: inline-block;
-            padding: 15px 25px;
-            background: linear-gradient(135deg, #2196f3, #0b7dda);
-            color: white;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: all 0.3s;
-            width: 100%;
-            text-align: center;
-            box-sizing: border-box;
-        }
-
-        .file-input-label:hover {
-            background: linear-gradient(135deg, #0b7dda, #0856a3);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(33, 150, 243, 0.4);
-        }
-
-        .file-name {
-            margin-top: 10px;
-            padding: 8px;
-            background: #f8f9fa;
-            border-radius: 5px;
-            font-size: 14px;
-            color: #666;
-            word-break: break-all;
-        }
-
-        .upload-btn {
-            background: linear-gradient(135deg, #2e7d32, #4caf50);
-            color: white;
-            padding: 15px 40px;
-            border: none;
-            border-radius: 8px;
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-            width: 100%;
-            margin-top: 20px;
-            transition: all 0.3s ease;
-        }
-
-        .upload-btn:hover {
-            background: linear-gradient(135deg, #1b5e20, #2e7d32);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(46, 125, 50, 0.4);
-        }
-
-        .upload-btn:disabled {
-            background: #cccccc;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-
-        .progress-bar {
-            width: 100%;
-            height: 20px;
-            background: #f0f0f0;
-            border-radius: 10px;
-            margin-top: 15px;
-            overflow: hidden;
-            display: none;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #4caf50, #2e7d32);
-            width: 0%;
-            transition: width 0.3s ease;
-        }
-
-        .info-section {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            margin-top: 30px;
-            text-align: left;
-        }
-
-        .info-section h3 {
-            color: #2e7d32;
-            margin-bottom: 10px;
-        }
-
-        .info-section ul {
-            margin: 0;
-            padding-left: 20px;
-        }
-
-        .info-section li {
-            margin-bottom: 5px;
-            color: #555;
-        }
-
-        .back-link {
-            display: inline-block;
-            margin-top: 30px;
-            padding: 12px 24px;
-            background: #2196f3;
-            color: white;
-            text-decoration: none;
-            border-radius: 6px;
-            font-weight: bold;
-            transition: background 0.3s;
-        }
-
-        .back-link:hover {
-            background: #0b7dda;
-        }
-
-        .alert {
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-            display: none;
-        }
-
-        .alert-error {
-            background: #ffebee;
-            color: #c62828;
-            border: 1px solid #ef5350;
-        }
-
-        .alert-success {
-            background: #e8f5e8;
-            color: #2e7d32;
-            border: 1px solid #4caf50;
-        }
-
-        @media (max-width: 600px) {
-            .container {
-                margin: 10px;
-                padding: 20px;
-            }
-
-            .file-input-label, .upload-btn {
-                font-size: 16px; /* Prevents zoom on iOS */
-            }
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Upload</title>
+  <style>
+    :root { --bg:#fff; --fg:#222; --accent:#633901; --btn:#000; }
+    * { box-sizing: border-box; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    body { margin: 0; background: var(--bg); color: var(--fg); display: grid; place-items: center; min-height: 100vh; padding: 16px; }
+    .card { width: 100%; max-width: 460px; padding: 16px; border: 1px solid #eee; border-radius: 10px; }
+    h1 { margin: 0 0 6px; font-size: 22px; }
+    p { margin: 0 0 16px; color: #2d2d2d; font-size: 14px; }
+    label { display: block; margin: 12px 0 6px; font-weight: 600; }
+    input[type="file"] { width: 100%; }
+    .row { display: flex; gap: 8px; align-items: center; margin-top: 12px; }
+    .hint { font-size: 12px; color: #666; }
+    .name { margin-top: 8px; font-size: 13px; color: #333; word-break: break-word; display: none; }
+    button {
+      width: 100%;
+      margin-top: 12px;
+      padding: 12px;
+      border: 0;
+      border-radius: 8px;
+      background: var(--btn);
+      color: #fff; /* button text is white */
+      font-weight: 700;
+      cursor: pointer;
+    }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+    .msg { margin-top: 10px; font-size: 13px; display: none; }
+    .ok { color: var(--accent); }
+    .err { color: #c62828; }
+    a { color: var(--accent); text-decoration: none; font-size: 14px; display: inline-block; margin-top: 16px; }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Submit File</h1>
-        <p class="subtitle">Upload files to the webserver (max 1MB per file)</p>
+  <main class="card">
+    <h1>Upload a file</h1>
+    <p>Max size: 1&nbsp;MB</p>
 
-        <div id="alert" class="alert"></div>
+    <form id="form" action="/upload" method="POST" enctype="multipart/form-data">
+      <label for="file">File</label>
+      <input id="file" name="file" type="file" required />
+      <div id="name" class="name"></div>
 
-        <form id="uploadForm" class="upload-form" action="/upload" method="POST" enctype="multipart/form-data">
-            <div class="form-group">
-                <label for="fileInput">Select File to Upload:</label>
-                <div class="file-input-wrapper">
-                    <input type="file" id="fileInput" name="file" class="file-input" accept="*/*" required>
-                    <label for="fileInput" class="file-input-label">
-                        📁 Choose File
-                    </label>
-                </div>
-                <div id="fileName" class="file-name" style="display: none;">
-                    No file selected
-                </div>
-            </div>
+      <button id="btn" type="submit" disabled>Upload</button>
+      <div id="msg" class="msg"></div>
+    </form>
 
-            <div class="progress-bar">
-                <div class="progress-fill" id="progressFill"></div>
-            </div>
+    <a href="/">← Back</a>
+  </main>
 
-            <button type="submit" class="upload-btn" id="uploadBtn" disabled>
-                🚀 Upload File
-            </button>
-        </form>
+  <script>
+    const fileInput = document.getElementById('file');
+    const btn = document.getElementById('btn');
+    const nameBox = document.getElementById('name');
+    const msg = document.getElementById('msg');
+    const MAX = 1024 * 1024; // 1 MB
 
-        <div class="info-section">
-            <h3>📋 Upload Guidelines:</h3>
-            <ul>
-                <li><strong>Maximum file size:</strong> 1 MB per file</li>
-                <li><strong>Supported formats:</strong> Any file type</li>
-                <li><strong>Security:</strong> Files are stored securely on the server</li>
-                <li><strong>Privacy:</strong> Uploaded files are for demonstration purposes</li>
-            </ul>
-        </div>
+    fileInput.addEventListener('change', () => {
+      msg.style.display = 'none';
+      const f = fileInput.files[0];
+      if (!f) { btn.disabled = true; nameBox.style.display = 'none'; return; }
+      nameBox.textContent = `📄 ${f.name} (${(f.size/1024).toFixed(1)} KB)`;
+      nameBox.style.display = 'block';
+      btn.disabled = f.size > MAX;
+      if (f.size > MAX) show('File is larger than 1 MB.', true);
+    });
 
-        <a href="/" class="back-link">← Back to Home</a>
-    </div>
+    document.getElementById('form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const f = fileInput.files[0];
+      if (!f) return;
+      if (f.size > MAX) return show('File is larger than 1 MB.', true);
 
-    <script>
-        const fileInput = document.getElementById('fileInput');
-        const fileName = document.getElementById('fileName');
-        const uploadBtn = document.getElementById('uploadBtn');
-        const uploadForm = document.getElementById('uploadForm');
-        const progressBar = document.querySelector('.progress-bar');
-        const progressFill = document.getElementById('progressFill');
-        const alertDiv = document.getElementById('alert');
-
-        // Handle file selection
-        fileInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                fileName.textContent = `📄 ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
-                fileName.style.display = 'block';
-                uploadBtn.disabled = false;
-
-                // Check file size (1MB limit)
-                if (file.size > 1024 * 1024) {
-                    showAlert('File size exceeds 1MB limit!', 'error');
-                    uploadBtn.disabled = true;
-                } else {
-                    hideAlert();
-                }
-            } else {
-                fileName.style.display = 'none';
-                uploadBtn.disabled = true;
-            }
-        });
-
-        // Handle form submission
-        uploadForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-
-            const file = fileInput.files[0];
-            if (!file) {
-                showAlert('Please select a file to upload!', 'error');
-                return;
-            }
-
-            if (file.size > 1024 * 1024) {
-                showAlert('File size exceeds 1MB limit!', 'error');
-                return;
-            }
-
-            // Show progress bar
-            progressBar.style.display = 'block';
-            progressFill.style.width = '0%';
-            uploadBtn.disabled = true;
-            uploadBtn.textContent = 'Uploading...';
-
-            // Simulate progress (in a real app, this would be actual upload progress)
-            let progress = 0;
-            const progressInterval = setInterval(() => {
-                progress += Math.random() * 15;
-                if (progress > 90) progress = 90;
-                progressFill.style.width = progress + '%';
-            }, 100);
-
-            // Create FormData and submit
-            const formData = new FormData();
-            formData.append('file', file);
-
-            fetch('/upload', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.text())
-            .then(result => {
-                clearInterval(progressInterval);
-                progressFill.style.width = '100%';
-
-                if (result.includes('Upload successful')) {
-                    showAlert('File uploaded successfully!', 'success');
-                    uploadBtn.textContent = '✅ Upload Complete';
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 2000);
-                } else {
-                    showAlert('Upload failed. Please try again.', 'error');
-                    uploadBtn.disabled = false;
-                    uploadBtn.textContent = '🚀 Upload File';
-                }
-            })
-            .catch(error => {
-                clearInterval(progressInterval);
-                showAlert('Network error. Please try again.', 'error');
-                uploadBtn.disabled = false;
-                uploadBtn.textContent = '🚀 Upload File';
-            });
-        });
-
-        function showAlert(message, type) {
-            alertDiv.textContent = message;
-            alertDiv.className = `alert alert-${type}`;
-            alertDiv.style.display = 'block';
+      btn.disabled = true; btn.textContent = 'Uploading...';
+      try {
+        const fd = new FormData(); fd.append('file', f);
+        const res = await fetch('/upload', { method: 'POST', body: fd });
+        const text = await res.text();
+        if (res.ok && /Upload successful/i.test(text)) {
+          show('Upload successful.', false);
+          btn.textContent = 'Done';
+        } else {
+          show('Upload failed. Try again.', true);
+          btn.disabled = false; btn.textContent = 'Upload';
         }
+      } catch {
+        show('Network error. Try again.', true);
+        btn.disabled = false; btn.textContent = 'Upload';
+      }
+    });
 
-        function hideAlert() {
-            alertDiv.style.display = 'none';
-        }
-
-        // Drag and drop functionality
-        const container = document.querySelector('.container');
-
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            container.addEventListener(eventName, preventDefaults, false);
-        });
-
-        function preventDefaults(e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-
-        ['dragenter', 'dragover'].forEach(eventName => {
-            container.addEventListener(eventName, highlight, false);
-        });
-
-        ['dragleave', 'drop'].forEach(eventName => {
-            container.addEventListener(eventName, unhighlight, false);
-        });
-
-        function highlight(e) {
-            container.style.border = '3px dashed #4caf50';
-            container.style.backgroundColor = '#f8fff8';
-        }
-
-        function unhighlight(e) {
-            container.style.border = '';
-            container.style.backgroundColor = '';
-        }
-
-        container.addEventListener('drop', handleDrop, false);
-
-        function handleDrop(e) {
-            const dt = e.dataTransfer;
-            const files = dt.files;
-
-            if (files.length > 0) {
-                fileInput.files = files;
-                fileInput.dispatchEvent(new Event('change'));
-            }
-        }
-    </script>
+    function show(t, error) {
+      msg.textContent = t;
+      msg.className = 'msg ' + (error ? 'err' : 'ok');
+      msg.style.display = 'block';
+    }
+  </script>
 </body>
 </html>
