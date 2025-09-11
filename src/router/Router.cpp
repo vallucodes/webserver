@@ -44,6 +44,7 @@ void Router::addRoute(std::string_view method, std::string_view path, Handler ha
 }
 
 const Router::Handler* Router::findHandler(const std::string& method, const std::string& path) const {
+    // First try exact match
     auto path_it = _routes.find(path);
     if (path_it != _routes.end()) {
         auto method_it = path_it->second.find(method);
@@ -51,6 +52,21 @@ const Router::Handler* Router::findHandler(const std::string& method, const std:
             return &method_it->second;
         }
     }
+
+    // If no exact match, try prefix matching for uploads routes
+    for (const auto& route_pair : _routes) {
+        const std::string& route_path = route_pair.first;
+        // Check if the route path is a prefix of the requested path
+        if (path.length() > route_path.length() &&
+            path.substr(0, route_path.length()) == route_path &&
+            (route_path == "/uploads" || route_path == "/uploads/")) {
+            auto method_it = route_pair.second.find(method);
+            if (method_it != route_pair.second.end()) {
+                return &method_it->second;
+            }
+        }
+    }
+
     return nullptr;
 }
 

@@ -26,8 +26,9 @@ COMMON_OBJS	= $(OBJ_DIR)/Router.o \
 # Individual test executables
 TEST_ADD_ROUTE		= test_addRoute		# main.cpp
 TEST_UPLOAD		= test_upload		# test_upload.cpp
+TEST_DELETE		= test_delete		# test_delete.cpp
 
-all: $(TEST_ADD_ROUTE) $(TEST_UPLOAD)
+all: $(TEST_ADD_ROUTE) $(TEST_UPLOAD) $(TEST_DELETE)
 
 $(TEST_ADD_ROUTE): $(OBJ_DIR)/test_addRoute.o $(COMMON_OBJS)
 	$(CXX) $(CXXFLAGS) $^ -o $@
@@ -35,11 +36,18 @@ $(TEST_ADD_ROUTE): $(OBJ_DIR)/test_addRoute.o $(COMMON_OBJS)
 $(TEST_UPLOAD): $(OBJ_DIR)/test_upload.o $(COMMON_OBJS)
 	$(CXX) $(CXXFLAGS) $^ -o $@
 
+$(TEST_DELETE): $(OBJ_DIR)/test_delete.o $(COMMON_OBJS)
+	$(CXX) $(CXXFLAGS) $^ -o $@
+
 $(OBJ_DIR)/test_addRoute.o: test_addRoute.cpp $(HEADERS)
 	@mkdir -p $(OBJ_DIR)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
 
 $(OBJ_DIR)/test_upload.o: test_upload.cpp $(HEADERS)
+	@mkdir -p $(OBJ_DIR)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+
+$(OBJ_DIR)/test_delete.o: test_delete.cpp $(HEADERS)
 	@mkdir -p $(OBJ_DIR)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
 
@@ -71,7 +79,7 @@ clean:
 	rm -rf $(OBJ_DIR)
 
 fclean: clean
-	rm -f $(TEST_ADD_ROUTE) $(TEST_UPLOAD)
+	rm -f $(TEST_ADD_ROUTE) $(TEST_UPLOAD) $(TEST_DELETE)
 
 re: fclean all
 
@@ -84,4 +92,7 @@ run_addroute: $(TEST_ADD_ROUTE)
 run_upload: $(TEST_UPLOAD)
 	./$(TEST_UPLOAD)
 
-.PHONY: all clean fclean re run run_addroute run_upload
+run_delete: $(TEST_DELETE)
+	./$(TEST_DELETE)
+
+.PHONY: all clean fclean re run run_addroute run_upload run_delete

@@ -245,4 +245,105 @@ void post(const Request& req, Response& res) {
     }
 }
 
+// File deletion handler - deletes files from uploads directory
+void del(const Request& req, Response& res) {
+    try {
+        // Extract filename from URL path (e.g., /uploads/filename.txt -> filename.txt)
+        std::string_view filePathView = req.getPath();
+
+        // Validate path starts with /uploads/
+        if (filePathView.length() < 9 || filePathView.substr(0, 9) != "/uploads/") {
+            std::string errorHtml = readFileToString(page::UPLOAD_ERROR_HTML);
+            size_t pos = errorHtml.find("ERROR_MESSAGE_PLACEHOLDER");
+            if (pos != std::string::npos) {
+                errorHtml.replace(pos, 25, "Invalid path. DELETE only allowed for /uploads/ directory.");
+            }
+            setSuccessResponse(res, errorHtml, CONTENT_TYPE_HTML);
+            return;
+        }
+
+        // Extract filename from path
+        std::string filename = std::string(filePathView.substr(9)); // Remove "/uploads/" prefix
+
+        // Sanitize filename (remove path separators for security)
+        filename.erase(std::remove_if(filename.begin(), filename.end(),
+            [](char c) { return c == '/' || c == '\\' || c == ':' || c == '*' || c == '?' || c == '"' || c == '<' || c == '>' || c == '|'; }), filename.end());
+
+        if (filename.empty()) {
+            std::string errorHtml = readFileToString(page::UPLOAD_ERROR_HTML);
+            size_t pos = errorHtml.find("ERROR_MESSAGE_PLACEHOLDER");
+            if (pos != std::string::npos) {
+                errorHtml.replace(pos, 25, "No filename provided in path.");
+            }
+            setSuccessResponse(res, errorHtml, CONTENT_TYPE_HTML);
+            return;
+        }
+
+        // Construct full file path
+        std::string filePath = "www/uploads/" + filename;
+
+        // Check if file exists before attempting deletion
+        if (!std::filesystem::exists(filePath)) {
+            std::string errorHtml = readFileToString(page::UPLOAD_ERROR_HTML);
+            size_t pos = errorHtml.find("ERROR_MESSAGE_PLACEHOLDER");
+            if (pos != std::string::npos) {
+                errorHtml.replace(pos, 25, "File not found: " + filename);
+            }
+            setSuccessResponse(res, errorHtml, CONTENT_TYPE_HTML);
+            return;
+        }
+
+        // Attempt to delete the file
+        if (std::filesystem::remove(filePath)) {
+            // Success response
+            std::string successHtml = readFileToString(page::UPLOAD_SUCCESS_HTML);
+
+            // Replace placeholders with deletion info
+            std::string replacements[2][2] = {
+                {"FILENAME_PLACEHOLDER", filename},
+                {"FILESIZE_PLACEHOLDER", "deleted"}
+            };
+
+            for (const auto& replacement : replacements) {
+                size_t pos = successHtml.find(replacement[0]);
+                while (pos != std::string::npos) {
+                    successHtml.replace(pos, replacement[0].length(), replacement[1]);
+                    pos = successHtml.find(replacement[0], pos + replacement[1].length());
+                }
+            }
+
+            // Also replace "Upload Successful" with "Deletion Successful"
+            size_t uploadPos = successHtml.find("Upload Successful");
+            if (uploadPos != std::string::npos) {
+                successHtml.replace(uploadPos, 17, "Deletion Successful");
+            }
+
+            setSuccessResponse(res, successHtml, CONTENT_TYPE_HTML);
+        } else {
+            // Deletion failed
+            std::string errorHtml = readFileToString(page::UPLOAD_ERROR_HTML);
+            size_t pos = errorHtml.find("ERROR_MESSAGE_PLACEHOLDER");
+            if (pos != std::string::npos) {
+                errorHtml.replace(pos, 25, "Failed to delete file: " + filename);
+            }
+            setSuccessResponse(res, errorHtml, CONTENT_TYPE_HTML);
+        }
+
+    } catch (const std::filesystem::filesystem_error& e) {
+        std::string errorHtml = readFileToString(page::UPLOAD_ERROR_HTML);
+        size_t pos = errorHtml.find("ERROR_MESSAGE_PLACEHOLDER");
+        if (pos != std::string::npos) {
+            errorHtml.replace(pos, 25, "Filesystem error during deletion.");
+        }
+        setSuccessResponse(res, errorHtml, CONTENT_TYPE_HTML);
+    } catch (const std::exception& e) {
+        std::string errorHtml = readFileToString(page::UPLOAD_ERROR_HTML);
+        size_t pos = errorHtml.find("ERROR_MESSAGE_PLACEHOLDER");
+        if (pos != std::string::npos) {
+            errorHtml.replace(pos, 25, "An unexpected error occurred during deletion.");
+        }
+        setSuccessResponse(res, errorHtml, CONTENT_TYPE_HTML);
+    }
+}
+
 
