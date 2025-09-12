@@ -46,7 +46,7 @@ bool isBadRequest(const Request& req){
     if ( !isValidRequestTarget(req.getMethod(), req.getPath()))
         return true;
     if ( !isValidProtocol(req.getHttpVersion()))
-        return true;
+        return true; 
     return false;
 }
 
@@ -59,12 +59,65 @@ void parseHeader(Request& req, const std::string_view& headerLines){
         std::string_view line = headerLines.substr(pos, lineEnd - pos);
         size_t colon = line.find(":");
         if (colon != std::string_view::npos){
-            req.setHeaders(trim(line.substr(0, colon)), trim(line.substr(colon + 1)));
+            std::string key = trim(line.substr(0, colon));
+            for (size_t i = 0; i < key.size(); i++) {
+                key[i] = std::tolower((unsigned char) key[i]);
+            }
+            req.setHeaders(key, trim(line.substr(colon + 1)));
         }
         pos = lineEnd + 2;
     };
 }
 
+bool isBadHeader(Request& req) {
+    static const std::unordered_set<std::string_view> uniqueHeaders = {
+        "Host",
+        "Content-Length",
+        "Content-Type",
+        "Authorization",
+        "From",
+        "Max-Forwards",
+        "Date",
+        "Expect",
+        "User-Agent",
+        "Referer",
+        "If-Modified-Since",
+        "If-Unmodified-Since",
+        "Retry-After",
+        "Location",
+        "Server",
+        "Last-Modified",
+        "ETag",
+        "Content-Location"
+    };
+    for (const auto& [key, values] : req.getAllHeaders()) {
+        if (uniqueHeaders.count(key) && values.size() > 1) {
+            return true;
+        }
+    }
+    return false; 
+}
+
+bool isBadMethod(Request& req){
+    if (req.getHttpVersion() == "HTTP/1.1"){
+        const auto& hostValues = req.getHeaders("host");
+        if (hostValues.empty())
+            return true; 
+    }
+    if (req.getMethod() == "POST"){
+        const auto& contentLength = req.getHeaders("content-length");
+        const auto& transferEncoding = req.getHeaders("transfer-encoding");
+        if (contentLength.empty() && transferEncoding.empty())
+            return true; 
+    }
+    if (req.getMethod() == "GET"){
+        const auto& contentLength = req.getHeaders("content-length");
+        const auto& transferEncoding = req.getHeaders("transfer-encoding");
+        if (!contentLength.empty() && !transferEncoding.empty())
+            return true; 
+    }
+    return false;
+}
 
 Request Parser::parseRequest(const std::string& httpString) {
     Request req;
@@ -94,16 +147,26 @@ Request Parser::parseRequest(const std::string& httpString) {
     size_t posEndHeader = sv.find("\r\n\r\n");
     std::string_view headerLines = sv.substr(pos + 2, (posEndHeader + 2) - (pos + 2));
     parseHeader(req, headerLines);
-    //check for if http1.1 and no host == error!
+    req.setError(isBadHeader(req));
+    if (req.getError()){
+        req.setStatus("400 Bad Request");
+        return req;
+    };
+    req.setError(isBadMethod(req));
+    if (req.getError()) {
+        return req;
+    };
 
     //parse body
-    auto contentLengthIt = req.getHeaders("Content-Length");
-    if (!contentLengthIt.empty()) {
-        size_t contentLength = std::stoul(std::string(contentLengthIt));
+    const auto& contentValues = req.getHeaders("content-length");
+    if (!contentValues.empty()) {
+        size_t contentLength = std::stoul(contentValues.front());
         std::string_view body = sv.substr(posEndHeader + 4, contentLength);
+        // multipart/form-data handling not yet supported
+        // const auto& contentType = req.getHeaders("content-type");
+
         req.setBody(std::string(body));
     }
-
     req.print();
     return req;
 }

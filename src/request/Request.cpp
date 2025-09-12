@@ -31,11 +31,15 @@ void Request::print() const {
     std::cout << "HTTP Version: " << _httpVersion << "\n";
 
     std::cout << "Headers:\n";
-    for (const auto& [key, value] : _headers) {
-        std::cout << "" << key << ": " << value << "\n";
+    for (const auto& pair : _headers) {
+        const std::string& key = pair.first;
+        const std::vector<std::string>& values = pair.second;
+
+        for (const auto& value : values) {
+            std::cout << key << ": " << value << "\n";
+        }
     }
 
-    std::cout << "Body:\n";
-    std::cout << _body << "\n";
+    std::cout << "Body:\n" << _body << "\n";
     std::cout << "==================\n";
 }

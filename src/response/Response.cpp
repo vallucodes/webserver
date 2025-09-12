@@ -19,11 +19,11 @@ std::string_view Response::getStatus() const {
 }
 
 // Header management
-void Response::setHeader(const std::string& key, const std::string& value) {
+/* void Response::setHeader(const std::string& key, const std::string& value) {
     _headers[key] = value;
-}
+} */
 
-std::string Response::getHeader(const std::string& key) const {
+/* std::string Response::getHeader(const std::string& key) const {
     auto it = _headers.find(key);
     if (it != _headers.end()) {
         return it->second;
@@ -38,3 +38,4 @@ std::string Response::getAllHeaders() const {
     }
     return headers;
 }
+ */

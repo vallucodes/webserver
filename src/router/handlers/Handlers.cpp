@@ -56,9 +56,9 @@ const std::string CONTENT_TYPE_HTML = "text/html";
 // @param contentType MIME type for the response content
 // @param contentLength Size of the response body in bytes
 void setCommonHeaders(Response& res, const std::string& contentType, size_t contentLength) {
-    res.setHeader("Content-Type", contentType);
-    res.setHeader("Content-Length", std::to_string(contentLength));
-    res.setHeader("Connection", CONNECTION_CLOSE);
+    res.setHeaders("Content-Type", contentType);
+    res.setHeaders("Content-Length", std::to_string(contentLength));
+    res.setHeaders("Connection", CONNECTION_CLOSE);
 }
 
 // Configure a complete successful HTTP response with status, headers, and body
@@ -164,7 +164,9 @@ void get(const Request& req, Response& res) {
 void post(const Request& req, Response& res) {
     try {
         std::string_view body = req.getBody();
-        std::string contentType = std::string(req.getHeaders("Content-Type"));
+        const auto& contentTypeKey = req.getHeaders("content-length");
+
+        std::string contentType = contentTypeKey.front();
 
         // Validate content type
         if (contentType.find("multipart/form-data") == std::string::npos) {

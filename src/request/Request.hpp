@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../message/AMessage.hpp"
+#include <algorithm>
 
 class Request : public AMessage {
   private:

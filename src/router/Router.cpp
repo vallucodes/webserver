@@ -104,9 +104,9 @@ void setErrorResponse(Response& res, int status){
     } else if (status == http::INTERNAL_SERVER_ERROR_500) {
         res.setStatus(http::STATUS_INTERNAL_SERVER_ERROR_500);
     }
-    res.setHeader("Content-Type", "text/html");
-    res.setHeader("Content-Length", std::to_string(Router::getDefaultErrorPage(status).length()));
-    res.setHeader("Connection", "close");
+    res.setHeaders("Content-Type", "text/html");
+    res.setHeaders("Content-Length", std::to_string(Router::getDefaultErrorPage(status).length()));
+    res.setHeaders("Connection", "close");
     res.setBody(Router::getDefaultErrorPage(status));
 }
 

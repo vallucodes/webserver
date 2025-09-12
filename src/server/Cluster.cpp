@@ -92,11 +92,23 @@ void	Cluster::handleClientInData(size_t& i) {
 		processReceivedData(i, buffer, bytes);
 }
 
+std::string headersToString(const std::unordered_map<std::string, std::vector<std::string>>& headers) {
+    std::string result;
+    for (const auto& pair : headers) {
+        const std::string& key = pair.first;
+        const std::vector<std::string>& values = pair.second;
+        for (const auto& value : values) {
+            result += key + ": " + value + "\r\n";
+        }
+    }
+    return result;
+}
+
 
 // Convert Response object to HTTP string
 std::string responseToString(const Response& res) {
     std::string responseStr = "HTTP/1.1 " + std::string(res.getStatus()) + "\r\n";
-    responseStr += res.getAllHeaders();
+    responseStr += headersToString(res.getAllHeaders());
     responseStr += "\r\n";
     responseStr += std::string(res.getBody());
     return responseStr;

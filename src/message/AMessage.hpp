@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <string_view>
+#include <vector>
 #include <unordered_map>
 
 // Interface for HTTP method, path, and body handling
@@ -22,7 +23,8 @@ class AMessage {
     virtual std::string_view getMethod() const;
     virtual std::string_view getPath() const;
     virtual std::string_view getBody() const;
-    virtual std::string_view getHeaders( const std::string& key) const;
+    const std::vector<std::string>& getHeaders(const std::string& key) const;
+    const std::unordered_map<std::string, std::vector<std::string>>& getAllHeaders() const ;
     virtual std::string_view getHttpVersion() const;
 
     // Pure virtual method - must be implemented by derived classes
@@ -34,7 +36,7 @@ class AMessage {
     std::string _path;    // Request/response path
     std::string _body;    // Message body content
     std::string _httpVersion; //http version (HTTP/1.1 or HTTP/1.0)
-    std::unordered_map<std::string, std::string> _headers; //content of Headers
+    std::unordered_map<std::string, std::vector<std::string>> _headers; //content of Headers
 };
 
 

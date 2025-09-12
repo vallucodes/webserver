@@ -17,11 +17,17 @@ std::string_view AMessage::getPath() const {
 std::string_view AMessage::getBody() const {
     return _body;
 }
-std::string_view AMessage::getHeaders( const std::string& key) const{
+
+const std::vector<std::string>& AMessage::getHeaders(const std::string& key) const {
+    static const std::vector<std::string> empty;
     auto it = _headers.find(key);
     if (it != _headers.end())
-        return ( it->second);
-    return "";
+        return it->second;
+    return empty;
+}
+
+const std::unordered_map<std::string, std::vector<std::string>>& AMessage::getAllHeaders() const {
+    return _headers;
 }
 
 std::string_view AMessage::getHttpVersion() const {
@@ -40,8 +46,8 @@ void AMessage::setBody(const std::string& body) {
     _body = body;
 }
 
-void AMessage::setHeaders(const std::string& key, const std::string& value) {
-    _headers[key] = value;
+void AMessage::setHeaders(const std::string& key,  const std::string& value) {
+     _headers[key].push_back(value);
 }
 
 void AMessage::setHttpVersion(const std::string& httpVersion){
