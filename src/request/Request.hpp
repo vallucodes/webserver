@@ -2,7 +2,6 @@
 
 #include "../message/AMessage.hpp"
 
-
 class Request : public AMessage {
   private:
     bool isError;

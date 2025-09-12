@@ -1,0 +1,3 @@
+String 1: This is example
+String 2: some <html file>
+String 3: end of file
