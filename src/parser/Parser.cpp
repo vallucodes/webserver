@@ -111,5 +111,5 @@ Request Parser::parseRequest(const std::string& httpString) {
 
 
 
-std::string Parser::serializeResponse(const Response& response){
-}
+// std::string Parser::serializeResponse(const Response& response){
+// }

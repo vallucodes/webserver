@@ -5,6 +5,7 @@
 #include "../router/handlers/Handlers.hpp"
 #include "../request/Request.hpp"
 #include "../response/Response.hpp"
+#include "../parser/Parser.hpp"
 #include <sstream>
 
 
@@ -108,17 +109,21 @@ void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 
 	if (requestComplete(client_state.buffer, client_state.data_validity)) {
 		// Extract the actual path from the HTTP request
-		std::string path = "/";
-		size_t first_space = client_state.buffer.find(" ");
-		size_t second_space = client_state.buffer.find(" ", first_space + 1);
-		if (first_space != std::string::npos && second_space != std::string::npos) {
-			path = client_state.buffer.substr(first_space + 1, second_space - first_space - 1);
-		}
+		// std::string path = "/";
+		// size_t first_space = client_state.buffer.find(" ");
+		// size_t second_space = client_state.buffer.find(" ", first_space + 1);
+		// if (first_space != std::string::npos && second_space != std::string::npos) {
+		// 	path = client_state.buffer.substr(first_space + 1, second_space - first_space - 1);
+		// }
 
 		// test fill out request
 		Request req;
-		req.setMethod("GET");
-		req.setPath(path);
+		Parser	parse;
+
+		std::cout << "----------\n" << _client_buffers[_fds[i].fd].buffer << "----------\n"  << std::endl;
+		req = parse.parseRequest(_client_buffers[_fds[i].fd].buffer);
+		// req.setMethod("GET");
+		// req.setPath(path);
 		// end of test fill out request
 
 		Response res;

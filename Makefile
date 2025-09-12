@@ -14,7 +14,8 @@ HEADERS		= inc/webserv.hpp \
 				src/router/handlers/Handlers.hpp \
 				src/request/Request.hpp \
 				src/response/Response.hpp \
-				src/message/AMessage.hpp
+				src/message/AMessage.hpp \
+				src/parser/Parser.hpp
 
 SRCS		= src/main.cpp \
 				src/server/HelperFunctions.cpp \
@@ -24,7 +25,9 @@ SRCS		= src/main.cpp \
 				src/router/handlers/Handlers.cpp \
 				src/request/Request.cpp \
 				src/response/Response.cpp \
-				src/message/AMessage.cpp
+				src/message/AMessage.cpp \
+				src/parser/Parser.cpp \
+				src/parser/ParserUtils.cpp
 
 OBJS		= $(patsubst $(SRC_DIR)%.cpp,$(OBJ_DIR)%.o,$(SRCS))
 

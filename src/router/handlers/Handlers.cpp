@@ -232,7 +232,7 @@ void post(const Request& req, Response& res) {
         }
 
         // Save file
-        const std::string filePath = "www/uploads/" + filename;
+        const std::string filePath = "www/upload/" + filename;
         std::ofstream outFile(filePath, std::ios::binary);
         if (!outFile) {
             setSuccessResponse(res, createErrorHtml("Failed to save file to server."), CONTENT_TYPE_HTML);

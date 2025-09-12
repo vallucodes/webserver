@@ -31,7 +31,8 @@ void Router::setupRouter() {
 	addRoute("GET", "/imgs/imunaev-.png", get);
 
 	// Upload route - handles file uploads
-	addRoute("POST", "/uploads", post);
+	addRoute("POST", "/upload", post);
+	addRoute("GET", "/upload", get);
 
 	// Debug: List all available routes
 	listRoutes();
@@ -115,6 +116,10 @@ void setErrorResponse(Response& res, int status){
 void Router::handleRequest(const Request& req, Response& res) const {
     std::string_view method_view = req.getMethod();
     std::string_view path_view = req.getPath();
+
+    std::cout << "---------" << std::endl;
+    req.print();
+    std::cout << "---------" << std::endl;
 
     std::string method(method_view);
     std::string path(path_view);

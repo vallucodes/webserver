@@ -29,7 +29,7 @@ inline std::string readFileToString(const std::string& filename) {
 }
 
 #define TIME_OUT_POLL		100
-#define TIME_OUT_REQUEST	2000000
+#define TIME_OUT_REQUEST	5000
 #define TIME_OUT_RESPONSE	10000
 #define MAX_CLIENTS			900
 
