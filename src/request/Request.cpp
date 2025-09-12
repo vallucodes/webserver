@@ -4,6 +4,22 @@ Request::Request(void) {}
 
 Request::~Request(void) {}
 
+void Request::setStatus(const std::string& status) {
+  _status = status;
+}
+
+bool Request::getError() const { 
+    return isError; 
+}
+
+void Request::setError(bool val) { 
+    isError = val;
+}
+
+std::string_view Request::getStatus() const {
+  return _status;
+}
+
 std::string Request::getMessageType() const {
     return "Request";
 }

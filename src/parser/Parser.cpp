@@ -1,48 +1,53 @@
 #include "Parser.hpp"
 
-void parseRequestLineFormat(Request& req, const std::string& firstLineStr){
+bool parseRequestLineFormat(Request& req, const std::string& firstLineStr){
     std::istringstream lineStream(firstLineStr);
     std::string method, path, version;
-    lineStream >> method >> path >> version;
+    if (!(lineStream >> method >> path >> version))
+        return false;
     req.setMethod(method);
     req.setPath(path);
     req.setHttpVersion(version);
+    return true;
 }
 
 
-void isValidMethod(std::string_view method) {
+bool isValidMethod(std::string_view method) {
     static const std::unordered_set<std::string_view> validMethods = {
-        "GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS", "PATCH"
+        "GET", "POST", "DELETE"
     };
     if (validMethods.find(method) == validMethods.end())
-        throw std::runtime_error("Invalid request: method not found");
+        return false;
+    return true;
 }
 
-void isValidRequestTarget(std::string_view method, std::string_view path){
-    if (path.empty()) {
-    throw std::runtime_error("Invalid request: empty target");
-    }
-
-    if (method != "CONNECT" && method != "OPTIONS" && path[0] != '/') {
-        throw std::runtime_error("Invalid request target: must start with '/'");
-    }
+bool isValidRequestTarget(std::string_view method, std::string_view path){
+    if (path.empty())
+        return false;
+    if (method != "CONNECT" && method != "OPTIONS" && path[0] != '/')
+        return false;
     for (char c : path) {
         if (c <= 0x1F || c == 0x7F || c == ' ') {
-            throw std::runtime_error("Invalid character in request target");
+            return false;
         }
     }
-
+    return true;
 }
 
-void isValidProtocol(std::string_view protocol){
+bool isValidProtocol(std::string_view protocol){
     if (protocol != "HTTP/1.1" && protocol != "HTTP/1.0")
-            throw std::runtime_error("Invalid HTTP protocol");
+        return false;
+    return true;
 }
 
-void validateRequestLineFormat(const Request& req){
-    isValidMethod(req.getMethod());
-    isValidRequestTarget(req.getMethod(), req.getPath());
-    isValidProtocol(req.getHttpVersion());
+bool isBadRequest(const Request& req){
+    if ( !isValidMethod(req.getMethod()) )
+        return true;
+    if ( !isValidRequestTarget(req.getMethod(), req.getPath()))
+        return true;
+    if ( !isValidProtocol(req.getHttpVersion()))
+        return true;
+    return false;
 }
 
 void parseHeader(Request& req, const std::string_view& headerLines){
@@ -67,16 +72,29 @@ Request Parser::parseRequest(const std::string& httpString) {
 
     //Parse request line
     size_t pos = sv.find("\r\n");
+    if (pos == std::string_view::npos){
+        req.setError(true);
+        req.setStatus("400 Bad Request");
+        return req;
+    }
     std::string_view firstLine = sv.substr(0, pos);
     std::string firstLineStr(firstLine);
-    parseRequestLineFormat(req, firstLineStr);
-    validateRequestLineFormat(req);
+    if ( !parseRequestLineFormat(req, firstLineStr) ){
+        req.setError(true);
+        req.setStatus("400 Bad Request");
+        return req;
+    }
+    req.setError(isBadRequest(req));
+    if (req.getError()){
+        req.setStatus("400 Bad Request");
+        return req;
+    }
     
-
     //Parse headers
     size_t posEndHeader = sv.find("\r\n\r\n");
     std::string_view headerLines = sv.substr(pos + 2, (posEndHeader + 2) - (pos + 2));
     parseHeader(req, headerLines);
+    //check for if http1.1 and no host == error!
 
     //parse body
     auto contentLengthIt = req.getHeaders("Content-Length");
@@ -91,6 +109,7 @@ Request Parser::parseRequest(const std::string& httpString) {
 }
 
 
-std::string Parser::serializeResponse(const Response& response){
 
+
+std::string Parser::serializeResponse(const Response& response){
 }
