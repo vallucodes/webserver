@@ -8,6 +8,12 @@ class Config {
 
 	private:
 
+		void	checkServerKeywords(const std::string& line);
+		void	checkLocationKeywords(const std::string& line);
+
+		void	extractServerFields(std::vector<Server>& servs, std::ifstream& cfg);
+		void	extractLocationFields(Server& serv, Location& loc, std::ifstream& cfg);
+
 		void	extractPort(Server& serv, const std::string& line);
 		void	extractAddress(Server& serv, const std::string& line);
 		void	extractMaxBodySize(Server& serv, const std::string& line);
@@ -25,6 +31,6 @@ class Config {
 		void	extractUploadPath(Location& loc, const std::string& line);
 
 	public:
-
+		std::vector<Server>	validate(const std::string& config);
 		std::vector<Server>	parse(const std::string& config);
 };

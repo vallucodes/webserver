@@ -4,11 +4,129 @@
 
 #include "Config.hpp"
 
+void	Config::checkServerKeywords(const std::string& line) {
+
+	const std::vector<std::regex> directives = {
+		std::regex("^\\s*port\\s+\\d+$"),
+		std::regex("^\\s*server_name\\s+\\S+$"),
+		std::regex("^\\s*host\\s+\\(\\d{1,3}\\.){3}\\d{1,3}$"),
+		std::regex("^\\s*root\\s+\\S+$"),
+		std::regex("^\\s*index\\s+\\S+$"),
+		std::regex("^\\s*client_max_body_size\\s+\\d+$"),
+		std::regex("^\\s*error_page\\s+\\d+\\s+\\S+$")
+	};
+
+	bool match = false;
+
+	for (auto &r : directives) {
+		if (std::regex_match(line, r)) {
+			match = true;
+			return ;
+		}
+	}
+	if (!match)
+		throw std::runtime_error("Error: Config: Malformed directive: " + line);
+}
+
+void	Config::checkLocationKeywords(const std::string& line) {
+
+}
+
+std::vector<Server>	Config::validate(const std::string& config) {
+
+	// std::cout << config << std::endl;
+	std::ifstream cfg(config);
+	if (!cfg.is_open())
+		throw std::runtime_error("Error: could not open config file.");
+
+	std::stack<std::string> blockstack;
+
+	std::regex	server("^\\s*server\\s*\\{$");
+	std::regex	location("^\\s*location\\s+[^\\s]+\\s*{$");
+	std::regex	close_block("^\\s*\\}$");
+
+	std::string line;
+	std::string blocktype;
+	std::smatch match;
+	while (std::getline(cfg, line)) {
+		if (line.empty() || line[0] == '#')
+			continue ;
+		if (line.ends_with("{")) {
+			if (std::regex_match(line, match, server))
+				blocktype = "server";
+			else if (std::regex_match(line, match, location))
+				blocktype = "location";
+			else
+				throw std::runtime_error("Error: Config: Invalid block type: " + line);
+			blockstack.push(blocktype);
+			continue ;
+		}
+		if (std::regex_match(line, match, close_block)) {
+			if (blockstack.empty())
+				throw std::runtime_error("Error: Config: Unbalanced }: " + line);
+			blockstack.pop();
+			continue;
+		}
+		if (blockstack.empty())
+			throw std::runtime_error("Error: Config: Keyword outside of any block: " + line);
+
+		std::string currentBlock = blockstack.top();
+
+		if (currentBlock == "server")
+			checkServerKeywords(line);
+		if (currentBlock == "location")
+			checkLocationKeywords(line);
+	}
+}
+
+void	Config::extractLocationFields(Server& serv, Location& loc, std::ifstream& cfg) {
+	std::string line;
+
+	while (std::getline(cfg, line)) {
+		// std::cout << line << std::endl;
+		if (line.find("}") != std::string::npos) {
+			serv.setLocation(loc);
+			break ;
+		}
+		extractAllowedMethods(loc, line);
+		extractIndexLoc(loc, line);
+		extractAutoindex(loc, line);
+		extractCgiPath(loc, line);
+		extractCgiExt(loc, line);
+		extractUploadPath(loc, line);
+	}
+}
+
+void	Config::extractServerFields(std::vector<Server>& servs, std::ifstream& cfg) {
+	std::string line;
+	Server serv;
+
+	while (std::getline(cfg, line)) {
+		// std::cout << line << std::endl;
+		if (line.find("}") != std::string::npos) {
+			servs.push_back(serv);
+			break ;
+		}
+		extractPort(serv, line);
+		extractAddress(serv, line);
+		extractMaxBodySize(serv, line);
+		extractName(serv, line);
+		extractRoot(serv, line);
+		extractIndex(serv, line);
+		extractErrorPage(serv, line);
+		if (line.find("location ") != std::string::npos) {
+			Location loc;
+			extractLocation(loc, line);
+			extractLocationFields(serv, loc, cfg);
+		}
+	}
+}
+
 std::vector<Server>	Config::parse(const std::string& config) {
 	Server serv;
 	std::vector<Server> servs;
 
-	std::cout << config << std::endl;
+	// std::cout << config << std::endl;
 	std::ifstream cfg(config);
 	if (!cfg.is_open())
 		throw std::runtime_error("Error: could not open config file.");
@@ -16,40 +134,8 @@ std::vector<Server>	Config::parse(const std::string& config) {
 	std::string line;
 	while (std::getline(cfg, line)) {
 		// std::cout << line << std::endl;
-		if (line.find("server {") != std::string::npos){
-			Server serv;
-			while (std::getline(cfg, line)) {
-				// std::cout << line << std::endl;
-				if (line.find("}") != std::string::npos) {
-					servs.push_back(serv);
-					break ;
-				}
-				extractPort(serv, line);
-				extractAddress(serv, line);
-				extractMaxBodySize(serv, line);
-				extractName(serv, line);
-				extractRoot(serv, line);
-				extractIndex(serv, line);
-				extractErrorPage(serv, line);
-				if (line.find("location ") != std::string::npos) {
-					Location loc;
-					extractLocation(loc, line);
-					while (std::getline(cfg, line)) {
-						// std::cout << line << std::endl;
-						if (line.find("}") != std::string::npos) {
-							serv.setLocation(loc);
-							break ;
-						}
-						extractAllowedMethods(loc, line);
-						extractIndexLoc(loc, line);
-						extractAutoindex(loc, line);
-						extractCgiPath(loc, line);
-						extractCgiExt(loc, line);
-						extractUploadPath(loc, line);
-					}
-				}
-			}
-		}
+		if (line.find("server {") != std::string::npos)
+			extractServerFields(servs, cfg);
 	}
 	return servs;
 }
