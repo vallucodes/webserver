@@ -4,16 +4,26 @@
 
 #include "Config.hpp"
 
+struct Directive {
+	std::string name;
+	std::regex	pattern;
+	std::function<bool(const std::string&)> valueChecker;
+};
+
+bool	Config::validatePort(const std::string& line) {
+
+}
+
 void	Config::checkServerKeywords(const std::string& line) {
 
-	const std::vector<std::regex> directives = {
-		std::regex("^\\s*port\\s+\\d+$"),
-		std::regex("^\\s*server_name\\s+\\S+$"),
-		std::regex("^\\s*host\\s+\\(\\d{1,3}\\.){3}\\d{1,3}$"),
-		std::regex("^\\s*root\\s+\\S+$"),
-		std::regex("^\\s*index\\s+\\S+$"),
-		std::regex("^\\s*client_max_body_size\\s+\\d+$"),
-		std::regex("^\\s*error_page\\s+\\d+\\s+\\S+$")
+	const std::vector<Directive> directives = {
+		{"port", std::regex("^\\s*port\\s+\\d+$"), validatePort},
+		{"server_name", std::regex("^\\s*server_name\\s+\\S+$"), nullptr},
+		{"host", std::regex("^\\s*host\\s+\\(\\d{1,3}\\.){3}\\d{1,3}$"), nullptr},
+		{"root", std::regex("^\\s*root\\s+\\S+$"), nullptr},
+		{"index", std::regex("^\\s*index\\s+\\S+$"), nullptr},
+		{"client_max_body_size", std::regex("^\\s*client_max_body_size\\s+\\d+$"), nullptr},
+		{"error_page", std::regex("^\\s*error_page\\s+\\d+\\s+\\S+$"), nullptr}
 	};
 
 	bool match = false;

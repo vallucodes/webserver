@@ -11,6 +11,8 @@ class Config {
 		void	checkServerKeywords(const std::string& line);
 		void	checkLocationKeywords(const std::string& line);
 
+		bool	validatePort(const std::string& line);
+
 		void	extractServerFields(std::vector<Server>& servs, std::ifstream& cfg);
 		void	extractLocationFields(Server& serv, Location& loc, std::ifstream& cfg);
 
