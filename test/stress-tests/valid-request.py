@@ -8,7 +8,7 @@ sock.connect((HOST, PORT))
 
 request = (
 	"GET / HTTP/1.1\r\n"
-	"Host: main2\r\n"
+	"Host: main2:8080\r\n"
 	"User-Agent: PythonSocket/1.0\r\n"
 	"Accept: */*\r\n"
 	"Connection: close\r\n"

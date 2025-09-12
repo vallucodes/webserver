@@ -96,10 +96,10 @@ void	printAllConfigs(std::vector<Server> cfg) {
 }
 
 void	printServerConfig(Server conf) {
+	std::cout << std::endl << YELLOW << "Server settings" << RESET << std::endl;
 	std::cout << "Port: " << conf.getPort() << std::endl;
-	uint32_t ip = conf.getAddress(); // network byte order
 	struct in_addr addr;
-	addr.s_addr = ip;
+	addr.s_addr = conf.getAddress();
 	std::cout << "Address: " << inet_ntoa(addr) << std::endl;
 	std::cout << "Client max body size: " << conf.getMaxBodySize() << std::endl;
 	std::cout << "Name: " << conf.getName() << std::endl;

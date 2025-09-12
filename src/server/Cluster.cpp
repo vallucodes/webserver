@@ -136,7 +136,6 @@ void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 		Server conf = findRelevantConfig(_fds[i].fd, _client_buffers[_fds[i].fd].buffer);
 		printServerConfig(conf); // this is simulating what will be sent to parser later
 
-
 		std::string body = readFileToString("www/index.html");
 		client_state.response =
 			"HTTP/1.1 200 OK\r\n"
@@ -216,7 +215,7 @@ const Server&	Cluster::findRelevantConfig(int client_fd, std::string&	buffer) {
 	size_t			header_end = findHeader(buffer);
 	std::string		header = buffer.substr(0, header_end);
 
-	std::regex	re("Host:\\s+(\\S+)"); // add optional case of port :8080 to be ignored if its there
+	std::regex	re("Host:\\s*([^:\\s]+)"); // add optional case of port :8080 to be ignored if its there
 	if (!std::regex_search(header, match, re))
 		return *conf->default_config;
 

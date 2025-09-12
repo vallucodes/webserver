@@ -39,42 +39,7 @@ size_t	findHeader(const std::string& buffer) {
 	return pos + 4;
 }
 
-bool	requestComplete(const std::string& buffer, bool& data_validity) {
-	// std::cout << "Buffer to be parsed currently: " << std::endl;
-	// std::cout << buffer << std::endl;
-	if (buffer.size() > MAX_BUFFER_SIZE) {
-		data_validity = false;
-		return false;
-	}
-
-	size_t header_end = findHeader(buffer);
-	if (header_end == std::string::npos)
-		return false;
-
-	// std::cout << "header end detected: " << std::endl;
-	// std::cout << pos2 << std::endl;
-
-	if (!findHostInHeader(buffer, header_end)) { // this is checking for Host: existance. Parser does that now
-		// std::cout << "No 'Host:' in header" << std::endl;
-		data_validity = false; //this should invoke 400 Bad request
-		return false;
-	}
-
-	// if (buffer.size() - header_end > _max_client_body_size) {
-	// 	data_validity = false;
-	// 	return false;
-	// }
-
-	size_t pos = buffer.find("\r\nTransfer-Encoding: chunked\r\n");
-	if (pos != std::string::npos && pos < header_end) // search for body and only after we found the header
-	{
-		pos = buffer.find("0\r\n\r\n", header_end); // TODO test this
-		if (pos == std::string::npos)
-			return false;
-		else
-			return true;
-	}
-
+bool	isRequestBodyComplete(const std::string& buffer, size_t header_end, bool& data_validity) {
 	size_t body_curr_len = buffer.size() - header_end;
 	std::smatch match;
 	if (std::regex_search(buffer, match, std::regex(R"(Content-Length:\s*(\d+)\r?\n)"))) { // might be issue that this is in body
@@ -101,6 +66,47 @@ bool	requestComplete(const std::string& buffer, bool& data_validity) {
 		// std::cout << "only header received" << std::endl;
 		return true;
 	}
+}
+
+int	isChunkedBodyComplete(const std::string& buffer, size_t header_end) {
+	size_t pos = buffer.find("\r\nTransfer-Encoding: chunked\r\n");
+	if (pos != std::string::npos && pos < header_end) // search for body and only after we found the header
+	{
+		pos = buffer.find("0\r\n\r\n", header_end); // TODO test this
+		if (pos == std::string::npos)
+			return false;
+		else
+			return true;
+	}
+	return -1;
+}
+
+bool	requestComplete(const std::string& buffer, bool& data_validity) {
+	// std::cout << "Buffer to be parsed currently: " << std::endl;
+	// std::cout << buffer << std::endl;
+	if (buffer.size() > MAX_BUFFER_SIZE) {
+		data_validity = false;
+		return false;
+	}
+
+	size_t header_end = findHeader(buffer);
+	if (header_end == std::string::npos)
+		return false;
+
+	// std::cout << "header end detected: " << pos2 << std::endl;
+
+	// if (buffer.size() - header_end > _max_client_body_size) { // check for body exceeding allowed length. Maybe parser will do it.
+	// 	data_validity = false;
+	// 	return false;
+	// }
+
+	int status = -1;
+	status = isChunkedBodyComplete(buffer, header_end);
+	if (status != -1)
+		return status;
+
+	status = isRequestBodyComplete(buffer, header_end, data_validity);
+	return status;
 }
 
 // after parsing config, should be checked that max amount of clients there should be less than max.
