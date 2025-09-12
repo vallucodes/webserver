@@ -1,30 +1,66 @@
 #include "Cluster.hpp"
-#include "Server.hpp"
+#include "devHelpers.hpp"
+#include "../config/Config.hpp"
+#include <arpa/inet.h>
 
-void	Cluster::config() {
+void	Cluster::config(const std::string& config_file) {
 
-	_max_clients = getMaxClients(); // shouldn allow to run a server if number is way too small
-	std::cout << "Max clients: " << _max_clients << std::endl;
-	srand(time(0));
+	Config config;
 
-	std::string addr1 = "127.0.0.1";
-	std::string addr2 = "127.0.0.1";
-	int port1 = 1024 + rand() % (10000 - 1024 + 1);
-	int port2 = 1024 + rand() % (10000 - 1024 + 1);
+	_configs = config.parse(config_file);
+	// printAllConfigs(_configs);
+	if (_configs.size() == 0)
+		throw std::runtime_error("Error: config file doesnt have any server"); // maybe this will be caught already in parsing
+	groupConfigs();
+	// printAllConfigGroups(_listener_groups);
 
-	_addresses.push_back({inet_addr(addr1.c_str()), port1});
-	_addresses.push_back({inet_addr(addr2.c_str()), port2});
-	_max_body_size = 10000000;
+	_max_clients = 100;
+}
+
+void	Cluster::groupConfigs() {
+	for (auto& config : _configs) {
+		if (_listener_groups.empty()) {
+			createGroup(config);
+			continue ;
+		}
+		uint32_t IP_conf = config.getAddress();
+		int port_conf = config.getPort();
+
+		bool added = false;
+		for (auto& group : _listener_groups) {
+			uint32_t IP_group =group.default_config->getAddress();
+			int	port_group = group.default_config->getPort();
+
+			if (IP_group == IP_conf && port_group == port_conf) {
+				group.configs.push_back(config);
+				added = true;
+			}
+		}
+		if (!added)
+			createGroup(config);
+	}
+}
+
+void	Cluster::createGroup(const Server& conf) {
+	ListenerGroup new_group;
+
+	new_group.fd = -1;
+	new_group.configs.push_back(conf);
+	new_group.default_config = &conf;
+
+	_listener_groups.push_back(new_group);
 }
 
 void	Cluster::create() {
 	std::cout << "Initializing servers...\n";
-	for (const std::pair<uint32_t, int>& entry : _addresses)
+	for (auto& group : _listener_groups)
 	{
-		Server serv(entry.first, entry.second);
-		serv.create();
-		_fds.push_back({serv.getFd(), POLLIN | POLLOUT, 0});
-		_server_fds.insert(serv.getFd());
+		Server serv = *group.default_config;
+		int fd = serv.create();
+		group.fd = fd;
+		_fds.push_back({fd, POLLIN | POLLOUT, 0});
+		_server_fds.insert(fd);
+		_servers[fd] = &group;
 	}
 }
 
@@ -66,6 +102,7 @@ void	Cluster::handleNewClient(size_t i) {
 			<< ntohs(client_addr.sin_port) << ". Assigned fd: "
 			<< client_fd << "\n";
 	_fds.push_back({client_fd, POLLIN, 0});
+	_clients[client_fd] = _servers[_fds[i].fd];
 }
 
 void	Cluster::handleClientInData(size_t& i) {
@@ -94,8 +131,11 @@ void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 	_client_buffers[_fds[i].fd].receive_start = std::chrono::high_resolution_clock::now();
 	ClientRequestState& client_state = _client_buffers[_fds[i].fd];
 
-	if (requestComplete(client_state.buffer, client_state.data_validity, _max_body_size)) {
+	if (requestComplete(client_state.buffer, client_state.data_validity)) {
 		// call here the parser in future. Send now is just sending back same message to client
+		Server conf = findRelevantConfig(_fds[i].fd, _client_buffers[_fds[i].fd].buffer);
+		printServerConfig(conf); // this is simulating what will be sent to parser later
+
 		std::string body = readFileToString("www/index.html");
 		client_state.response =
 			"HTTP/1.1 200 OK\r\n"
@@ -169,8 +209,22 @@ void	Cluster::checkForTimeouts() {
 	}
 }
 
-const	std::vector<std::pair<uint32_t, int>>& Cluster::getAddresses() const {  //move this to Config.hpp
-	return _addresses;
+const Server&	Cluster::findRelevantConfig(int client_fd, std::string&	buffer) {
+	std::smatch		match;
+	ListenerGroup*	conf = _clients[client_fd];
+	size_t			header_end = findHeader(buffer);
+	std::string		header = buffer.substr(0, header_end);
+
+	std::regex	re("Host:\\s*([^:\\s]+)"); // add optional case of port :8080 to be ignored if its there
+	if (!std::regex_search(header, match, re))
+		return *conf->default_config;
+
+	std::string host = match[1];
+	for (auto& conf : conf->configs) {
+		if (conf.getName() == host)
+			return conf;
+	}
+	return *conf->default_config;
 }
 
 const	std::set<int>& Cluster::getServerFds() const {

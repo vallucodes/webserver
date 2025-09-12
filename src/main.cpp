@@ -9,13 +9,17 @@ void	handle_sigint(int sig) {
 	exit(0);
 }
 
-int main()
+int main(int ac, char **av)
 {
 	signal(SIGINT, handle_sigint);
 
+	// if (ac != 2)
+	// 	return 1;
+	(void)ac;
+
 	Cluster cluster;
 	try {
-		cluster.config();
+		cluster.config(av[1]);
 		cluster.create();
 		cluster.run();
 
@@ -25,4 +29,8 @@ int main()
 	return 0;
 }
 
-//connect to server: telnet 127.0.0.1 <port>
+// connect to server: telnet 127.0.0.1 <port>
+
+// handle 2,5 requests
+// check chunked body size thing, is it handled correctly
+// if request is big, save to tmp file

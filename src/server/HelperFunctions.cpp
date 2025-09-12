@@ -20,41 +20,26 @@ void	setSocketToNonBlockingMode(int sock) {
 	}
 }
 
-bool	requestComplete(const std::string& buffer, bool& data_validity, uint64_t _max_client_body_size) {
-	// std::cout << "Buffer to be parsed currently: " << std::endl;
-	// std::cout << buffer << std::endl;
-	if (buffer.size() > MAX_BUFFER_SIZE) {
-		data_validity = false;
-		return false;
-	}
-
-	size_t header_end = 0;
-	size_t pos2 = buffer.find("\r\n\r\n");
-	if (pos2 == std::string::npos)
+bool	findHostInHeader(const std::string& buffer, size_t header_end) {
+	std::regex	re("Host:\\s+\\S+");
+	std::smatch	match;
+	std::string header = buffer.substr(0, header_end);
+	if (std::regex_search(header, match, re))
 	{
-		// std::cout << "Header end not detected" << std::endl;
-		return false;
+		// std::cout << "Host found in header" << match[0] << std::endl;
+		return true;
 	}
-	header_end = pos2 + 4;
+	return false;
+}
 
-	// std::cout << "header end detected: " << std::endl;
-	// std::cout << pos2 << std::endl;
+size_t	findHeader(const std::string& buffer) {
+	size_t pos = buffer.find("\r\n\r\n");
+	if (pos == std::string::npos)
+		return std::string::npos;
+	return pos + 4;
+}
 
-	if (buffer.size() - header_end > _max_client_body_size) {
-		data_validity = false;
-		return false;
-	}
-
-	size_t pos = buffer.find("\r\nTransfer-Encoding: chunked\r\n");
-	if (pos != std::string::npos && pos < header_end) // search for body and only after we found the header
-	{
-		pos = buffer.find("0\r\n\r\n");
-		if (pos == std::string::npos || pos < header_end)
-			return false;
-		else
-			return true;
-	}
-
+bool	isRequestBodyComplete(const std::string& buffer, size_t header_end, bool& data_validity) {
 	size_t body_curr_len = buffer.size() - header_end;
 	std::smatch match;
 	if (std::regex_search(buffer, match, std::regex(R"(Content-Length:\s*(\d+)\r?\n)"))) { // might be issue that this is in body
@@ -83,6 +68,47 @@ bool	requestComplete(const std::string& buffer, bool& data_validity, uint64_t _m
 	}
 }
 
+int	isChunkedBodyComplete(const std::string& buffer, size_t header_end) {
+	size_t pos = buffer.find("\r\nTransfer-Encoding: chunked\r\n");
+	if (pos != std::string::npos && pos < header_end) // search for body and only after we found the header
+	{
+		pos = buffer.find("0\r\n\r\n", header_end); // TODO test this
+		if (pos == std::string::npos)
+			return false;
+		else
+			return true;
+	}
+	return -1;
+}
+
+bool	requestComplete(const std::string& buffer, bool& data_validity) {
+	// std::cout << "Buffer to be parsed currently: " << std::endl;
+	// std::cout << buffer << std::endl;
+	if (buffer.size() > MAX_BUFFER_SIZE) {
+		data_validity = false;
+		return false;
+	}
+
+	size_t header_end = findHeader(buffer);
+	if (header_end == std::string::npos)
+		return false;
+
+	// std::cout << "header end detected: " << pos2 << std::endl;
+
+	// if (buffer.size() - header_end > _max_client_body_size) { // check for body exceeding allowed length. Maybe parser will do it.
+	// 	data_validity = false;
+	// 	return false;
+	// }
+
+	int status = -1;
+	status = isChunkedBodyComplete(buffer, header_end);
+	if (status != -1)
+		return status;
+
+	status = isRequestBodyComplete(buffer, header_end, data_validity);
+	return status;
+}
+
 // after parsing config, should be checked that max amount of clients there should be less than max.
 // Or handled somehow, this is just temp fix. Its finding systems max fds and using that - 10.
 uint64_t	getMaxClients() {
@@ -97,3 +123,6 @@ uint64_t	getMaxClients() {
 		max_clients = 1;
 	return max_clients;
 }
+
+
+
