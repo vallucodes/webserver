@@ -20,6 +20,25 @@ void	setSocketToNonBlockingMode(int sock) {
 	}
 }
 
+bool	findHostInHeader(const std::string& buffer, size_t header_end) {
+	std::regex	re("Host:\\s+\\S+");
+	std::smatch	match;
+	std::string header = buffer.substr(0, header_end);
+	if (std::regex_search(header, match, re))
+	{
+		// std::cout << "Host found in header" << match[0] << std::endl;
+		return true;
+	}
+	return false;
+}
+
+size_t	findHeader(const std::string& buffer) {
+	size_t pos = buffer.find("\r\n\r\n");
+	if (pos == std::string::npos)
+		return std::string::npos;
+	return pos + 4;
+}
+
 bool	requestComplete(const std::string& buffer, bool& data_validity) {
 	// std::cout << "Buffer to be parsed currently: " << std::endl;
 	// std::cout << buffer << std::endl;
@@ -28,17 +47,18 @@ bool	requestComplete(const std::string& buffer, bool& data_validity) {
 		return false;
 	}
 
-	size_t header_end = 0;
-	size_t pos2 = buffer.find("\r\n\r\n");
-	if (pos2 == std::string::npos)
-	{
-		// std::cout << "Header end not detected" << std::endl;
+	size_t header_end = findHeader(buffer);
+	if (header_end == std::string::npos)
 		return false;
-	}
-	header_end = pos2 + 4;
 
 	// std::cout << "header end detected: " << std::endl;
 	// std::cout << pos2 << std::endl;
+
+	if (!findHostInHeader(buffer, header_end)) { // this is checking for Host: existance. Parser does that now
+		// std::cout << "No 'Host:' in header" << std::endl;
+		data_validity = false; //this should invoke 400 Bad request
+		return false;
+	}
 
 	// if (buffer.size() - header_end > _max_client_body_size) {
 	// 	data_validity = false;
@@ -48,8 +68,8 @@ bool	requestComplete(const std::string& buffer, bool& data_validity) {
 	size_t pos = buffer.find("\r\nTransfer-Encoding: chunked\r\n");
 	if (pos != std::string::npos && pos < header_end) // search for body and only after we found the header
 	{
-		pos = buffer.find("0\r\n\r\n");
-		if (pos == std::string::npos || pos < header_end)
+		pos = buffer.find("0\r\n\r\n", header_end); // TODO test this
+		if (pos == std::string::npos)
 			return false;
 		else
 			return true;

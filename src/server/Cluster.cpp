@@ -8,21 +8,59 @@ void	Cluster::config(const std::string& config_file) {
 	Config config;
 
 	_configs = config.parse(config_file);
+	// printAllConfigs(_configs);
+	if (_configs.size() == 0)
+		throw std::runtime_error("Error: config file doesnt have any server"); // maybe this will be caught already in parsing
+	groupConfigs();
+	// printAllConfigGroups(_listener_groups);
 
 	_max_clients = 100;
+}
 
-	printAllConfigs(_configs);
+void	Cluster::groupConfigs() {
+	for (auto& config : _configs) {
+		if (_listener_groups.empty()) {
+			createGroup(config);
+			continue ;
+		}
+		uint32_t IP_conf = config.getAddress();
+		int port_conf = config.getPort();
+
+		bool added = false;
+		for (auto& group : _listener_groups) {
+			uint32_t IP_group =group.default_config->getAddress();
+			int	port_group = group.default_config->getPort();
+
+			if (IP_group == IP_conf && port_group == port_conf) {
+				group.configs.push_back(config);
+				added = true;
+			}
+		}
+		if (!added)
+			createGroup(config);
+	}
+}
+
+void	Cluster::createGroup(const Server& conf) {
+	ListenerGroup new_group;
+
+	new_group.fd = -1;
+	new_group.configs.push_back(conf);
+	new_group.default_config = &conf;
+
+	_listener_groups.push_back(new_group);
 }
 
 void	Cluster::create() {
 	std::cout << "Initializing servers...\n";
-	for (size_t i = 0; i < _configs.size(); ++i)
+	for (auto& group : _listener_groups)
 	{
-		Server serv = _configs[i];
+		Server serv = *group.default_config;
 		int fd = serv.create();
+		group.fd = fd;
 		_fds.push_back({fd, POLLIN | POLLOUT, 0});
 		_server_fds.insert(fd);
-		_servers[fd] = &_configs[i];
+		_servers[fd] = &group;
 	}
 }
 
@@ -95,7 +133,9 @@ void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 
 	if (requestComplete(client_state.buffer, client_state.data_validity)) {
 		// call here the parser in future. Send now is just sending back same message to client
-		printServerConfig(*_clients[_fds[i].fd]); // this is simulating what will be sent to parser later
+		Server conf = findRelevantConfig(_fds[i].fd, _client_buffers[_fds[i].fd].buffer);
+		printServerConfig(conf); // this is simulating what will be sent to parser later
+
 
 		std::string body = readFileToString("www/index.html");
 		client_state.response =
@@ -168,6 +208,24 @@ void	Cluster::checkForTimeouts() {
 		if (elapsed_ms > TIME_OUT_RESPONSE && _client_buffers[_fds[i].fd].response.size() > 0)
 			dropClient(i, CLIENT_TIMEOUT);
 	}
+}
+
+const Server&	Cluster::findRelevantConfig(int client_fd, std::string&	buffer) {
+	std::smatch		match;
+	ListenerGroup*	conf = _clients[client_fd];
+	size_t			header_end = findHeader(buffer);
+	std::string		header = buffer.substr(0, header_end);
+
+	std::regex	re("Host:\\s+(\\S+)"); // add optional case of port :8080 to be ignored if its there
+	if (!std::regex_search(header, match, re))
+		return *conf->default_config;
+
+	std::string host = match[1];
+	for (auto& conf : conf->configs) {
+		if (conf.getName() == host)
+			return conf;
+	}
+	return *conf->default_config;
 }
 
 const	std::set<int>& Cluster::getServerFds() const {
