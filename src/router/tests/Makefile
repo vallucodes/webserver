@@ -27,8 +27,9 @@ COMMON_OBJS	= $(OBJ_DIR)/Router.o \
 TEST_ADD_ROUTE		= test_addRoute		# main.cpp
 TEST_UPLOAD		= test_upload		# test_upload.cpp
 TEST_DELETE		= test_delete		# test_delete.cpp
+TEST_GET		= test_get		# test_get.cpp
 
-all: $(TEST_ADD_ROUTE) $(TEST_UPLOAD) $(TEST_DELETE)
+all: $(TEST_ADD_ROUTE) $(TEST_UPLOAD) $(TEST_DELETE) $(TEST_GET)
 
 $(TEST_ADD_ROUTE): $(OBJ_DIR)/test_addRoute.o $(COMMON_OBJS)
 	$(CXX) $(CXXFLAGS) $^ -o $@
@@ -37,6 +38,9 @@ $(TEST_UPLOAD): $(OBJ_DIR)/test_upload.o $(COMMON_OBJS)
 	$(CXX) $(CXXFLAGS) $^ -o $@
 
 $(TEST_DELETE): $(OBJ_DIR)/test_delete.o $(COMMON_OBJS)
+	$(CXX) $(CXXFLAGS) $^ -o $@
+
+$(TEST_GET): $(OBJ_DIR)/test_get.o $(COMMON_OBJS)
 	$(CXX) $(CXXFLAGS) $^ -o $@
 
 $(OBJ_DIR)/test_addRoute.o: test_addRoute.cpp $(HEADERS)
@@ -48,6 +52,10 @@ $(OBJ_DIR)/test_upload.o: test_upload.cpp $(HEADERS)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
 
 $(OBJ_DIR)/test_delete.o: test_delete.cpp $(HEADERS)
+	@mkdir -p $(OBJ_DIR)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+
+$(OBJ_DIR)/test_get.o: test_get.cpp $(HEADERS)
 	@mkdir -p $(OBJ_DIR)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
 
@@ -79,7 +87,7 @@ clean:
 	rm -rf $(OBJ_DIR)
 
 fclean: clean
-	rm -f $(TEST_ADD_ROUTE) $(TEST_UPLOAD) $(TEST_DELETE)
+	rm -f $(TEST_ADD_ROUTE) $(TEST_UPLOAD) $(TEST_DELETE) $(TEST_GET)
 
 re: fclean all
 
@@ -95,4 +103,23 @@ run_upload: $(TEST_UPLOAD)
 run_delete: $(TEST_DELETE)
 	./$(TEST_DELETE)
 
-.PHONY: all clean fclean re run run_addroute run_upload run_delete
+run_get: $(TEST_GET)
+	./$(TEST_GET)
+
+run_all: $(TEST_ADD_ROUTE) $(TEST_UPLOAD) $(TEST_DELETE) $(TEST_GET)
+	@echo "=== Running All Router Tests ==="
+	@echo "Running addRoute test..."
+	./$(TEST_ADD_ROUTE)
+	@echo
+	@echo "Running upload test..."
+	./$(TEST_UPLOAD)
+	@echo
+	@echo "Running delete test..."
+	./$(TEST_DELETE)
+	@echo
+	@echo "Running get test..."
+	./$(TEST_GET)
+	@echo
+	@echo "=== All Router Tests Completed ==="
+
+.PHONY: all clean fclean re run run_addroute run_upload run_delete run_get run_all
