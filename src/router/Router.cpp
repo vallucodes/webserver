@@ -34,6 +34,10 @@ void Router::setupRouter() {
 	addRoute("POST", "/uploads", post);
 	addRoute("GET", "/uploads", get);
 
+	addRoute("GET", "/delete.html", get);
+	addRoute("DELETE", "/uploads", del);
+
+
 	// Debug: List all available routes
 	listRoutes();
 }

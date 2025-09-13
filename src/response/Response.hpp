@@ -15,11 +15,6 @@ class Response: public AMessage {
     std::string_view getStatus() const;
     void setStatus(const std::string& status);
 
-    // Header management
-  //  void setHeader(const std::string& key, const std::string& value);
-    //std::string getHeader(const std::string& key) const;
-    //std::string getAllHeaders() const;
-
   private:
     std::string _status;
     std::map<std::string, std::string> _headers;
