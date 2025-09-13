@@ -107,7 +107,8 @@ int main() {
         std::cout << "Upload.html properly serves content (200 OK)" << std::endl;
 
         // Check content type header
-        std::string contentType = uploadRes.getHeader("Content-Type");
+        const std::vector<std::string>& contentTypeVec = uploadRes.getHeaders("Content-Type");
+        std::string contentType = contentTypeVec.empty() ? "" : contentTypeVec[0];
         if (contentType.find("text/html") != std::string::npos) {
             std::cout << "Correct Content-Type header: " << contentType << std::endl;
         } else {

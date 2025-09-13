@@ -164,7 +164,12 @@ void get(const Request& req, Response& res) {
 void post(const Request& req, Response& res) {
     try {
         std::string_view body = req.getBody();
-        const auto& contentTypeKey = req.getHeaders("content-length");
+        const auto& contentTypeKey = req.getHeaders("Content-Type");
+
+        if (contentTypeKey.empty()) {
+            setSuccessResponse(res, createErrorHtml("Missing Content-Type header."), CONTENT_TYPE_HTML);
+            return;
+        }
 
         std::string contentType = contentTypeKey.front();
 
@@ -234,7 +239,7 @@ void post(const Request& req, Response& res) {
         }
 
         // Save file
-        const std::string filePath = "www/upload/" + filename;
+        const std::string filePath = "www/uploads/" + filename;
         std::ofstream outFile(filePath, std::ios::binary);
         if (!outFile) {
             setSuccessResponse(res, createErrorHtml("Failed to save file to server."), CONTENT_TYPE_HTML);
