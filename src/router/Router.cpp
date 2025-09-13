@@ -164,10 +164,16 @@ void Router::handleRequest(const Request& req, Response& res) const {
         }
         std::cout << std::endl;
         setErrorResponse(res, http::METHOD_NOT_ALLOWED_405);
+        std::cout << "---------" << std::endl;
+        res.print();
+        std::cout << "---------" << std::endl;
     } else {
         // Path not found
         std::cout << "Path '" << path << "' not found in routes" << std::endl;
         setErrorResponse(res, http::NOT_FOUND_404);
+        std::cout << "---------" << std::endl;
+        res.print();
+        std::cout << "---------" << std::endl;
     }
 }
 

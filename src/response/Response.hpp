@@ -15,6 +15,10 @@ class Response: public AMessage {
     std::string_view getStatus() const;
     void setStatus(const std::string& status);
 
+    virtual void setHeaders(const std::string& key, const std::string& value) override;
+
+    void print() const;
+
   private:
     std::string _status;
     std::map<std::string, std::string> _headers;

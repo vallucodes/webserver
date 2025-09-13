@@ -133,6 +133,8 @@ void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 		// Handle the request using the router
 		_router.handleRequest(req, res); // correct
 
+		res.print(); //DEBUG PRINT
+
 		// Convert response to HTTP string format
 		client_state.response = responseToString(res);
 
