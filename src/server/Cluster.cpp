@@ -85,6 +85,7 @@ void	Cluster::handleNewClient(size_t i) {
 
 void	Cluster::handleClientInData(size_t& i) {
 	char buffer[1024];
+	// char buffer[16384];
 	int bytes = recv(_fds[i].fd, buffer, sizeof(buffer), 0);
 	if (bytes <= 0)
 		dropClient(i, CLIENT_DISCONNECT);
@@ -109,7 +110,7 @@ std::string headersToString(const std::unordered_map<std::string, std::vector<st
 std::string responseToString(const Response& res) {
     std::string responseStr = "HTTP/1.1 " + std::string(res.getStatus()) + "\r\n";
     responseStr += headersToString(res.getAllHeaders());
-    responseStr += "\r\n";
+		responseStr += "\r\n";
     responseStr += std::string(res.getBody());
     return responseStr;
 }

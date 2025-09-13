@@ -31,8 +31,8 @@ void Router::setupRouter() {
 	addRoute("GET", "/imgs/imunaev-.png", get);
 
 	// Upload route - handles file uploads
-	addRoute("POST", "/upload", post);
-	addRoute("GET", "/upload", get);
+	addRoute("POST", "/uploads", post);
+	addRoute("GET", "/uploads", get);
 
 	// Debug: List all available routes
 	listRoutes();
