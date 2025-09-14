@@ -13,7 +13,7 @@ void	Cluster::config(const std::string& config_file) {
 	if (_configs.size() == 0)
 		throw std::runtime_error("Error: config file doesnt have any server"); // maybe this will be caught already in parsing
 	groupConfigs();
-	printAllConfigGroups(_listener_groups);
+	// printAllConfigGroups(_listener_groups);
 
 	_max_clients = 100;
 }

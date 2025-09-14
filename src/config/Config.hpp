@@ -1,38 +1,58 @@
 #pragma once
 #include <iostream>
 #include <vector>
+#include <regex>
+#include <fstream>
+#include <string>
 
 #include "../server/Server.hpp"
+
+struct Directive {
+	std::string name;
+	std::regex	pattern;
+	std::function<bool(const std::string&)> valueChecker;
+	bool isSet = false;
+};
 
 class Config {
 
 	private:
 
-		void	checkServerKeywords(const std::string& line);
-		void	checkLocationKeywords(const std::string& line);
+		std::vector<Directive> _server_directives;
+		std::vector<Directive> _location_directives;
 
-		bool	validatePort(const std::string& line);
+		void		checkKeywords(const std::string& line, const std::string& context);
 
-		void	extractServerFields(std::vector<Server>& servs, std::ifstream& cfg);
-		void	extractLocationFields(Server& serv, Location& loc, std::ifstream& cfg);
+		static bool	validatePort(const std::string& line);
+		static bool	validateIP(const std::string& line);
+		static bool	validateIndex(const std::string& line);
+		static bool	validateMaxBodySize(const std::string& line);
+		static bool	validateErrorPage(const std::string& line);
 
-		void	extractPort(Server& serv, const std::string& line);
-		void	extractAddress(Server& serv, const std::string& line);
-		void	extractMaxBodySize(Server& serv, const std::string& line);
-		void	extractName(Server& serv, const std::string& line);
-		void	extractRoot(Server& serv, const std::string& line);
-		void	extractIndex(Server& serv, const std::string& line);
-		void	extractErrorPage(Server& serv, const std::string& line);
+		static void	extractServerFields(std::vector<Server>& servs, std::ifstream& cfg);
+		static void	extractLocationFields(Server& serv, Location& loc, std::ifstream& cfg);
 
-		void	extractLocation(Location& loc, const std::string& line);
-		void	extractAllowedMethods(Location& loc, const std::string& line);
-		void	extractIndexLoc(Location& loc, const std::string& line);
-		void	extractAutoindex(Location& loc, const std::string& line);
-		void	extractCgiPath(Location& loc, const std::string& line);
-		void	extractCgiExt(Location& loc, const std::string& line);
-		void	extractUploadPath(Location& loc, const std::string& line);
+		static void	extractPort(Server& serv, const std::string& line);
+		static void	extractAddress(Server& serv, const std::string& line);
+		static void	extractMaxBodySize(Server& serv, const std::string& line);
+		static void	extractName(Server& serv, const std::string& line);
+		static void	extractRoot(Server& serv, const std::string& line);
+		static void	extractIndex(Server& serv, const std::string& line);
+		static void	extractErrorPage(Server& serv, const std::string& line);
+
+		static void	extractLocation(Location& loc, const std::string& line);
+		static void	extractAllowedMethods(Location& loc, const std::string& line);
+		static void	extractIndexLoc(Location& loc, const std::string& line);
+		static void	extractAutoindex(Location& loc, const std::string& line);
+		static void	extractCgiPath(Location& loc, const std::string& line);
+		static void	extractCgiExt(Location& loc, const std::string& line);
+		static void	extractUploadPath(Location& loc, const std::string& line);
+
+		void		resetDirectivesFlags();
 
 	public:
-		std::vector<Server>	validate(const std::string& config);
+		void				validate(const std::string& config);
 		std::vector<Server>	parse(const std::string& config);
+		Config ();
+		~Config () = default;
 };

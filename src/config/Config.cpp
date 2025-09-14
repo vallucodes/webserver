@@ -1,48 +1,116 @@
-#include <regex>
-#include <fstream>
-#include <string>
-
 #include "Config.hpp"
 
-struct Directive {
-	std::string name;
-	std::regex	pattern;
-	std::function<bool(const std::string&)> valueChecker;
-};
-
 bool	Config::validatePort(const std::string& line) {
+	size_t pos = line.find_last_of(' ');
+	if (pos == std::string::npos)
+		return false;
 
+	int port = std::stoi(line.substr(pos + 1));
+	if (port >= 1024 && port <= 49151) {
+
+		std::vector<int> restricted_ports =
+		{1025, 1080, 1098, 1099,
+		1433, 1521, 1723, 3306,
+		3389, 5432, 5900};
+		for (size_t i = 6000; i < 6064; ++i)
+			restricted_ports.push_back(i);
+
+		auto it = std::find(restricted_ports.begin(), restricted_ports.end(), port);
+		if (it != restricted_ports.end())
+			return false;
+		return true;
+	}
+	return false;
 }
 
-void	Config::checkServerKeywords(const std::string& line) {
+bool	Config::validateIP(const std::string& line) {
+	std::regex	re("host\\s+(\\d+\\.\\d+\\.\\d+\\.\\d+)$");
+	std::smatch	match;
+	if (std::regex_search(line, match, re))
+	{
+		struct in_addr addr;
+		if (!inet_pton(AF_INET, match[1].str().c_str(), &addr))
+			return false;
+	}
+	return true;
+}
 
-	const std::vector<Directive> directives = {
-		{"port", std::regex("^\\s*port\\s+\\d+$"), validatePort},
+bool	Config::validateIndex(const std::string& line) {
+	std::regex	re(".html$");
+	if (!std::regex_search(line, re))
+		return false;
+	return true;
+}
+
+bool	Config::validateMaxBodySize(const std::string& line) {
+	size_t pos = line.find_last_of(' ');
+	if (pos == std::string::npos)
+		return false;
+
+	int body_size = std::stoi(line.substr(pos + 1));
+	if (body_size >= 0 && body_size <= MAX_BODY_SIZE)
+		return true;
+	return false;
+}
+
+bool	Config::validateErrorPage(const std::string& line) {
+	std::regex	re1("^\\s*error_page\\s+(\\d+)\\s+(\\S+)$");
+	std::smatch	match;
+	if (!std::regex_search(line, match, re1))
+		return false;
+	int error_nb = std::stoi(match[1]);
+	int error_nb_file = std::stoi(match[2]);
+	if (error_nb != error_nb_file)
+		return false;
+	std::regex	re2(".html$");
+	if (!std::regex_search(line, re2))
+		return false;
+	return true;
+}
+
+Config::Config() {
+	_server_directives = {
+		{"listen", std::regex("^\\s*listen\\s+\\d+$"), validatePort},
 		{"server_name", std::regex("^\\s*server_name\\s+\\S+$"), nullptr},
-		{"host", std::regex("^\\s*host\\s+\\(\\d{1,3}\\.){3}\\d{1,3}$"), nullptr},
+		{"host", std::regex("^\\s*host\\s+\\d+\\.\\d+\\.\\d+\\.\\d+$"), validateIP},
 		{"root", std::regex("^\\s*root\\s+\\S+$"), nullptr},
-		{"index", std::regex("^\\s*index\\s+\\S+$"), nullptr},
-		{"client_max_body_size", std::regex("^\\s*client_max_body_size\\s+\\d+$"), nullptr},
-		{"error_page", std::regex("^\\s*error_page\\s+\\d+\\s+\\S+$"), nullptr}
+		{"index", std::regex("^\\s*index\\s+\\S+$"), validateIndex},
+		{"client_max_body_size", std::regex("^\\s*client_max_body_size\\s+\\d+$"), validateMaxBodySize},
+		{"error_page", std::regex("^\\s*error_page\\s+\\d+\\s+\\S+$"), validateErrorPage}
 	};
 
-	bool match = false;
+	_location_directives = {
+		{"location", std::regex("^\\s*location\\s+\\S+$"), nullptr},
+		{"allow_methods", std::regex("^\\s*allow_methods(\\s+\\S+){1,10}$"), nullptr},
+		{"index", std::regex("^\\s*index\\s+\\S+$"), validateIndex},
+		{"autoindex", std::regex("^\\s*autoindex\\s+\\S+$"), nullptr},
+		{"cgi_path", std::regex("^\\s*cgi_path\\s+\\S+$"), nullptr},
+		{"cgi_exit", std::regex("^\\s*cgi_exit\\s+\\S+$"), nullptr},
+		{"upload_to", std::regex("^\\s*upload_to\\s+\\S+$"), nullptr}
+	};
+}
 
-	for (auto &r : directives) {
-		if (std::regex_match(line, r)) {
+void	Config::checkKeywords(const std::string& line, const std::string& context) {
+	bool match = false;
+	if (context == "server");
+		std::vector<Directive>& directives = _server_directives;
+	if (context == "location")
+		std::vector<Directive>& directives = _location_directives;
+	for (auto &d : directives) {
+		if (std::regex_match(line, d.pattern)) {
 			match = true;
-			return ;
+			if (d.isSet)
+				throw std::runtime_error("Error: Config: Repeated directive: " + line);
+			if (d.valueChecker && !d.valueChecker(line))
+				throw std::runtime_error("Invalid value for directive: " + d.name);
+			d.isSet = true;
 		}
 	}
 	if (!match)
 		throw std::runtime_error("Error: Config: Malformed directive: " + line);
 }
 
-void	Config::checkLocationKeywords(const std::string& line) {
-
-}
-
-std::vector<Server>	Config::validate(const std::string& config) {
+void	Config::validate(const std::string& config) {
 
 	// std::cout << config << std::endl;
 	std::ifstream cfg(config);
@@ -52,7 +120,7 @@ std::vector<Server>	Config::validate(const std::string& config) {
 	std::stack<std::string> blockstack;
 
 	std::regex	server("^\\s*server\\s*\\{$");
-	std::regex	location("^\\s*location\\s+[^\\s]+\\s*{$");
+	std::regex	location("^\\s*location\\s+[^\\s]+\\s*\\{$");
 	std::regex	close_block("^\\s*\\}$");
 
 	std::string line;
@@ -62,8 +130,10 @@ std::vector<Server>	Config::validate(const std::string& config) {
 		if (line.empty() || line[0] == '#')
 			continue ;
 		if (line.ends_with("{")) {
-			if (std::regex_match(line, match, server))
+			if (std::regex_match(line, match, server)) {
 				blocktype = "server";
+				resetDirectivesFlags();
+			}
 			else if (std::regex_match(line, match, location))
 				blocktype = "location";
 			else
@@ -81,11 +151,10 @@ std::vector<Server>	Config::validate(const std::string& config) {
 			throw std::runtime_error("Error: Config: Keyword outside of any block: " + line);
 
 		std::string currentBlock = blockstack.top();
-
 		if (currentBlock == "server")
-			checkServerKeywords(line);
-		if (currentBlock == "location")
-			checkLocationKeywords(line);
+			checkKeywords(line, "server");
+		// if (currentBlock == "location")
+		// 	checkLocationKeywords(line);
 	}
 }
 
@@ -166,12 +235,8 @@ void	Config::extractAddress(Server& serv, const std::string& line) {
 	if (std::regex_search(line, match, re))
 	{
 		struct in_addr addr;
-		if (inet_pton(AF_INET, match[1].str().c_str(), &addr) == 1){
-			// std::cout << "address found: " << match[1] << std::endl;
-			serv.setAddress(addr.s_addr);
-		}
-		else
-			throw std::runtime_error("Error: Invalid IP address");
+		inet_pton(AF_INET, match[1].str().c_str(), &addr);
+		serv.setAddress(addr.s_addr);
 	}
 }
 
@@ -310,4 +375,11 @@ void	Config::extractUploadPath(Location& loc, const std::string& line) {
 		// std::cout << "cgi_path found: " << match[1] << std::endl;
 		loc.upload_path = match[1];
 	}
+}
+
+void	Config::resetDirectivesFlags() {
+	for (auto &d : _server_directives)
+		d.isSet = false;
+	for (auto &d : _location_directives)
+		d.isSet = false;
 }
