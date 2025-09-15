@@ -21,7 +21,7 @@ bool isValidMethod(std::string_view method) {
     return true;
 }
 
-bool isValidRequestTarget(std::string_view method, std::string_view path){
+bool isValidRequestTarget(std::string_view path){
     if (path.empty())
         return false;
     for (char c : path) {
@@ -41,7 +41,7 @@ bool isValidProtocol(std::string_view protocol){
 bool isBadRequest(const Request& req){
     if ( !isValidMethod(req.getMethod()) )
         return true;
-    if ( !isValidRequestTarget(req.getMethod(), req.getPath()))
+    if ( !isValidRequestTarget(req.getPath()))
         return true;
     if ( !isValidProtocol(req.getHttpVersion()))
         return true; 
@@ -123,24 +123,43 @@ bool isBadMethod(Request& req){
     return false;
 }
 
-void printEscaped(const std::string& s) {
-    for (char c : s) {
-        switch (c) {
-            case '\r': std::cout << "\\r"; break;
-            case '\n': std::cout << "\\n"; break;
-            default: std::cout << c; break;
-        }
+bool isChunked(Request& req){
+    auto transferEncoding = req.getHeaders("transfer-encoding");
+    bool findChunk = !transferEncoding.empty() && transferEncoding.front() == "chunked";
+    return findChunk;
+}
+
+std::string decodeChunkedBody(std::string body){
+    std::string result;
+    size_t pos =0;
+
+    while (pos < body.size()) {
+        size_t lineEnd = body.find("\r\n", pos);
+        if (lineEnd == std::string::npos) break;
+
+        std::string sizeLine = body.substr(pos, lineEnd - pos);
+        size_t chunkSize = 0;
+        std::istringstream(sizeLine) >> std::hex >> chunkSize;
+        pos = lineEnd + 2;
+
+        if (chunkSize == 0) break;
+
+        if (pos + chunkSize > body.size()) break; 
+
+        result.append(body.substr(pos, chunkSize));
+        pos += chunkSize + 2;
     }
-    std::cout << std::endl;
+
+    return result;
 }
 
 Request Parser::parseRequest(const std::string& httpString) {
     Request req;
     std::string_view sv(httpString);
     
-    std::cout << "------this is the string--------" << std::endl;
-    printEscaped(httpString);
-    std::cout << "------this was the string--------" << std::endl;
+    std::cout << "\noriginal string is:" << httpString << std::endl;
+    std::cout << "end of string" <<  std::endl;
+
     //Parse request line
     size_t pos = sv.find("\r\n");
     if (pos == std::string_view::npos){
@@ -177,19 +196,16 @@ Request Parser::parseRequest(const std::string& httpString) {
     };
 
     //parse body
+    std::string_view body = sv.substr(posEndHeader + 4);
     auto contentValues = req.getHeaders("content-length");
     if (!contentValues.empty()) {
         size_t contentLength = std::stoul(contentValues.front());
-        std::string_view body = sv.substr(posEndHeader + 4, contentLength);
-        req.setBody(std::string(body));
+        req.setBody(std::string(body.substr(0, contentLength)));
     }
-    else {
-        contentValues = req.getHeaders("transfer-encoding");
-        if (!contentValues.empty()){
-            std::string_view body = sv.substr(posEndHeader + 4, std::string_view::npos);
-            req.setBody(std::string(body));
-        }
-    }
+    else if (isChunked(req))
+        req.setBody(decodeChunkedBody(std::string(body)));
+    else
+        req.setBody("");
 
     // req.print();
     return req;

@@ -24,6 +24,7 @@ bool	requestComplete(const std::string& buffer, bool& data_validity) {
 	// std::cout << "Buffer to be parsed currently: " << std::endl;
 	// std::cout << buffer << std::endl;
 	if (buffer.size() > 2097152) {
+		// std::cout << "buffer too big" << std::endl;
 		data_validity = false;
 		return false;
 	}
@@ -37,18 +38,22 @@ bool	requestComplete(const std::string& buffer, bool& data_validity) {
 	}
 	header_end = pos2 + 4;
 
-	// std::cout << "header end detected: " << std::endl;
-	// std::cout << pos2 << std::endl;
-
+	// std::cout << "header end detected: " << header_end << std::endl;
+	// std::cout << buffer << std::endl;
 	size_t pos = buffer.find("\r\nTransfer-Encoding: chunked\r\n");
+	// std::cout << "pos of Transfer-Encoding: chunked: " << pos << std::endl;
 	if (pos != std::string::npos && pos < header_end) // search for body and only after we found the header
 	{
+		// std::cout << "here " << std::endl;
 		pos = buffer.find("0\r\n\r\n");
 		if (pos == std::string::npos || pos < header_end)
 			return false;
 		else
 			return true;
 	}
+
+	// std::cout << "escaped, buffer: " << std::endl;
+	// std::cout << buffer << std::endl;
 
 	size_t body_curr_len = buffer.size() - header_end;
 	std::smatch match;

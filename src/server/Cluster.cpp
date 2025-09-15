@@ -120,8 +120,11 @@ void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 	_client_buffers[_fds[i].fd].receive_start = std::chrono::high_resolution_clock::now();
 	ClientRequestState& client_state = _client_buffers[_fds[i].fd];
 
+	// std::cout << "bytes: " << bytes << std::endl;
+	// std::cout.write(buffer, bytes);
+	// std::cout << std::endl;
 	if (requestComplete(client_state.buffer, client_state.data_validity)) {
-
+		
 		// test fill out request
 		Request req;
 		Parser	parse;
