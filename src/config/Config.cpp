@@ -85,12 +85,25 @@ bool	Config::validateErrorPage(const std::string& line) {
 	return true;
 }
 
-bool	Config::validateLocation(const std::string& line) {
+bool	Config::validateLocation(const std::string& line, LocationType& type, bool& location_present) {
 	std::regex	re("^\\s*location\\s+(\\S+)\\s+\\{$");
 	std::smatch	match;
 	if (std::regex_search(line, match, re)) {
-		if (match[1].str()[0] != '/' && match[1].str()[0] != '.') //
+		if (match[1].str()[0] != '/' && match[1].str()[0] != '.')
 			return false;
+		for (auto& d : _location_directives) {
+			if (d.name == "location" && match[1].str()[0] == '/') {
+				// std::cout << "Curr match: " << match[1] << ", setting type DIRECOTRY\n";
+				d.location_type = DIRECTORY;
+				type = d.location_type;
+				location_present = true;
+			}
+			else if (d.name == "location" && match[1].str()[0] == '.') {
+				// std::cout << "Curr match: " << match[1] << ", setting type FILE_EXTENSION\n";
+				d.location_type = FILE_EXTENSION;
+				type = d.location_type;
+			}
+		}
 		return true;
 	}
 	return false;
@@ -144,6 +157,24 @@ bool	Config::validateAutoindex(const std::string& line) {
 }
 
 Config::Config() {
+	_mandatory_server_directives = {
+		"listen",
+		"server_name",
+		"host",
+		"root"
+	};
+
+	_mandatory_location_directives_directory = {
+		"allow_methods",
+		"index"
+	};
+
+	_mandatory_location_directives_cgi = {
+		"allow_methods",
+		"cgi_path",
+		"cgi_ext"
+	};
+
 	_server_directives = {
 		{"listen", std::regex("^\\s*listen\\s+\\d+$"), validatePort},
 		{"server_name", std::regex("^\\s*server_name\\s+\\S+$"), nullptr},
@@ -155,6 +186,7 @@ Config::Config() {
 	};
 
 	_location_directives = {
+		{"location", std::regex(""), nullptr},
 		{"allow_methods", std::regex("^\\s*allow_methods(\\s+\\S+){1,9}$"), validateMethods},
 		{"index", std::regex("^\\s*index\\s+\\S+$"), validateIndex},
 		{"autoindex", std::regex("^\\s*autoindex\\s+\\S+$"), validateAutoindex},
@@ -175,7 +207,7 @@ void	Config::checkKeywords(const std::string& line, const std::string& context) 
 			if (d.isSet)
 				throw std::runtime_error("Error: Config: Repeated directive: " + line);
 			if (d.valueChecker && !d.valueChecker(line))
-				throw std::runtime_error("Invalid value for directive: " + d.name);
+				throw std::runtime_error("Error: Config: Invalid value for directive: " + d.name);
 			d.isSet = true;
 		}
 	}
@@ -184,7 +216,6 @@ void	Config::checkKeywords(const std::string& line, const std::string& context) 
 }
 
 void	Config::validate(const std::string& config) {
-
 	std::ifstream cfg(config);
 	if (!cfg.is_open())
 		throw std::runtime_error("Error: could not open config file.");
@@ -195,22 +226,26 @@ void	Config::validate(const std::string& config) {
 	std::regex	location("^\\s*location\\s+[^\\s]+\\s*\\{$");
 	std::regex	close_block("^\\s*\\}$");
 
-	std::string line;
-	std::string blocktype;
-	std::smatch match;
+	LocationType	current_type = NONE;
+	bool			location_present = false;
+	std::string		line;
+	std::string		blocktype;
+	std::smatch		match;
+
 	while (std::getline(cfg, line)) {
-		if (line.empty() || line[0] == '#')
+		size_t first_non_space = line.find_first_not_of(" \t");
+		if (first_non_space == std::string::npos || line[first_non_space] == '#')
 			continue ;
 		if (line.ends_with("{")) {
 			if (std::regex_match(line, match, server)) {
 				blocktype = "server";
-				resetDirectivesFlags();
+				resetDirectivesFlags(blocktype);
 			}
 			else if (std::regex_match(line, match, location)) {
 				blocktype = "location";
-				if (!validateLocation(line))
+				if (!validateLocation(line, current_type, location_present))
 					throw std::runtime_error("Invalid value for directive: location");
-				resetDirectivesFlags();
+				resetDirectivesFlags(blocktype);
 			}
 			else
 				throw std::runtime_error("Error: Config: Invalid block type: " + line);
@@ -220,8 +255,11 @@ void	Config::validate(const std::string& config) {
 		if (std::regex_match(line, match, close_block)) {
 			if (blockstack.empty())
 				throw std::runtime_error("Error: Config: Unbalanced }: " + line);
+			verifyMandatoryDirectives(blockstack.top(), current_type);
+			if (blockstack.top() == "server" && !location_present)
+				throw std::runtime_error("Error: Config: Missing directory type of location");
 			blockstack.pop();
-			continue;
+			continue ;
 		}
 		if (blockstack.empty())
 			throw std::runtime_error("Error: Config: Keyword outside of any block: " + line);
@@ -451,9 +489,35 @@ void	Config::extractUploadPath(Location& loc, const std::string& line) {
 	}
 }
 
-void	Config::resetDirectivesFlags() {
-	for (auto &d : _server_directives)
-		d.isSet = false;
-	for (auto &d : _location_directives)
-		d.isSet = false;
+void	Config::resetDirectivesFlags(const std::string& blocktype) {
+	if (blocktype == "server") {
+		for (auto &d : _server_directives)
+			d.isSet = false;
+	}
+	if (blocktype == "location") {
+		for (auto &d : _location_directives)
+			d.isSet = false;
+	}
+}
+
+void	Config::verifyMandatoryDirectives(const std::string& blocktype, LocationType loctype) {
+	if (blocktype == "server") {
+		for (auto& d : _server_directives) {
+			// std::cout << "Checking: " << d.name << ", value: " << d.isSet << std::endl;
+			if (_mandatory_server_directives.count(d.name) && !d.isSet)
+				throw std::runtime_error("Error: Config: Missing mandatory server directory: " + d.name);
+		}
+	}
+	else if (blocktype == "location") {
+		const auto& mandatory_list =
+		(loctype == DIRECTORY) ? _mandatory_location_directives_directory
+								: _mandatory_location_directives_cgi;
+		for (auto& d : _location_directives) {
+				// std::cout << "Checking: " << d.name << ", type: " << d.location_type << std::endl;
+			if (mandatory_list.count(d.name) && !d.isSet)
+				throw std::runtime_error("Error: Config: Missing mandatory location directory: " + d.name);
+		}
+	}
+	else
+		throw std::runtime_error("Unreachable: verifyMandatoryDirectives()");
 }

@@ -1,27 +1,38 @@
 #pragma once
 #include <iostream>
 #include <vector>
+#include <unordered_set>
 #include <regex>
 #include <fstream>
 #include <string>
 
 #include "../server/Server.hpp"
 
+enum LocationType {
+	NONE,
+	DIRECTORY,
+	FILE_EXTENSION
+};
+
 struct Directive {
 	std::string name;
 	std::regex	pattern;
 	std::function<bool(const std::string&)> valueChecker;
 	bool isSet = false;
+	LocationType location_type = NONE;
 };
 
 class Config {
 
 	private:
 
-		std::vector<Directive>			_server_directives;
-		std::vector<Directive>			_location_directives;
-		static std::vector<std::string>	_methods;
-		static std::vector<std::string>	_cgi_extensions;
+		std::unordered_set<std::string>		_mandatory_server_directives;
+		std::unordered_set<std::string>		_mandatory_location_directives_directory;
+		std::unordered_set<std::string>		_mandatory_location_directives_cgi;
+		std::vector<Directive>				_server_directives;
+		std::vector<Directive>				_location_directives;
+		static std::vector<std::string>		_methods;
+		static std::vector<std::string>		_cgi_extensions;
 
 		void		checkKeywords(const std::string& line, const std::string& context);
 
@@ -30,7 +41,7 @@ class Config {
 		static bool	validateIndex(const std::string& line);
 		static bool	validateMaxBodySize(const std::string& line);
 		static bool	validateErrorPage(const std::string& line);
-		static bool	validateLocation(const std::string& line);
+		bool		validateLocation(const std::string& line, LocationType& type, bool& location_present);
 		static bool	validateMethods(const std::string& line);
 		static bool	validateExt(const std::string& line);
 		static bool	validateAutoindex(const std::string& line);
@@ -54,7 +65,8 @@ class Config {
 		static void	extractCgiExt(Location& loc, const std::string& line);
 		static void	extractUploadPath(Location& loc, const std::string& line);
 
-		void		resetDirectivesFlags();
+		void		resetDirectivesFlags(const std::string& blocktype);
+		void		verifyMandatoryDirectives(const std::string& blocktype, LocationType current);
 
 	public:
 		void				validate(const std::string& config);
