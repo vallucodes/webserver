@@ -1,5 +1,22 @@
 #include "Config.hpp"
 
+std::vector<std::string> Config:: _methods = {
+	"GET",
+	"POST",
+	"DELETE",
+	"HEAD",
+	"PUT",
+	"PATCH",
+	"OPTIONS",
+	"CONNECT",
+	"TRACE"
+};
+
+std::vector<std::string> Config::_cgi_extensions = {
+	".py",
+	".php"
+};
+
 bool	Config::validatePort(const std::string& line) {
 	size_t pos = line.find_last_of(' ');
 	if (pos == std::string::npos)
@@ -68,6 +85,64 @@ bool	Config::validateErrorPage(const std::string& line) {
 	return true;
 }
 
+bool	Config::validateLocation(const std::string& line) {
+	std::regex	re("^\\s*location\\s+(\\S+)\\s+\\{$");
+	std::smatch	match;
+	if (std::regex_search(line, match, re)) {
+		if (match[1].str()[0] != '/' && match[1].str()[0] != '.') //
+			return false;
+		return true;
+	}
+	return false;
+}
+
+bool	Config::validateMethods(const std::string& line) {
+	std::regex	re("^\\s*allow_methods(\\s+\\S+){1,9}$");
+	if (std::regex_match(line, re)) {
+		size_t pos = line.find("allow_methods");
+		std::string methods_str = line.substr(pos + 13);
+
+		std::istringstream iss(methods_str);
+		std::string method;
+		while (iss >> method) {
+			auto it = std::find(_methods.begin(), _methods.end(), method);
+			if (it == _methods.end())
+				return false;
+		}
+		return true;
+	}
+	return false;
+}
+
+bool	Config::validateExt(const std::string& line) {
+	std::regex	re("^\\s*cgi_ext(\\s+\\S+)+$");
+	if (std::regex_match(line, re)) {
+		size_t pos = line.find("cgi_ext");
+		std::string methods_str = line.substr(pos + 7);
+
+		std::istringstream iss(methods_str);
+		std::string method;
+		while (iss >> method) {
+			auto it = std::find(_cgi_extensions.begin(), _cgi_extensions.end(), method);
+			if (it == _cgi_extensions.end())
+				return false;
+		}
+		return true;
+	}
+	return false;
+}
+
+bool	Config::validateAutoindex(const std::string& line) {
+	std::regex	re("^\\s*autoindex\\s+(\\S+)$");
+	std::smatch	match;
+	if (std::regex_search(line, match, re)) {
+		if (match[1] != "on" && match[1] != "off")
+			return false;
+		return true;
+	}
+	return false;
+}
+
 Config::Config() {
 	_server_directives = {
 		{"listen", std::regex("^\\s*listen\\s+\\d+$"), validatePort},
@@ -80,22 +155,20 @@ Config::Config() {
 	};
 
 	_location_directives = {
-		{"location", std::regex("^\\s*location\\s+\\S+$"), nullptr},
-		{"allow_methods", std::regex("^\\s*allow_methods(\\s+\\S+){1,10}$"), nullptr},
+		{"allow_methods", std::regex("^\\s*allow_methods(\\s+\\S+){1,9}$"), validateMethods},
 		{"index", std::regex("^\\s*index\\s+\\S+$"), validateIndex},
-		{"autoindex", std::regex("^\\s*autoindex\\s+\\S+$"), nullptr},
-		{"cgi_path", std::regex("^\\s*cgi_path\\s+\\S+$"), nullptr},
-		{"cgi_exit", std::regex("^\\s*cgi_exit\\s+\\S+$"), nullptr},
-		{"upload_to", std::regex("^\\s*upload_to\\s+\\S+$"), nullptr}
+		{"autoindex", std::regex("^\\s*autoindex\\s+\\S+$"), validateAutoindex},
+		{"cgi_path", std::regex("^\\s*cgi_path\\s+\\S+$"), nullptr},// this can be made more strict to enforce leading / to path
+		{"cgi_ext", std::regex("^\\s*cgi_ext(\\s+\\S+)+$"), validateExt},
+		{"upload_to", std::regex("^\\s*upload_to\\s+\\S+$"), nullptr}, // this can be made more strict to enforce leading / to path
+		{"return", std::regex("^\\s*return\\s+\\S+$"), nullptr} // this can be made more strict to enforce leading / to path
 	};
 }
 
 void	Config::checkKeywords(const std::string& line, const std::string& context) {
 	bool match = false;
-	if (context == "server");
-		std::vector<Directive>& directives = _server_directives;
-	if (context == "location")
-		std::vector<Directive>& directives = _location_directives;
+	std::vector<Directive>& directives =
+		(context == "server") ? _server_directives : _location_directives;
 	for (auto &d : directives) {
 		if (std::regex_match(line, d.pattern)) {
 			match = true;
@@ -112,7 +185,6 @@ void	Config::checkKeywords(const std::string& line, const std::string& context) 
 
 void	Config::validate(const std::string& config) {
 
-	// std::cout << config << std::endl;
 	std::ifstream cfg(config);
 	if (!cfg.is_open())
 		throw std::runtime_error("Error: could not open config file.");
@@ -134,8 +206,12 @@ void	Config::validate(const std::string& config) {
 				blocktype = "server";
 				resetDirectivesFlags();
 			}
-			else if (std::regex_match(line, match, location))
+			else if (std::regex_match(line, match, location)) {
 				blocktype = "location";
+				if (!validateLocation(line))
+					throw std::runtime_error("Invalid value for directive: location");
+				resetDirectivesFlags();
+			}
 			else
 				throw std::runtime_error("Error: Config: Invalid block type: " + line);
 			blockstack.push(blocktype);
@@ -153,8 +229,8 @@ void	Config::validate(const std::string& config) {
 		std::string currentBlock = blockstack.top();
 		if (currentBlock == "server")
 			checkKeywords(line, "server");
-		// if (currentBlock == "location")
-		// 	checkLocationKeywords(line);
+		if (currentBlock == "location")
+			checkKeywords(line, "location");
 	}
 }
 
@@ -337,8 +413,6 @@ void	Config::extractAutoindex(Location& loc, const std::string& line) {
 			loc.autoindex = true;
 		else if (match[1] == "off")
 			loc.autoindex = false;
-		else
-			throw std::runtime_error("Wrong formatting of autoindex");
 	}
 }
 

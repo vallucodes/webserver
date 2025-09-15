@@ -18,8 +18,10 @@ class Config {
 
 	private:
 
-		std::vector<Directive> _server_directives;
-		std::vector<Directive> _location_directives;
+		std::vector<Directive>			_server_directives;
+		std::vector<Directive>			_location_directives;
+		static std::vector<std::string>	_methods;
+		static std::vector<std::string>	_cgi_extensions;
 
 		void		checkKeywords(const std::string& line, const std::string& context);
 
@@ -28,6 +30,10 @@ class Config {
 		static bool	validateIndex(const std::string& line);
 		static bool	validateMaxBodySize(const std::string& line);
 		static bool	validateErrorPage(const std::string& line);
+		static bool	validateLocation(const std::string& line);
+		static bool	validateMethods(const std::string& line);
+		static bool	validateExt(const std::string& line);
+		static bool	validateAutoindex(const std::string& line);
 
 		static void	extractServerFields(std::vector<Server>& servs, std::ifstream& cfg);
 		static void	extractLocationFields(Server& serv, Location& loc, std::ifstream& cfg);
