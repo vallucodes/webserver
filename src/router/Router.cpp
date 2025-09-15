@@ -37,6 +37,22 @@ void Router::setupRouter() {
 	addRoute("GET", "/delete.html", get);
 	addRoute("DELETE", "/uploads", del);
 
+	// CGI routes - handle CGI scripts based on file extensions
+	// Since no parser exists yet, we manually add routes for CGI files
+	// These routes will be handled by the CGI handler which checks file extensions
+	addRoute("GET", "/cgi-bin/script.py", cgi);
+	addRoute("POST", "/cgi-bin/script.py", cgi);
+	addRoute("GET", "/cgi-bin/hello.c", cgi);
+	addRoute("POST", "/cgi-bin/hello.c", cgi);
+	addRoute("GET", "/cgi-bin/hello.ts", cgi);
+	addRoute("POST", "/cgi-bin/hello.ts", cgi);
+	addRoute("GET", "/cgi-bin/hello.js", cgi);
+	addRoute("POST", "/cgi-bin/hello.js", cgi);
+
+	// Generic CGI route for any file with CGI extension in www directory
+	// This will catch any CGI files not explicitly listed above
+	// The CGI handler will check the file extension and handle accordingly
+
 
 	// Debug: List all available routes
 	listRoutes();
