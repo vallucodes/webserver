@@ -23,8 +23,8 @@ void Router::setupRouter() {
     addRoute("GET", "/", get);
 	addRoute("GET", "/index.html", get);
 	addRoute("GET", "/upload.html", get);
-	addRoute("GET", "/upload_error.html", get);
-	addRoute("GET", "/upload_success.html", get);
+	// addRoute("GET", "/upload_error.html", get);
+	// addRoute("GET", "/upload_success.html", get);
 
 	addRoute("GET", "/imgs/lhaas.png", get);
 	addRoute("GET", "/imgs/vlopatin.png", get);
@@ -40,8 +40,8 @@ void Router::setupRouter() {
 	// CGI routes - handle CGI scripts based on file extensions
 	// Since no parser exists yet, we manually add routes for CGI files
 	// These routes will be handled by the CGI handler which checks file extensions
-	addRoute("GET", "/cgi-bin/script.py", cgi);
-	addRoute("POST", "/cgi-bin/script.py", cgi);
+	addRoute("GET", "/cgi-bin/hello.py", cgi);
+	addRoute("POST", "/cgi-bin/hello.py", cgi);
 	addRoute("GET", "/cgi-bin/hello.c", cgi);
 	addRoute("POST", "/cgi-bin/hello.c", cgi);
 	addRoute("GET", "/cgi-bin/hello.ts", cgi);
@@ -106,6 +106,10 @@ std::string Router::getDefaultErrorPage(int status) {
             return readFileToString(error_page::ERROR_PAGE_NOT_FOUND_404);
         case http::METHOD_NOT_ALLOWED_405:
             return readFileToString(error_page::ERROR_PAGE_METHOD_NOT_ALLOWED_405);
+        case http::BAD_REQUEST_400:
+            return readFileToString(error_page::ERROR_PAGE_BAD_REQUEST_400);
+        case http::PAYLOAD_TOO_LARGE_413:
+            return readFileToString(error_page::ERROR_PAGE_PAYLOAD_TOO_LARGE_413);
         case http::INTERNAL_SERVER_ERROR_500:
             return readFileToString(error_page::ERROR_PAGE_INTERNAL_SERVER_ERROR_500);
         default:
@@ -121,6 +125,10 @@ void setErrorResponse(Response& res, int status){
         res.setStatus(http::STATUS_NOT_FOUND_404);
     } else if (status == http::METHOD_NOT_ALLOWED_405) {
         res.setStatus(http::STATUS_METHOD_NOT_ALLOWED_405);
+    } else if (status == http::BAD_REQUEST_400) {
+        res.setStatus(http::STATUS_BAD_REQUEST_400);
+    } else if (status == http::PAYLOAD_TOO_LARGE_413) {
+        res.setStatus(http::STATUS_PAYLOAD_TOO_LARGE_413);
     } else if (status == http::INTERNAL_SERVER_ERROR_500) {
         res.setStatus(http::STATUS_INTERNAL_SERVER_ERROR_500);
     }

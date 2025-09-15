@@ -1,60 +1,36 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Upload Successful</title>
-  <style>
-    body {
-      margin: 0;
-      display: grid;
-      place-items: center;
-      min-height: 100vh;
-      background: #fff;
-      font-family: system-ui, sans-serif;
-      color: #222;
-      padding: 16px;
-    }
-    .card {
-      max-width: 420px;
-      width: 100%;
-      border: 1px solid #eee;
-      border-radius: 10px;
-      padding: 20px;
-      text-align: center;
-    }
-    .icon { font-size: 48px; margin-bottom: 12px; color: #2d2d2d; }
-    h1 { margin: 0 0 8px; font-size: 22px; color: #2d2d2d; }
-    p { margin: 0 0 16px; font-size: 14px; color: #444; }
-    .info { text-align: left; margin: 16px 0; font-size: 14px; }
-    .info div { margin-bottom: 6px; }
-    a {
-      display: inline-block;
-      margin: 8px;
-      padding: 10px 18px;
-      border-radius: 6px;
-      background: #000;
-      color: #fff; /* button text is white */
-      text-decoration: none;
-      font-weight: 600;
-    }
-    a:hover { background: #633901; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Successful</title>
+    <style>
+        :root { --bg:#fff; --fg:#222; --accent:#633901; --btn:#000; }
+        * { box-sizing: border-box; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+        body { margin: 0; background: var(--bg); color: var(--fg); display: grid; place-items: center; min-height: 100vh; padding: 16px; }
+        .card { width: 100%; max-width: 460px; padding: 16px; border: 1px solid #eee; border-radius: 10px; }
+        h1 { margin: 0 0 6px; font-size: 22px; }
+        p { margin: 0 0 16px; color: #2d2d2d; font-size: 14px; }
+        .success { color: var(--accent); font-weight: bold; }
+        .file-info { background: #f5f5f5; padding: 12px; border-radius: 6px; margin: 16px 0; }
+        .filename { font-weight: bold; word-break: break-word; }
+        .filesize { color: #666; font-size: 13px; }
+        a { color: var(--accent); text-decoration: none; font-size: 14px; display: inline-block; margin-top: 16px; }
+        a:hover { text-decoration: underline; }
+    </style>
 </head>
 <body>
-  <main class="card">
+    <main class="card">
+        <h1 class="success">Upload Successful</h1>
+        <p>Your file has been uploaded successfully!</p>
 
-    <h1>Upload Successful!</h1>
-    <p>Your file has been uploaded.</p>
+        <div class="file-info">
+            <div class="filename">Filename: FILENAME_PLACEHOLDER</div>
+            <div class="filesize">Size: FILESIZE_PLACEHOLDER</div>
+        </div>
 
-    <div class="info">
-      <div><strong>Filename:</strong> FILENAME_PLACEHOLDER</div>
-      <div><strong>Size:</strong> FILESIZE_PLACEHOLDER KB</div>
-      <div><strong>Storage:</strong> www/uploads/</div>
-    </div>
-
-    <a href="/">← Home</a>
-    <a href="/upload.html">Upload Another</a>
-  </main>
+        <a href="/upload.html">← Upload Another File</a>
+        <a href="/" style="margin-left: 16px;">← Back to Home</a>
+    </main>
 </body>
 </html>

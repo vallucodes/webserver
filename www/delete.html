@@ -69,15 +69,25 @@
       btn.disabled = true; btn.textContent = 'Deleting...';
       try {
         const res = await fetch(`/uploads/${encodeURIComponent(filename)}`, { method: 'DELETE' });
-        const text = await res.text();
-        if (res.ok && text.includes('Deletion Successful')) {
-          show('File deleted successfully.', false);
-          btn.textContent = 'Done';
+        const text = await Promise.race([
+          res.text().catch(() => ''),
+          new Promise(resolve => setTimeout(() => resolve(''), 700))
+        ]);
+
+        if (res.ok) {
+          // 2xx → real success
+          show(text && text.trim() ? text : 'File deleted successfully.', false);
           filenameInput.value = '';
+          btn.textContent = 'Delete another file';
+          btn.disabled = false;
+        } else if (res.status === 404) {
+          // explicit handling for missing file
+          show('File not found.', true);
+          btn.disabled = false; btn.textContent = 'Delete';
         } else {
-          // Extract error message from HTML response
+          // other error codes
           const errorMatch = text.match(/<div class="msg">\s*(.*?)\s*<\/div>/);
-          const errorMsg = errorMatch ? errorMatch[1] : 'Delete failed';
+          const errorMsg = errorMatch ? errorMatch[1] : (text && text.trim() ? text : 'Delete failed.');
           show(errorMsg, true);
           btn.disabled = false; btn.textContent = 'Delete';
         }
@@ -86,6 +96,8 @@
         btn.disabled = false; btn.textContent = 'Delete';
       }
     });
+
+
 
     function show(t, error) {
       msg.textContent = t;

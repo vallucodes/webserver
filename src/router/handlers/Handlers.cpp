@@ -171,7 +171,7 @@ void post(const Request& req, Response& res) {
         const auto& contentTypeKey = req.getHeaders("content-type");
 
         if (contentTypeKey.empty()) {
-            setSuccessResponse(res, createErrorHtml("Missing Content-Type header."), CONTENT_TYPE_HTML);
+            setErrorResponse(res, http::BAD_REQUEST_400);
             return;
         }
 
@@ -179,14 +179,14 @@ void post(const Request& req, Response& res) {
 
         // Validate content type
         if (contentType.find("multipart/form-data") == std::string::npos) {
-            setSuccessResponse(res, createErrorHtml("Invalid content type. Expected multipart/form-data."), CONTENT_TYPE_HTML);
+            setErrorResponse(res, http::BAD_REQUEST_400);
             return;
         }
 
         // Extract boundary
         const size_t boundaryPos = contentType.find("boundary=");
         if (boundaryPos == std::string::npos) {
-            setSuccessResponse(res, createErrorHtml("Invalid multipart boundary."), CONTENT_TYPE_HTML);
+            setErrorResponse(res, http::BAD_REQUEST_400);
             return;
         }
 
@@ -196,7 +196,7 @@ void post(const Request& req, Response& res) {
         // Find file boundaries
         const size_t fileStart = bodyStr.find(boundary);
         if (fileStart == std::string::npos) {
-            setSuccessResponse(res, createErrorHtml("No file data found in request."), CONTENT_TYPE_HTML);
+            setErrorResponse(res, http::BAD_REQUEST_400);
             return;
         }
 
@@ -206,26 +206,26 @@ void post(const Request& req, Response& res) {
         // Extract filename
         const size_t filenamePos = filePart.find("filename=\"");
         if (filenamePos == std::string::npos) {
-            setSuccessResponse(res, createErrorHtml("No filename provided."), CONTENT_TYPE_HTML);
+            setErrorResponse(res, http::BAD_REQUEST_400);
             return;
         }
 
         const size_t filenameEnd = filePart.find("\"", filenamePos + 10);
         if (filenameEnd == std::string::npos) {
-            setSuccessResponse(res, createErrorHtml("Invalid filename format."), CONTENT_TYPE_HTML);
+            setErrorResponse(res, http::BAD_REQUEST_400);
             return;
         }
 
         std::string filename = sanitizeFilename(filePart.substr(filenamePos + 10, filenameEnd - filenamePos - 10));
         if (filename.empty()) {
-            setSuccessResponse(res, createErrorHtml("No filename provided."), CONTENT_TYPE_HTML);
+            setErrorResponse(res, http::BAD_REQUEST_400);
             return;
         }
 
         // Extract file content
         const size_t contentStart = filePart.find("\r\n\r\n");
         if (contentStart == std::string::npos) {
-            setSuccessResponse(res, createErrorHtml("Invalid file format."), CONTENT_TYPE_HTML);
+            setErrorResponse(res, http::BAD_REQUEST_400);
             return;
         }
 
@@ -238,7 +238,7 @@ void post(const Request& req, Response& res) {
 
         // Validate file size
         if (fileContent.length() > 1024 * 1024) {
-            setSuccessResponse(res, createErrorHtml("File size exceeds 1MB limit."), CONTENT_TYPE_HTML);
+            setErrorResponse(res, http::PAYLOAD_TOO_LARGE_413);
             return;
         }
 
@@ -250,7 +250,7 @@ void post(const Request& req, Response& res) {
 
         std::ofstream outFile(filePath, std::ios::binary);
         if (!outFile) {
-            setSuccessResponse(res, createErrorHtml("Failed to save file to server."), CONTENT_TYPE_HTML);
+            setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
             return;
         }
 
@@ -262,7 +262,7 @@ void post(const Request& req, Response& res) {
         setSuccessResponse(res, createSuccessHtml(filename, fileSizeStr), CONTENT_TYPE_HTML);
 
     } catch (const std::exception&) {
-        setSuccessResponse(res, createErrorHtml("An unexpected error occurred during upload."), CONTENT_TYPE_HTML);
+        setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
     }
 }
 
@@ -275,13 +275,13 @@ void del(const Request& req, Response& res) {
 
         // Validate path
         if (filePathView.length() < 9 || filePathView.substr(0, 9) != "/uploads/") {
-            setSuccessResponse(res, createErrorHtml("Invalid path. DELETE only allowed for /uploads/ directory."), CONTENT_TYPE_HTML);
+            setErrorResponse(res, http::BAD_REQUEST_400);
             return;
         }
 
         std::string filename = sanitizeFilename(std::string(filePathView.substr(9)));
         if (filename.empty()) {
-            setSuccessResponse(res, createErrorHtml("No filename provided in path."), CONTENT_TYPE_HTML);
+            setErrorResponse(res, http::BAD_REQUEST_400);
             return;
         }
 
@@ -289,7 +289,7 @@ void del(const Request& req, Response& res) {
 
         // Check if file exists
         if (!std::filesystem::exists(filePath)) {
-            setSuccessResponse(res, createErrorHtml("File not found: " + filename), CONTENT_TYPE_HTML);
+            setErrorResponse(res, http::NOT_FOUND_404);
             return;
         }
 
@@ -297,13 +297,13 @@ void del(const Request& req, Response& res) {
         if (std::filesystem::remove(filePath)) {
             setSuccessResponse(res, createDeletionSuccessHtml(filename), CONTENT_TYPE_HTML);
         } else {
-            setSuccessResponse(res, createErrorHtml("Failed to delete file: " + filename), CONTENT_TYPE_HTML);
+            setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
         }
 
     } catch (const std::filesystem::filesystem_error&) {
-        setSuccessResponse(res, createErrorHtml("Filesystem error during deletion."), CONTENT_TYPE_HTML);
+        setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
     } catch (const std::exception&) {
-        setSuccessResponse(res, createErrorHtml("An unexpected error occurred during deletion."), CONTENT_TYPE_HTML);
+        setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
     }
 }
 
