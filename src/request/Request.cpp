@@ -1,6 +1,6 @@
 #include "Request.hpp"
 
-Request::Request(void) {}
+Request::Request(void) : _isError(false) {}
 
 Request::~Request(void) {}
 
@@ -9,11 +9,11 @@ void Request::setStatus(const std::string& status) {
 }
 
 bool Request::getError() const { 
-    return isError; 
+    return _isError; 
 }
 
 void Request::setError(bool val) { 
-    isError = val;
+    _isError = val;
 }
 
 std::string_view Request::getStatus() const {

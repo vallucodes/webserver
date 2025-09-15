@@ -24,8 +24,6 @@ bool isValidMethod(std::string_view method) {
 bool isValidRequestTarget(std::string_view method, std::string_view path){
     if (path.empty())
         return false;
-    if (method != "CONNECT" && method != "OPTIONS" && path[0] != '/')
-        return false;
     for (char c : path) {
         if (c <= 0x1F || c == 0x7F || c == ' ') {
             return false;
@@ -50,7 +48,7 @@ bool isBadRequest(const Request& req){
     return false;
 }
 
-void parseHeader(Request& req, const std::string_view& headerLines){
+bool parseHeader(Request& req, const std::string_view& headerLines){
     size_t pos = 0;
     while (true){
         size_t lineEnd = headerLines.find("\r\n", pos);
@@ -65,30 +63,36 @@ void parseHeader(Request& req, const std::string_view& headerLines){
             }
             req.setHeaders(key, trim(line.substr(colon + 1)));
         }
+        else{
+            req.setError(true);
+            req.setStatus("400 Bad Request");
+            return false;
+        }
         pos = lineEnd + 2;
     };
+    return true;
 }
 
 bool isBadHeader(Request& req) {
     static const std::unordered_set<std::string_view> uniqueHeaders = {
-        "Host",
-        "Content-Length",
-        "Content-Type",
-        "Authorization",
-        "From",
-        "Max-Forwards",
-        "Date",
-        "Expect",
-        "User-Agent",
-        "Referer",
-        "If-Modified-Since",
-        "If-Unmodified-Since",
-        "Retry-After",
-        "Location",
-        "Server",
-        "Last-Modified",
-        "ETag",
-        "Content-Location"
+        "host",
+        "content-length",
+        "content-type",
+        "authorization",
+        "from",
+        "max-forwards",
+        "date",
+        "expect",
+        "user-agent",
+        "referer",
+        "if-modified-since",
+        "if-unmodified-since",
+        "retry-after",
+        "location",
+        "server",
+        "last-modified",
+        "etag",
+        "content-location"
     };
     for (const auto& [key, values] : req.getAllHeaders()) {
         if (uniqueHeaders.count(key) && values.size() > 1) {
@@ -119,10 +123,24 @@ bool isBadMethod(Request& req){
     return false;
 }
 
+void printEscaped(const std::string& s) {
+    for (char c : s) {
+        switch (c) {
+            case '\r': std::cout << "\\r"; break;
+            case '\n': std::cout << "\\n"; break;
+            default: std::cout << c; break;
+        }
+    }
+    std::cout << std::endl;
+}
+
 Request Parser::parseRequest(const std::string& httpString) {
     Request req;
     std::string_view sv(httpString);
-
+    
+    std::cout << "------this is the string--------" << std::endl;
+    printEscaped(httpString);
+    std::cout << "------this was the string--------" << std::endl;
     //Parse request line
     size_t pos = sv.find("\r\n");
     if (pos == std::string_view::npos){
@@ -146,7 +164,8 @@ Request Parser::parseRequest(const std::string& httpString) {
     //Parse headers
     size_t posEndHeader = sv.find("\r\n\r\n");
     std::string_view headerLines = sv.substr(pos + 2, (posEndHeader + 2) - (pos + 2));
-    parseHeader(req, headerLines);
+    if (!parseHeader(req, headerLines))
+        return req;
     req.setError(isBadHeader(req));
     if (req.getError()){
         req.setStatus("400 Bad Request");
@@ -158,16 +177,21 @@ Request Parser::parseRequest(const std::string& httpString) {
     };
 
     //parse body
-    const auto& contentValues = req.getHeaders("content-length");
+    auto contentValues = req.getHeaders("content-length");
     if (!contentValues.empty()) {
         size_t contentLength = std::stoul(contentValues.front());
         std::string_view body = sv.substr(posEndHeader + 4, contentLength);
-        // multipart/form-data handling not yet supported
-        // const auto& contentType = req.getHeaders("content-type");
-
         req.setBody(std::string(body));
     }
-    req.print();
+    else {
+        contentValues = req.getHeaders("transfer-encoding");
+        if (!contentValues.empty()){
+            std::string_view body = sv.substr(posEndHeader + 4, std::string_view::npos);
+            req.setBody(std::string(body));
+        }
+    }
+
+    // req.print();
     return req;
 }
 
