@@ -7,6 +7,7 @@ void	Cluster::config(const std::string& config_file) {
 
 	Config config;
 
+	config.validate(config_file);
 	_configs = config.parse(config_file);
 	// printAllConfigs(_configs);
 	if (_configs.size() == 0)
