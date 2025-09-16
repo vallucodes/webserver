@@ -111,9 +111,18 @@ void	Cluster::handleClientInData(size_t& i) {
 	int bytes = recv(_fds[i].fd, buffer, sizeof(buffer), 0);
 	if (bytes <= 0)
 		dropClient(i, CLIENT_DISCONNECT);
-	else
+	else {
+		std::cout << "START----------------------------------------------------------\n";
+		std::cout << "bytes: " << bytes << std::endl;
+		std::cout << "buffer received (hex): ";
+		for (int j = 0; j < bytes; ++j) {
+			printf("%02X ", (unsigned char)buffer[j]);
+		}
+		std::cout << "\nEND----------------------------------------------------------\n";
 		processReceivedData(i, buffer, bytes);
+	}
 }
+
 
 #include <fstream>
 std::string readFileToString(const std::string& filename) {
@@ -132,7 +141,8 @@ void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 	_client_buffers[_fds[i].fd].receive_start = std::chrono::high_resolution_clock::now();
 	ClientRequestState& client_state = _client_buffers[_fds[i].fd];
 
-	if (requestComplete(client_state.buffer, client_state.data_validity)) {
+	if (requestComplete(client_state)) {
+		client_state.request = buildRequest(client_state.buffer);
 		// call here the parser in future. Send now is just sending back same message to client
 		Server conf = findRelevantConfig(_fds[i].fd, _client_buffers[_fds[i].fd].buffer);
 		printServerConfig(conf); // this is simulating what will be sent to parser later
@@ -145,7 +155,6 @@ void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 			"\r\n";
 
 		client_state.response.append(body);
-		client_state.buffer.clear();
 		client_state.receive_start = {};
 		_fds[i].events |= POLLOUT;
 		client_state.send_start = std::chrono::high_resolution_clock::now(); //this should be moved to the response part of code
@@ -179,7 +188,7 @@ void	Cluster::sendPendingData(size_t& i) {
 }
 
 void	Cluster::dropClient(size_t& i, const std::string& msg) {
-	std::cout << "Client " << _fds[i].fd << msg;
+	std::cout << CYAN << "Client " << _fds[i].fd << msg << RESET;
 	close (_fds[i].fd);
 	_client_buffers.erase(_fds[i].fd);
 	_fds.erase(_fds.begin() + i);
@@ -210,7 +219,7 @@ void	Cluster::checkForTimeouts() {
 	}
 }
 
-const Server&	Cluster::findRelevantConfig(int client_fd, std::string&	buffer) {
+const Server&	Cluster::findRelevantConfig(int client_fd, const std::string& buffer) {
 	std::smatch		match;
 	ListenerGroup*	conf = _clients[client_fd];
 	size_t			header_end = findHeader(buffer);
@@ -230,4 +239,73 @@ const Server&	Cluster::findRelevantConfig(int client_fd, std::string&	buffer) {
 
 const	std::set<int>& Cluster::getServerFds() const {
 	return _server_fds;
+}
+
+std::string	Cluster::buildRequest(const std::string& buffer) {
+
+	// clear part of buffer that is returned
+}
+
+bool	Cluster::isRequestBodyComplete(ClientRequestState& client_state, const std::string& buffer, size_t header_end) {
+	size_t body_curr_len = buffer.size() - header_end;
+	std::smatch match;
+	if (std::regex_search(buffer, match, std::regex(R"(Content-Length:\s*(\d+)\r?\n)"))) { // might be issue that this is in body
+		size_t body_expected_len = std::stoul(match[1].str());
+		if (body_curr_len >= body_expected_len) {
+			// std::cout << "body received and there might another request starting after" << std::endl;
+			client_state.request_size = header_end + body_expected_len;
+			return true;
+		}
+		else {
+			// std::cout << "body not fully received" << std::endl;
+			return false;
+		}
+	}
+	else {
+		// std::cout << "only header received, possibly some bytes in body" << std::endl;
+		return true;
+	}
+}
+
+int	Cluster::isChunkedBodyComplete(const std::string& buffer, size_t header_end) {
+	size_t pos = buffer.find("\r\nTransfer-Encoding: chunked\r\n");
+	if (pos != std::string::npos && pos < header_end) // search for body and only after we found the header
+	{
+		pos = buffer.find("0\r\n\r\n", header_end); // TODO test this
+		if (pos == std::string::npos)
+			return false;
+		else
+			return true;
+	}
+	return -1;
+}
+
+bool	Cluster::requestComplete(ClientRequestState& client_state) {
+	// std::cout << "Buffer to be parsed currently: " << std::endl;
+	// std::cout << buffer << std::endl;
+	std::string buffer = client_state.buffer;
+
+	if (buffer.size() > MAX_BUFFER_SIZE) {
+		client_state.data_validity = false;
+		return false;
+	}
+
+	size_t header_end = findHeader(buffer);
+	if (header_end == std::string::npos)
+		return false;
+
+	// std::cout << "header end detected: " << pos2 << std::endl;
+
+	// if (buffer.size() - header_end > _max_client_body_size) { // check for body exceeding allowed length. Maybe parser will do it.
+	// 	data_validity = false;
+	// 	return false;
+	// }
+
+	int status = -1;
+	status = isChunkedBodyComplete(buffer, header_end);
+	if (status != -1)
+		return status;
+
+	status = isRequestBodyComplete(client_state, buffer, header_end);
+	return status;
 }

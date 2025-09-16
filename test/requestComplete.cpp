@@ -75,7 +75,7 @@ TEST(RequestCompleteTest, ReturnTrueForCorrectBodySize) {
 }
 
 // 7
-TEST(RequestCompleteTest, ReturnFalseForBigBodySize) {
+TEST(RequestCompleteTest, ReturnTrueMoreThanOneRequest) {
 	bool status = true;
 	std::string buffer =
 		"POST / HTTP/1.1\r\n"
@@ -83,8 +83,8 @@ TEST(RequestCompleteTest, ReturnFalseForBigBodySize) {
 		"\r\n"
 		"12345678910";
 
-	EXPECT_FALSE(requestComplete(buffer, status));
-	EXPECT_FALSE(status);
+	EXPECT_TRUE(requestComplete(buffer, status));
+	EXPECT_TRUE(status);
 }
 
 // 8
@@ -97,15 +97,15 @@ TEST(RequestCompleteTest, ReturnFalseForEmptyRequest) {
 }
 
 //9
-TEST(RequestCompleteTest, ReturnFalseNoContentLengthBodyExists) {
+TEST(RequestCompleteTest, ReturnTrueMoreThanOneRequestOnlyHeader) {
 	bool status = true;
 	std::string buffer =
 		"POST / HTTP/1.1\r\n"
 		"\r\n"
 		"12345678910";
 
-	EXPECT_FALSE(requestComplete(buffer, status));
-	EXPECT_FALSE(status);
+	EXPECT_TRUE(requestComplete(buffer, status));
+	EXPECT_TRUE(status);
 }
 
 //10

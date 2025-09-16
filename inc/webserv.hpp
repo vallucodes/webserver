@@ -6,7 +6,6 @@
 #include <signal.h>
 #include <unistd.h>
 
-
 #define TIME_OUT_POLL		100
 #define TIME_OUT_REQUEST	60000
 #define TIME_OUT_RESPONSE	60000

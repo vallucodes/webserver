@@ -7,6 +7,12 @@
 #include <chrono>
 #include <iostream>
 
+#define RED "\033[1;31m"
+#define GREEN "\033[1;32m"
+#define CYAN "\033[1;36m"
+#define YELLOW "\033[1;33m"
+#define RESET "\033[0m"
+
 #include "webserv.hpp"
 #include "Server.hpp"
 #include "HelperFunctions.hpp"
@@ -32,6 +38,8 @@ class Cluster {
 			std::chrono::time_point<std::chrono::high_resolution_clock>	receive_start {};
 			std::chrono::time_point<std::chrono::high_resolution_clock>	send_start {};
 			std::string	buffer;
+			std::string	request;
+			size_t		request_size;
 			std::string	response;
 			Server*		config;
 			bool		data_validity = 1;
@@ -41,7 +49,11 @@ class Cluster {
 
 		void			groupConfigs();
 		void			createGroup(const Server& conf);
-		const Server&	findRelevantConfig(int client_fd, std::string&	buffer);
+		const Server&	findRelevantConfig(int client_fd, const std::string& buffer);
+		std::string		buildRequest(const std::string& buffer);
+		bool			requestComplete(ClientRequestState& client_state);
+		int				isChunkedBodyComplete(const std::string& buffer, size_t header_end);
+		bool			isRequestBodyComplete(ClientRequestState& client_state, const std::string& buffer, size_t header_end);
 
 		void	handleNewClient(size_t i);
 		void	handleClientInData(size_t& i);
