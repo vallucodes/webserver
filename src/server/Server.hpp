@@ -24,7 +24,7 @@ class Server {
 		std::string					_root;
 		std::string					_index;
 		std::map<int, std::string>	_error_pages;
-		size_t						_client_max_body_size;
+		size_t						_client_max_body_size = MAX_BODY_SIZE;
 		std::vector<Location>		_locations;
 
 	public:
