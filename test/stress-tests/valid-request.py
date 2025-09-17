@@ -1,18 +1,16 @@
 import socket
 
 HOST = '127.0.0.1'
-PORT = 7071
+PORT = 5008
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.connect((HOST, PORT))
 
 request = (
 	"GET / HTTP/1.1\r\n"
-	"Host: main2:8080\r\n"
-	"User-Agent: PythonSocket/1.0\r\n"
-	"Accept: */*\r\n"
-	"Connection: close\r\n"
+	"Content-Length: 5\r\n"
 	"\r\n"
+	"12345"
 )
 
 sock.sendall(request.encode())

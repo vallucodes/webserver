@@ -6,13 +6,13 @@
 #include <signal.h>
 #include <unistd.h>
 
-
 #define TIME_OUT_POLL		100
-#define TIME_OUT_REQUEST	60000
-#define TIME_OUT_RESPONSE	60000
+#define TIME_OUT_REQUEST	6000
+#define TIME_OUT_RESPONSE	6000000
 #define MAX_CLIENTS			900
 #define MAX_BUFFER_SIZE		10000000
 #define MAX_BODY_SIZE		10000000
+#define MAX_HEADER_SIZE		8192
 
 #define CLIENT_DISCONNECT			" disconnected.\n"
 #define CLIENT_TIMEOUT				" dropped by the server: Timeout.\n"
