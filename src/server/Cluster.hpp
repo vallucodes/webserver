@@ -44,13 +44,14 @@ class Cluster {
 			Server*		config;
 			bool		data_validity = 1;
 			bool		waiting_response = 0; // later can be removed if check that response field has anything, send that
+			
 		};
 		std::map<int, ClientRequestState>	_client_buffers;	// storing client related reuqest, and bool is 1:valid, 0 invalid
 
 		void			groupConfigs();
 		void			createGroup(const Server& conf);
 		const Server&	findRelevantConfig(int client_fd, const std::string& buffer);
-		std::string		buildRequest(const std::string& buffer);
+		void			buildRequest(ClientRequestState& client_state);
 		bool			requestComplete(ClientRequestState& client_state);
 		int				isChunkedBodyComplete(const std::string& buffer, size_t header_end);
 		bool			isRequestBodyComplete(ClientRequestState& client_state, const std::string& buffer, size_t header_end);
