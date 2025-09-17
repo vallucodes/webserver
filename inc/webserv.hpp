@@ -13,6 +13,7 @@
 #define MAX_BUFFER_SIZE		10000000
 #define MAX_BODY_SIZE		10000000
 #define MAX_HEADER_SIZE		8192
+#define MAX_RESPONSE_SIZE	1024
 
 #define CLIENT_DISCONNECT			" disconnected.\n"
 #define CLIENT_TIMEOUT				" dropped by the server: Timeout.\n"
