@@ -43,8 +43,8 @@ class Cluster {
 			std::string	response;
 			Server*		config;
 			bool		data_validity = 1;
-			bool		waiting_response = 0; // later can be removed if check that response field has anything, send that
-			
+			bool		waiting_response = 0;
+
 		};
 		std::map<int, ClientRequestState>	_client_buffers;	// storing client related reuqest, and bool is 1:valid, 0 invalid
 
@@ -55,6 +55,7 @@ class Cluster {
 		bool			requestComplete(ClientRequestState& client_state);
 		int				isChunkedBodyComplete(const std::string& buffer, size_t header_end);
 		bool			isRequestBodyComplete(ClientRequestState& client_state, const std::string& buffer, size_t header_end);
+		std::string		popResponseChunk(ClientRequestState& client_state);
 
 		void	handleNewClient(size_t i);
 		void	handleClientInData(size_t& i);

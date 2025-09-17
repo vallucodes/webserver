@@ -168,6 +168,20 @@ void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 	}
 }
 
+std::string	Cluster::popResponseChunk(ClientRequestState& client_state) {
+	std::string response;
+	if (client_state.response.size() > MAX_RESPONSE_SIZE) {
+		response = client_state.response.substr(0, MAX_RESPONSE_SIZE);
+		// std::cout << "request: \n" << client_state.request << std::endl;
+		client_state.response = client_state.response.substr(MAX_RESPONSE_SIZE);
+	}
+	else {
+		response = client_state.response;
+		client_state.response.erase();
+	}
+	return response;
+}
+
 void	Cluster::sendPendingData(size_t& i) {
 	// --- Send minimal HTTP response ---
 	ClientRequestState& client_state = _client_buffers[_fds[i].fd];
@@ -176,13 +190,12 @@ void	Cluster::sendPendingData(size_t& i) {
 		return ;
 
 	if (client_state.waiting_response == true) {
-		std::cout << "Sending data to: " << _fds[i].fd << std::endl;
-		// TODO needs to be chuncked in future
+		std::string response = popResponseChunk(client_state);
+		// std::cout << "Sending data to: " << _fds[i].fd << std::endl;
 		// TODO multiple responses must be separated
-		ssize_t sent = send(_fds[i].fd, client_state.response.c_str(), client_state.response.size(), 0);
-		if (sent >= 0) {
+		ssize_t sent = send(_fds[i].fd, response.c_str(), response.size(), 0);
+		if (sent >= 0 && client_state.response.empty()) {
 			// std::cout << "Response fully sent" << std::endl;
-			client_state.response.clear(); // response fully sent
 			_fds[i].events &= ~POLLOUT;
 			client_state.send_start = std::chrono::high_resolution_clock::time_point{};
 			client_state.waiting_response = false;
