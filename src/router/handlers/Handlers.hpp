@@ -28,3 +28,13 @@ void post(const Request& req, Response& res);
 // @param req The incoming HTTP request with file path in URL
 // @param res The response object to populate
 void del(const Request& req, Response& res);
+
+// Handle CGI requests for executable scripts (e.g., .php files)
+// @param req The incoming HTTP request
+// @param res The response object to populate
+void cgi(const Request& req, Response& res);
+
+// Handle HTTP redirection requests
+// @param req The incoming HTTP request
+// @param res The response object to populate
+void redirect(const Request& req, Response& res);

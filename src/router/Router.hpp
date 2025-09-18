@@ -13,14 +13,22 @@ namespace http {
 
     // HTTP Status Messages
     const std::string STATUS_OK_200 = "200 OK";
+    const std::string STATUS_MOVED_PERMANENTLY_301 = "301 Moved Permanently";
+    const std::string STATUS_FOUND_302 = "302 Found";
     const std::string STATUS_NOT_FOUND_404 = "404 Not Found";
     const std::string STATUS_METHOD_NOT_ALLOWED_405 = "405 Method Not Allowed";
+    const std::string STATUS_BAD_REQUEST_400 = "400 Bad Request";
+    const std::string STATUS_PAYLOAD_TOO_LARGE_413 = "413 Payload Too Large";
     const std::string STATUS_INTERNAL_SERVER_ERROR_500 = "500 Internal Server Error";
 
     // HTTP Status Codes
     const int OK_200 = 200;
+    const int MOVED_PERMANENTLY_301 = 301;
+    const int FOUND_302 = 302;
     const int NOT_FOUND_404 = 404;
     const int METHOD_NOT_ALLOWED_405 = 405;
+    const int BAD_REQUEST_400 = 400;
+    const int PAYLOAD_TOO_LARGE_413 = 413;
     const int INTERNAL_SERVER_ERROR_500 = 500;
 
 }
@@ -29,6 +37,8 @@ namespace http {
 namespace error_page {
   const std::string ERROR_PAGE_NOT_FOUND_404 = "www/errors/not_found_404.html";
   const std::string ERROR_PAGE_METHOD_NOT_ALLOWED_405 = "www/errors/method_not_allowed_405.html";
+  const std::string ERROR_PAGE_BAD_REQUEST_400 = "www/errors/internal_server_error_500.html"; // Using generic error page
+  const std::string ERROR_PAGE_PAYLOAD_TOO_LARGE_413 = "www/errors/internal_server_error_500.html"; // Using generic error page
   const std::string ERROR_PAGE_INTERNAL_SERVER_ERROR_500 = "www/errors/internal_server_error_500.html";
 
 }

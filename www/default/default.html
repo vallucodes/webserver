@@ -1,6 +1,6 @@
 <!--
-    405 Method Not Allowed Error Page - Displayed when HTTP method is not supported for the resource
-    Provides user-friendly error message with navigation back to home
+    Default Page - Served when accessing a directory without specifying a filename
+    Provides information about the default directory functionality
 -->
 <!DOCTYPE html>
 <html lang="en">
@@ -9,9 +9,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="/favicon.ico" type="image/x-icon">
-    <title>405 Method Not Allowed</title>
+    <title>Default Directory</title>
 
-    <!-- Embedded CSS styles for error page layout -->
+    <!-- Embedded CSS styles for default page layout -->
     <style>
         body {
             text-align: center;
@@ -32,7 +32,7 @@
             color: #2d2d2d;
             margin-bottom: 10px;
         }
-        .error-icon {
+        .default-icon {
             font-size: 60px;
             color: #2d2d2d;
             margin-bottom: 20px;
@@ -41,6 +41,19 @@
             color: #333;
             font-size: 16px;
             margin: 20px 0;
+        }
+        .info-box {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+            text-align: left;
+        }
+        .info-box code {
+            background-color: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
         }
         .back-link {
             display: inline-block;
@@ -59,14 +72,25 @@
     </style>
 </head>
 <body>
-    <!-- 405 error page content -->
+    <!-- Default page content -->
 
-    <!-- Main container for error message -->
+    <!-- Main container for default page message -->
     <div class="container">
-        <!-- Error title -->
-        <h1>405 Method Not Allowed</h1>
-        <!-- Error description -->
-        <p>Invalid method for this resource.</p>
+        <!-- Default page title -->
+        <h1>Default Directory</h1>
+        <!-- Default page description -->
+        <p>This is the default page served when accessing a directory.</p>
+
+        <!-- Information box about how it works -->
+        <div class="info-box">
+            <p><strong>How it works:</strong></p>
+            <ul>
+                <li>Requesting <code>/default/</code> serves this page</li>
+                <li>Requesting <code>/default/default.html</code> also serves this page</li>
+                <li>The server checks for default files in this order: <code>index.html</code>, then <code>default.html</code></li>
+            </ul>
+        </div>
+
         <!-- Navigation link back to home page -->
         <a href="/" class="back-link">← Back to Home</a>
     </div>

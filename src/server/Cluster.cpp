@@ -4,6 +4,7 @@
 #include "../config/Config.hpp"
 #include "../parser/Parser.hpp"
 #include "../request/Request.hpp"
+#include "../router/Router.hpp"
 
 void	Cluster::config(const std::string& config_file) {
 
@@ -18,6 +19,9 @@ void	Cluster::config(const std::string& config_file) {
 	// printAllConfigGroups(_listener_groups);
 
 	_max_clients = 100;
+
+	// ASK ILIA to del this shit
+	_router.setupRouter();
 }
 
 void	Cluster::groupConfigs() {
@@ -214,6 +218,10 @@ void	Cluster::sendPendingData(size_t& i) {
 			_fds[i].events &= ~POLLOUT;
 			client_state.send_start = std::chrono::high_resolution_clock::time_point{};
 			client_state.waiting_response = false;
+			// Ilia added this
+			// Close connection after sending response (HTTP/1.0 style)
+			// or infinity loop
+			dropClient(i, " - Response sent, closing connection");
 		}
 		else if (sent < 0)
 			dropClient(i, CLIENT_SEND_ERROR);
