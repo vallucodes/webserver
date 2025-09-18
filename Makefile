@@ -15,6 +15,8 @@ HEADERS		= inc/webserv.hpp \
 				src/server/Cluster.hpp \
 				src/server/Server.hpp \
 				src/router/Router.hpp \
+				src/router/HttpConstants.hpp \
+				src/router/RequestProcessor.hpp \
 				src/router/handlers/Handlers.hpp \
 				src/request/Request.hpp \
 				src/response/Response.hpp \
@@ -30,6 +32,7 @@ SRCS		= src/main.cpp \
 				src/server/Cluster.cpp \
 				src/server/Server.cpp \
 				src/router/Router.cpp \
+				src/router/RequestProcessor.cpp \
 				src/router/handlers/Handlers.cpp \
 				src/request/Request.cpp \
 				src/response/Response.cpp \

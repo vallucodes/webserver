@@ -21,8 +21,10 @@
 
 #include "../../inc/webserv.hpp"
 #include "Router.hpp"
+#include "HttpConstants.hpp"
 #include "handlers/Handlers.hpp"
 #include <algorithm>
+
 
 /**
  * @brief Default constructor for Router
@@ -250,6 +252,7 @@ const Router::Handler* Router::findHandler(const std::string& server_name, const
     return nullptr; // No matching route found
 }
 
+
 /**
  * @brief Find the matching location configuration for a given server and path
  *
@@ -381,64 +384,13 @@ void setErrorResponse(Response& res, int status){
  * @brief Process an incoming HTTP request and route it to the appropriate handler
  *
  * This is the main entry point for request processing in the web server.
- * The method implements a comprehensive request handling flow:
+ * The method coordinates between routing and request processing by:
+ * 1. Finding the appropriate handler for the request
+ * 2. Delegating execution to the RequestProcessor
+ * 3. Providing fallback mechanisms when no handler is found
  *
- * 1. Path Normalization: Remove query parameters and fragments
- * 2. Route Matching: Find appropriate handler using hierarchical lookup
- * 3. Handler Execution: Execute the matched handler with error handling
- * 4. Fallback Logic: Handle unmatched requests (static files, 404 errors)
- *
- * Request Processing Flow:
- * ┌─────────────────┐
- * │   Normalize     │ Remove ?query and #fragment from path
- * │     Path        │
- * └─────────────────┘
- *         │
- *         ▼
- * ┌─────────────────┐
- * │  Find Handler   │ server -> path -> method lookup
- * │   in Routes     │
- * └─────────────────┘
- *         │
- *    ┌────┴────┐
- *    │         │
- *   Found    Not Found
- *    │         │
- *    ▼         ▼
- * ┌─────────────────┐ ┌─────────────────┐
- * │ Execute Handler │ │ Check if path   │
- * │                 │ │ exists in routes│
- * └─────────────────┘ └─────────────────┘
- *    │                   │
- *    ▼              ┌────┴────┐
- * ┌─────────────────┐ │         │
- * │   Success       │ │Method   │
- * │                 │ │Not      │
- * └─────────────────┘ │Allowed  │
- *                     │405      │
- *                     └─────────┘
- *                          │
- *                          ▼
- *                   ┌─────────────────┐
- *                   │ Try Static File │
- *                   │    Serving      │
- *                   └─────────────────┘
- *                          │
- *                     ┌────┴────┐
- *                     │         │
- *                   Success   Failed
- *                     │         │
- *                     ▼         ▼
- *                  ┌─────────────────┐
- *                  │   Return File   │
- *                  │                 │
- *                  └─────────────────┘
- *                        │
- *                        ▼
- *                 ┌─────────────────┐
- *                 │   Return 404    │
- *                 │   Not Found     │
- *                 └─────────────────┘
+ * The Router focuses on routing logic while RequestProcessor handles
+ * the complex request processing pipeline.
  *
  * @param server The server configuration for this request
  * @param req The incoming HTTP request object
@@ -449,94 +401,19 @@ void Router::handleRequest(const Server& server, const Request& req, Response& r
     std::string_view method_view = req.getMethod();
     std::string_view path_view = req.getPath();
 
+    std::string method(method_view);
+    std::string path(path_view);
+
     // Debug: Print the incoming request details
     // std::cout << "---------" << std::endl;
     req.print();
     // std::cout << "---------" << std::endl;
 
-    std::string method(method_view);
-    std::string path(path_view);
+    // Find the appropriate handler for this request
+    const Handler* handler = findHandler(server.getName(), method, path);
 
-    // Debug logging for request details
-    // std::cout << "Request: " << method << " " << path << std::endl;
-
-    // === PATH NORMALIZATION ===
-    // Remove query parameters (?key=value) from the path
-    size_t query_pos = path.find('?');
-    if (query_pos != std::string::npos) {
-        path = path.substr(0, query_pos);
-        std::cout << "Normalized path (removed query): " << path << std::endl;
-    }
-
-    // Remove URL fragments (#anchor) from the path
-    size_t fragment_pos = path.find('#');
-    if (fragment_pos != std::string::npos) {
-        path = path.substr(0, fragment_pos);
-        std::cout << "Normalized path (removed fragment): " << path << std::endl;
-    }
-
-    // === ROUTE MATCHING ===
-    // Try to find a registered handler for this server/method/path combination
-    if (const Handler* h = findHandler(server.getName(), method, path)) {
-        // Handler found - execute it with proper error handling
-        try {
-            // Find the matching location configuration for additional context
-            const Location* location = findLocation(server, path);
-
-            // Execute the handler function
-            (*h)(req, res, location);
-        } catch (...) {
-            // Handler threw an exception - return 500 Internal Server Error
-            setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
-        }
-        return; // Request successfully handled
-    }
-
-    // === FALLBACK LOGIC ===
-    // No handler found - implement fallback strategies
-
-    // Check if the path exists in routes but method is not allowed
-    auto path_it = _routes.find(path);
-    if (path_it != _routes.end()) {
-        // Path exists but the HTTP method is not allowed for this path
-        std::cout << "Path '" << path << "' exists but method '" << method << "' is not allowed" << std::endl;
-        std::cout << "Allowed methods for '" << path << "': ";
-        for (const auto& method_pair : path_it->second) {
-            std::cout << method_pair.first << " ";
-        }
-        std::cout << std::endl;
-
-        // Return 405 Method Not Allowed
-        setErrorResponse(res, http::METHOD_NOT_ALLOWED_405);
-        std::cout << "---------" << std::endl;
-        res.print();
-        std::cout << "---------" << std::endl;
-    } else {
-        // Path not found in routes - try to serve as static file
-        std::cout << "Path '" << path << "' not found in routes, trying to serve as static file" << std::endl;
-
-        // For GET requests, attempt to serve the path as a static file
-        if (method == "GET") {
-            try {
-                // Try to serve the file using the GET handler
-                get(req, res, nullptr);
-                std::cout << "---------" << std::endl;
-                res.print();
-                std::cout << "---------" << std::endl;
-                return; // Static file served successfully
-            } catch (...) {
-                // Static file serving failed (file doesn't exist, permission denied, etc.)
-                std::cout << "Static file serving failed for path '" << path << "'" << std::endl;
-            }
-        }
-
-        // All attempts failed - return 404 Not Found
-        std::cout << "Path '" << path << "' not found in routes and not a valid static file" << std::endl;
-        setErrorResponse(res, http::NOT_FOUND_404);
-        std::cout << "---------" << std::endl;
-        res.print();
-        std::cout << "---------" << std::endl;
-    }
+    // Delegate to RequestProcessor for execution and fallback handling
+    _requestProcessor.processRequest(server, req, handler, res);
 }
 
 

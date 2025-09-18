@@ -38,6 +38,7 @@
 #include "../../request/Request.hpp"
 #include "../../response/Response.hpp"
 #include "../../router/Router.hpp"
+#include "../HttpConstants.hpp"
 
 /**
  * @brief Core HTTP Request Handler Functions

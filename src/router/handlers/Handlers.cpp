@@ -30,6 +30,7 @@
 #include "../../../inc/webserv.hpp"
 #include "Handlers.hpp"
 #include "../Router.hpp"
+#include "../HttpConstants.hpp"
 
 using namespace http;
 
@@ -93,10 +94,6 @@ std::string getContentType(const std::string& filename) {
     return "text/plain";
 }
 
-// Helper constants for response formatting
-const std::string CONNECTION_CLOSE = "close";
-const std::string CONTENT_TYPE_HTML = "text/html";
-
 // Helper functions for response formatting
 
 // Set common HTTP headers for responses (Content-Type, Content-Length, Connection)
@@ -104,9 +101,9 @@ const std::string CONTENT_TYPE_HTML = "text/html";
 // @param contentType MIME type for the response content
 // @param contentLength Size of the response body in bytes
 void setCommonHeaders(Response& res, const std::string& contentType, size_t contentLength) {
-    res.setHeaders("Content-Type", contentType);
-    res.setHeaders("Content-Length", std::to_string(contentLength));
-    res.setHeaders("Connection", CONNECTION_CLOSE);
+    res.setHeaders(http::CONTENT_TYPE, contentType);
+    res.setHeaders(http::CONTENT_LENGTH, std::to_string(contentLength));
+    res.setHeaders(http::CONNECTION, http::CONNECTION_CLOSE);
 }
 
 // Configure a complete successful HTTP response with status, headers, and body
@@ -342,7 +339,7 @@ void get(const Request& req, Response& res, const Location* location) {
             std::string dirPath = page::WWW + requestPath;
             if (location->autoindex && std::filesystem::is_directory(dirPath)) {
                 std::string dirListing = generateDirectoryListing(dirPath, requestPath);
-                setSuccessResponse(res, dirListing, CONTENT_TYPE_HTML);
+                setSuccessResponse(res, dirListing, http::CONTENT_TYPE_HTML);
                 return;
             }
         }
@@ -525,7 +522,7 @@ void post(const Request& req, Response& res, const Location* location __attribut
 
         // Success response
         const std::string fileSizeStr = std::to_string(fileContent.length() / 1024.0).substr(0, 4) + " KB";
-        setSuccessResponse(res, createSuccessHtml(filename, fileSizeStr), CONTENT_TYPE_HTML);
+        setSuccessResponse(res, createSuccessHtml(filename, fileSizeStr), http::CONTENT_TYPE_HTML);
 
     } catch (const std::exception&) {
         setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
@@ -594,7 +591,7 @@ void del(const Request& req, Response& res, const Location* location __attribute
 
         // Attempt deletion
         if (std::filesystem::remove(filePath)) {
-            setSuccessResponse(res, createDeletionSuccessHtml(filename), CONTENT_TYPE_HTML);
+            setSuccessResponse(res, createDeletionSuccessHtml(filename), http::CONTENT_TYPE_HTML);
         } else {
             setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
         }
@@ -1092,7 +1089,7 @@ void redirect(const Request& req, Response& res, const Location* location __attr
         res.setHeaders("Location", redirectUrl);
 
         // Set connection header
-        res.setHeaders("Connection", CONNECTION_CLOSE);
+        res.setHeaders(http::CONNECTION, http::CONNECTION_CLOSE);
 
         // Optional: Add a simple HTML body for browsers that don't follow redirects automatically
         std::string body = "<!DOCTYPE html><html><head><title>Redirecting...</title></head><body>";
@@ -1102,7 +1099,7 @@ void redirect(const Request& req, Response& res, const Location* location __attr
         res.setBody(body);
 
         // Set Content-Type header
-        res.setHeaders("Content-Type", CONTENT_TYPE_HTML);
+        res.setHeaders(http::CONTENT_TYPE, http::CONTENT_TYPE_HTML);
 
     } catch (const std::exception& e) {
         // Unexpected error
