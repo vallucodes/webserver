@@ -8,6 +8,10 @@ using namespace http;
 #include <sstream>
 #include <filesystem>
 #include <cctype>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <cstring>
+#include <cstdlib>
 
 // Determine the MIME content type based on file extension
 // @param filename The filename to analyze
@@ -142,6 +146,28 @@ void get(const Request& req, Response& res) {
             filePath = page::WWW + std::string(filePathView);
         }
 
+        // Check if the path is a directory and try to serve default files
+        if (std::filesystem::is_directory(filePath)) {
+            // List of default files to check in order of preference
+            std::vector<std::string> defaultFiles = {
+                "index.html", "default.html"
+            };
+
+            for (const auto& defaultFile : defaultFiles) {
+                std::string defaultPath = filePath + "/" + defaultFile;
+                if (std::filesystem::exists(defaultPath) && std::filesystem::is_regular_file(defaultPath)) {
+                    filePath = defaultPath;
+                    break;
+                }
+            }
+
+            // If no default file was found, return 404
+            if (std::filesystem::is_directory(filePath)) {
+                setErrorResponse(res, http::NOT_FOUND_404);
+                return;
+            }
+        }
+
         // Attempt to read the requested file
         std::string fileContent = readFileToString(filePath);
 
@@ -167,7 +193,7 @@ void post(const Request& req, Response& res) {
         const auto& contentTypeKey = req.getHeaders("content-type");
 
         if (contentTypeKey.empty()) {
-            setSuccessResponse(res, createErrorHtml("Missing Content-Type header."), CONTENT_TYPE_HTML);
+            setErrorResponse(res, http::BAD_REQUEST_400);
             return;
         }
 
@@ -175,14 +201,14 @@ void post(const Request& req, Response& res) {
 
         // Validate content type
         if (contentType.find("multipart/form-data") == std::string::npos) {
-            setSuccessResponse(res, createErrorHtml("Invalid content type. Expected multipart/form-data."), CONTENT_TYPE_HTML);
+            setErrorResponse(res, http::BAD_REQUEST_400);
             return;
         }
 
         // Extract boundary
         const size_t boundaryPos = contentType.find("boundary=");
         if (boundaryPos == std::string::npos) {
-            setSuccessResponse(res, createErrorHtml("Invalid multipart boundary."), CONTENT_TYPE_HTML);
+            setErrorResponse(res, http::BAD_REQUEST_400);
             return;
         }
 
@@ -192,7 +218,7 @@ void post(const Request& req, Response& res) {
         // Find file boundaries
         const size_t fileStart = bodyStr.find(boundary);
         if (fileStart == std::string::npos) {
-            setSuccessResponse(res, createErrorHtml("No file data found in request."), CONTENT_TYPE_HTML);
+            setErrorResponse(res, http::BAD_REQUEST_400);
             return;
         }
 
@@ -202,26 +228,26 @@ void post(const Request& req, Response& res) {
         // Extract filename
         const size_t filenamePos = filePart.find("filename=\"");
         if (filenamePos == std::string::npos) {
-            setSuccessResponse(res, createErrorHtml("No filename provided."), CONTENT_TYPE_HTML);
+            setErrorResponse(res, http::BAD_REQUEST_400);
             return;
         }
 
         const size_t filenameEnd = filePart.find("\"", filenamePos + 10);
         if (filenameEnd == std::string::npos) {
-            setSuccessResponse(res, createErrorHtml("Invalid filename format."), CONTENT_TYPE_HTML);
+            setErrorResponse(res, http::BAD_REQUEST_400);
             return;
         }
 
         std::string filename = sanitizeFilename(filePart.substr(filenamePos + 10, filenameEnd - filenamePos - 10));
         if (filename.empty()) {
-            setSuccessResponse(res, createErrorHtml("No filename provided."), CONTENT_TYPE_HTML);
+            setErrorResponse(res, http::BAD_REQUEST_400);
             return;
         }
 
         // Extract file content
         const size_t contentStart = filePart.find("\r\n\r\n");
         if (contentStart == std::string::npos) {
-            setSuccessResponse(res, createErrorHtml("Invalid file format."), CONTENT_TYPE_HTML);
+            setErrorResponse(res, http::BAD_REQUEST_400);
             return;
         }
 
@@ -234,7 +260,7 @@ void post(const Request& req, Response& res) {
 
         // Validate file size
         if (fileContent.length() > 1024 * 1024) {
-            setSuccessResponse(res, createErrorHtml("File size exceeds 1MB limit."), CONTENT_TYPE_HTML);
+            setErrorResponse(res, http::PAYLOAD_TOO_LARGE_413);
             return;
         }
 
@@ -246,7 +272,7 @@ void post(const Request& req, Response& res) {
 
         std::ofstream outFile(filePath, std::ios::binary);
         if (!outFile) {
-            setSuccessResponse(res, createErrorHtml("Failed to save file to server."), CONTENT_TYPE_HTML);
+            setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
             return;
         }
 
@@ -258,7 +284,7 @@ void post(const Request& req, Response& res) {
         setSuccessResponse(res, createSuccessHtml(filename, fileSizeStr), CONTENT_TYPE_HTML);
 
     } catch (const std::exception&) {
-        setSuccessResponse(res, createErrorHtml("An unexpected error occurred during upload."), CONTENT_TYPE_HTML);
+        setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
     }
 }
 
@@ -271,13 +297,13 @@ void del(const Request& req, Response& res) {
 
         // Validate path
         if (filePathView.length() < 9 || filePathView.substr(0, 9) != "/uploads/") {
-            setSuccessResponse(res, createErrorHtml("Invalid path. DELETE only allowed for /uploads/ directory."), CONTENT_TYPE_HTML);
+            setErrorResponse(res, http::BAD_REQUEST_400);
             return;
         }
 
         std::string filename = sanitizeFilename(std::string(filePathView.substr(9)));
         if (filename.empty()) {
-            setSuccessResponse(res, createErrorHtml("No filename provided in path."), CONTENT_TYPE_HTML);
+            setErrorResponse(res, http::BAD_REQUEST_400);
             return;
         }
 
@@ -285,7 +311,7 @@ void del(const Request& req, Response& res) {
 
         // Check if file exists
         if (!std::filesystem::exists(filePath)) {
-            setSuccessResponse(res, createErrorHtml("File not found: " + filename), CONTENT_TYPE_HTML);
+            setErrorResponse(res, http::NOT_FOUND_404);
             return;
         }
 
@@ -293,13 +319,403 @@ void del(const Request& req, Response& res) {
         if (std::filesystem::remove(filePath)) {
             setSuccessResponse(res, createDeletionSuccessHtml(filename), CONTENT_TYPE_HTML);
         } else {
-            setSuccessResponse(res, createErrorHtml("Failed to delete file: " + filename), CONTENT_TYPE_HTML);
+            setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
         }
 
     } catch (const std::filesystem::filesystem_error&) {
-        setSuccessResponse(res, createErrorHtml("Filesystem error during deletion."), CONTENT_TYPE_HTML);
+        setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
     } catch (const std::exception&) {
-        setSuccessResponse(res, createErrorHtml("An unexpected error occurred during deletion."), CONTENT_TYPE_HTML);
+        setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
+    }
+}
+
+// Check if file extension indicates CGI script
+// @param filename The filename to check
+// @return true if file should be handled by CGI
+bool isCgiScript(const std::string& filename) {
+    size_t dotPos = filename.find_last_of('.');
+    if (dotPos != std::string::npos) {
+        std::string ext = filename.substr(dotPos + 1);
+        // Convert to lowercase for case-insensitive comparison
+        for (char& c : ext) {
+            c = std::tolower(c);
+        }
+        // CGI extensions
+        // return ext == "py" || ext == "cgi" || ext == "ts" || ext == "js";
+        return ext == "py" || ext == "cgi" || ext == "js";
+    }
+    return false;
+}
+
+// Set up CGI environment variables
+// @param req The HTTP request
+// @param scriptPath Full path to the CGI script
+// @param scriptName Name of the CGI script
+// @return Vector of environment variable strings in "KEY=VALUE" format
+std::vector<std::string> setupCgiEnvironment(const Request& req, const std::string& scriptPath, const std::string& scriptName) {
+    std::vector<std::string> env;
+
+    // Basic CGI environment variables
+    env.push_back("GATEWAY_INTERFACE=CGI/1.1");
+    env.push_back("SERVER_PROTOCOL=HTTP/1.1");
+    env.push_back("REQUEST_METHOD=" + std::string(req.getMethod()));
+    env.push_back("SCRIPT_NAME=" + scriptName);
+    env.push_back("SCRIPT_FILENAME=" + scriptPath);
+    env.push_back("PATH_INFO=" + scriptPath); // Full path as requested
+    env.push_back("PATH_TRANSLATED=" + scriptPath);
+
+    // Query string handling
+    std::string pathStr(req.getPath());
+    size_t queryPos = pathStr.find('?');
+    if (queryPos != std::string::npos) {
+        env.push_back("QUERY_STRING=" + pathStr.substr(queryPos + 1));
+    } else {
+        env.push_back("QUERY_STRING=");
+    }
+
+    // Content handling
+    auto contentType = req.getHeaders("content-type");
+    if (!contentType.empty()) {
+        env.push_back("CONTENT_TYPE=" + contentType[0]);
+    }
+
+    auto contentLength = req.getHeaders("content-length");
+    if (!contentLength.empty()) {
+        env.push_back("CONTENT_LENGTH=" + contentLength[0]);
+    } else {
+        // If no Content-Length, use body size
+        env.push_back("CONTENT_LENGTH=" + std::to_string(std::string(req.getBody()).length()));
+    }
+
+    // Server information
+    env.push_back("SERVER_SOFTWARE=webserv/1.0");
+    env.push_back("SERVER_NAME=localhost");
+    env.push_back("SERVER_PORT=8080");
+
+    // Remote client info (simplified)
+    env.push_back("REMOTE_ADDR=127.0.0.1");
+    env.push_back("REMOTE_HOST=localhost");
+
+    // Add PATH for finding executables
+    env.push_back("PATH=/usr/bin:/bin:/usr/local/bin");
+
+    return env;
+}
+
+// Execute CGI script and capture output
+// @param scriptPath Full path to the CGI script
+// @param env Environment variables for CGI
+// @param input Input data to send to CGI (request body)
+// @return CGI output as string, or empty string on error
+std::string executeCgiScript(const std::string& scriptPath, const std::vector<std::string>& env, const std::string& input) {
+    std::cout << "CGI: executeCgiScript called for: " << scriptPath << std::endl;
+    int pipe_in[2];  // For sending input to CGI
+    int pipe_out[2]; // For receiving output from CGI
+
+    if (pipe(pipe_in) == -1 || pipe(pipe_out) == -1) {
+        std::cout << "CGI: Failed to create pipes" << std::endl;
+        return "";
+    }
+
+    pid_t pid = fork();
+    if (pid == -1) {
+        std::cout << "CGI: Fork failed" << std::endl;
+        close(pipe_in[0]);
+        close(pipe_in[1]);
+        close(pipe_out[0]);
+        close(pipe_out[1]);
+        return "";
+    }
+    std::cout << "CGI: Fork successful, child PID: " << pid << std::endl;
+
+    if (pid == 0) { // Child process
+        // Close unused pipe ends
+        close(pipe_in[1]);
+        close(pipe_out[0]);
+
+        // Redirect stdin to read from pipe_in
+        if (dup2(pipe_in[0], STDIN_FILENO) == -1) {
+            close(pipe_in[0]);
+            close(pipe_out[1]);
+            exit(1);
+        }
+
+        // Redirect stdout to write to pipe_out
+        if (dup2(pipe_out[1], STDOUT_FILENO) == -1) {
+            close(pipe_in[0]);
+            close(pipe_out[1]);
+            exit(1);
+        }
+
+        // Close original pipe descriptors
+        close(pipe_in[0]);
+        close(pipe_out[1]);
+
+        // Set up environment variables
+        std::vector<char*> envp;
+        for (const auto& var : env) {
+            envp.push_back(strdup(var.c_str()));
+        }
+        envp.push_back(nullptr);
+
+        // Change to script directory for relative path access and get just the filename
+        std::filesystem::path scriptDir = std::filesystem::path(scriptPath).parent_path();
+        std::string scriptName = std::filesystem::path(scriptPath).filename().string();
+
+        if (!scriptDir.empty()) {
+            chdir(scriptDir.c_str());
+        }
+
+        // Execute CGI script based on file extension
+        size_t dotPos = scriptName.find_last_of('.');
+        if (dotPos != std::string::npos) {
+            std::string ext = scriptName.substr(dotPos + 1);
+            // Convert to lowercase for case-insensitive comparison
+            for (char& c : ext) {
+                c = std::tolower(c);
+            }
+
+            // std::cout << "CGI Child: Executing " << ext << " script: " << scriptName << " from dir: " << scriptDir << std::endl;
+
+            if (ext == "py") {
+                execl("/usr/bin/python3", "python3", scriptName.c_str(), nullptr);
+            } else if (ext == "js") {
+                // For JavaScript files, execute with Node.js
+                execl("/usr/bin/node", "node", scriptName.c_str(), nullptr);
+            // } else if (ext == "ts") {
+            //     // For TypeScript files, check if compiled JS exists, otherwise try direct execution
+            //     std::string jsFileName = scriptName.substr(0, scriptName.length() - 3) + ".js";
+            //     std::cout << "CGI Child: TypeScript script: " << scriptName << std::endl;
+            //     std::cout << "CGI Child: Looking for JS file: " << jsFileName << std::endl;
+            //     std::cout << "CGI Child: JS file exists: " << std::filesystem::exists(jsFileName) << std::endl;
+            //     if (std::filesystem::exists(jsFileName)) {
+            //         // Use compiled JavaScript if it exists
+            //         std::cout << "CGI Child: Executing compiled JS: " << jsFileName << std::endl;
+            //         execl("/usr/bin/node", "node", jsFileName.c_str(), nullptr);
+            //     } else {
+            //         // Try direct execution with node (might work with newer Node versions)
+            //         std::cout << "CGI Child: JS file not found, trying direct TS execution" << std::endl;
+            //         execl("/usr/bin/node", "node", scriptName.c_str(), nullptr);
+            //     }
+            } else {
+                // For unknown extensions, try direct execution
+                execl(scriptName.c_str(), scriptName.c_str(), nullptr);
+            }
+        } else {
+            // No extension, try direct execution
+            execl(scriptName.c_str(), scriptName.c_str(), nullptr);
+        }
+        std::cout << "CGI Child: execl failed" << std::endl;
+
+        // Clean up environment variables on failure
+        for (auto& ptr : envp) {
+            if (ptr) free(ptr);
+        }
+
+        // If execl fails, exit
+        exit(1);
+    } else { // Parent process
+        // Close unused pipe ends
+        close(pipe_in[0]);
+        close(pipe_out[1]);
+
+        // Send input to CGI
+        if (!input.empty()) {
+            write(pipe_in[1], input.c_str(), input.length());
+        }
+        close(pipe_in[1]); // Send EOF
+
+        // Read output from CGI
+        std::string output;
+        char buffer[4096];
+        ssize_t bytesRead;
+
+        while ((bytesRead = read(pipe_out[0], buffer, sizeof(buffer))) > 0) {
+            output.append(buffer, bytesRead);
+        }
+
+        close(pipe_out[0]);
+
+        // Wait for child to finish
+        int status;
+        waitpid(pid, &status, 0);
+
+        if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
+            return output;
+        } else {
+            return "";
+        }
+    }
+}
+
+// Handle CGI requests for executable scripts (e.g., .php files)
+// @param req The incoming HTTP request
+// @param res The response object to populate
+void cgi(const Request& req, Response& res) {
+    try {
+        // Extract and validate file path
+        std::string_view filePathView = req.getPath();
+        if (filePathView.empty()) {
+            setErrorResponse(res, http::NOT_FOUND_404);
+            return;
+        }
+
+        std::string filePath;
+        if (filePathView == page::ROOT_HTML || filePathView == page::INDEX_HTML_PATH) {
+            filePath = page::INDEX_HTML;
+        } else {
+            filePath = page::WWW + std::string(filePathView);
+        }
+
+        // Check if file exists and is executable
+        if (!std::filesystem::exists(filePath)) {
+            setErrorResponse(res, http::NOT_FOUND_404);
+            return;
+        }
+
+        // Verify it's a CGI script
+        if (!isCgiScript(filePath)) {
+            // Not a CGI script, handle as regular file
+            std::string fileContent = readFileToString(filePath);
+            std::string contentType = getContentType(filePath);
+            setSuccessResponse(res, fileContent, contentType);
+            return;
+        }
+
+        // Set up CGI environment
+        std::string scriptName = std::filesystem::path(filePath).filename().string();
+        auto env = setupCgiEnvironment(req, filePath, scriptName);
+
+        // Get request body for CGI input
+        std::string input(req.getBody());
+
+        // Execute CGI script
+        std::cout << "CGI: Executing script: " << filePath << std::endl;
+        std::string cgiOutput = executeCgiScript(filePath, env, input);
+
+        std::cout << "CGI: Script output length: " << cgiOutput.length() << std::endl;
+        if (cgiOutput.empty()) {
+            std::cout << "CGI: Script execution failed - returning 500 error" << std::endl;
+            setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
+            return;
+        }
+        std::cout << "CGI: Script executed successfully" << std::endl;
+
+        // Parse CGI output (simple parsing - in production you'd want more robust parsing)
+        // CGI output format: headers followed by blank line, then body
+        size_t headerEnd = cgiOutput.find("\r\n\r\n");
+        if (headerEnd == std::string::npos) {
+            headerEnd = cgiOutput.find("\n\n");
+        }
+
+        std::string headersPart;
+        std::string bodyPart;
+
+        if (headerEnd != std::string::npos) {
+            headersPart = cgiOutput.substr(0, headerEnd);
+            bodyPart = cgiOutput.substr(headerEnd + (cgiOutput[headerEnd] == '\r' ? 4 : 2));
+        } else {
+            // No headers, treat whole output as body
+            bodyPart = cgiOutput;
+        }
+
+        // Set response status (default to 200 if not specified)
+        res.setStatus(http::STATUS_OK_200);
+
+        // Parse and set headers from CGI output
+        std::istringstream headerStream(headersPart);
+        std::string headerLine;
+        while (std::getline(headerStream, headerLine)) {
+            // Remove \r if present
+            if (!headerLine.empty() && headerLine.back() == '\r') {
+                headerLine.pop_back();
+            }
+
+            size_t colonPos = headerLine.find(':');
+            if (colonPos != std::string::npos) {
+                std::string headerName = headerLine.substr(0, colonPos);
+                std::string headerValue = headerLine.substr(colonPos + 1);
+
+                // Trim whitespace
+                headerValue.erase(headerValue.begin(), std::find_if(headerValue.begin(), headerValue.end(), [](int ch) {
+                    return !std::isspace(ch);
+                }));
+                headerValue.erase(std::find_if(headerValue.rbegin(), headerValue.rend(), [](int ch) {
+                    return !std::isspace(ch);
+                }).base(), headerValue.end());
+
+                // Special handling for Status header
+                if (headerName == "Status") {
+                    res.setStatus("HTTP/1.1 " + headerValue);
+                } else {
+                    res.setHeaders(headerName, headerValue);
+                }
+            }
+        }
+
+        // Set default content type if not specified
+        auto contentType = res.getHeaders("Content-Type");
+        if (contentType.empty()) {
+            res.setHeaders("Content-Type", "text/html");
+        }
+
+        // Set response body
+        res.setBody(bodyPart);
+
+    } catch (const std::runtime_error& e) {
+        // File not found or read error
+        setErrorResponse(res, http::NOT_FOUND_404);
+    } catch (const std::exception& e) {
+        // Unexpected error
+        setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
+    }
+}
+
+// Handle HTTP redirection requests
+// @param req The incoming HTTP request
+// @param res The response object to populate
+void redirect(const Request& req, Response& res) {
+    try {
+        // Extract the requested path
+        std::string_view pathView = req.getPath();
+
+        // Define redirection rules based on path
+        std::string redirectUrl;
+
+        // Example redirections - you can customize these
+        if (pathView == "/old-page") {
+            // Permanent redirect (301)
+            res.setStatus(http::STATUS_MOVED_PERMANENTLY_301);
+            redirectUrl = "/index.html";
+        } else if (pathView == "/temp-redirect") {
+            // Temporary redirect (302)
+            res.setStatus(http::STATUS_FOUND_302);
+            redirectUrl = "/upload.html";
+        } else {
+            // Default: redirect to home page if no specific rule matches
+            res.setStatus(http::STATUS_FOUND_302);
+            redirectUrl = "/";
+        }
+
+        // Set Location header for redirection
+        res.setHeaders("Location", redirectUrl);
+
+        // Set connection header
+        res.setHeaders("Connection", CONNECTION_CLOSE);
+
+        // Optional: Add a simple HTML body for browsers that don't follow redirects automatically
+        std::string body = "<!DOCTYPE html><html><head><title>Redirecting...</title></head><body>";
+        body += "<p>If you are not redirected automatically, <a href=\"" + redirectUrl + "\">click here</a>.</p>";
+        body += "</body></html>";
+
+        res.setBody(body);
+
+        // Set Content-Type header
+        res.setHeaders("Content-Type", CONTENT_TYPE_HTML);
+
+    } catch (const std::exception& e) {
+        // Unexpected error
+        setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
     }
 }
 
