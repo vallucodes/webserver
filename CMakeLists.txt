@@ -30,11 +30,12 @@ target_include_directories(testRequestComplete PRIVATE
 # Link Google Test libraries to your tests
 target_link_libraries(testRequestComplete PRIVATE gtest_main)
 target_link_libraries(testParseRequest PRIVATE gtest_main)
+target_link_libraries(testDecodeChunkedBody PRIVATE gtest_main)
 
 include(GoogleTest)
 gtest_discover_tests(testRequestComplete)
 gtest_discover_tests(testParseRequest)
-
+gtest_discover_tests(testDecodeChunkedBody)
 
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
