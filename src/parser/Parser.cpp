@@ -131,7 +131,7 @@ bool isChunked(Request& req){
 
 std::string decodeChunkedBody(std::string body){
     std::string result;
-    size_t pos =0;
+    size_t pos = 0;
 
     while (pos < body.size()) {
         size_t lineEnd = body.find("\r\n", pos);

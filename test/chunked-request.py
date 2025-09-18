@@ -3,7 +3,7 @@ import time
 
 # Server configuration
 HOST = '127.0.0.1'
-PORT = 7319
+PORT = 1856
 
 # Define tricky chunks
 chunks = [
@@ -11,7 +11,7 @@ chunks = [
     "ello, world!\n",                   # normal chunk with newline inside
     "Ω≈ç√∫˜µ≤≥÷",                       # non-ASCII characters
     "1234567890"*10,                    # a long chunk (100 bytes)
-    "\r\nBetween-CRLF\r\n",             # chunk containing CRLF inside body
+    "\r\nBetween-CLRF\r\n",             # chunk containing CRLF inside body
 ]
 
 # Build the raw HTTP request headers
