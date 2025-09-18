@@ -146,6 +146,28 @@ void get(const Request& req, Response& res) {
             filePath = page::WWW + std::string(filePathView);
         }
 
+        // Check if the path is a directory and try to serve default files
+        if (std::filesystem::is_directory(filePath)) {
+            // List of default files to check in order of preference
+            std::vector<std::string> defaultFiles = {
+                "index.html", "default.html"
+            };
+
+            for (const auto& defaultFile : defaultFiles) {
+                std::string defaultPath = filePath + "/" + defaultFile;
+                if (std::filesystem::exists(defaultPath) && std::filesystem::is_regular_file(defaultPath)) {
+                    filePath = defaultPath;
+                    break;
+                }
+            }
+
+            // If no default file was found, return 404
+            if (std::filesystem::is_directory(filePath)) {
+                setErrorResponse(res, http::NOT_FOUND_404);
+                return;
+            }
+        }
+
         // Attempt to read the requested file
         std::string fileContent = readFileToString(filePath);
 
@@ -643,6 +665,54 @@ void cgi(const Request& req, Response& res) {
     } catch (const std::runtime_error& e) {
         // File not found or read error
         setErrorResponse(res, http::NOT_FOUND_404);
+    } catch (const std::exception& e) {
+        // Unexpected error
+        setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
+    }
+}
+
+// Handle HTTP redirection requests
+// @param req The incoming HTTP request
+// @param res The response object to populate
+void redirect(const Request& req, Response& res) {
+    try {
+        // Extract the requested path
+        std::string_view pathView = req.getPath();
+
+        // Define redirection rules based on path
+        std::string redirectUrl;
+
+        // Example redirections - you can customize these
+        if (pathView == "/old-page") {
+            // Permanent redirect (301)
+            res.setStatus(http::STATUS_MOVED_PERMANENTLY_301);
+            redirectUrl = "/index.html";
+        } else if (pathView == "/temp-redirect") {
+            // Temporary redirect (302)
+            res.setStatus(http::STATUS_FOUND_302);
+            redirectUrl = "/upload.html";
+        } else {
+            // Default: redirect to home page if no specific rule matches
+            res.setStatus(http::STATUS_FOUND_302);
+            redirectUrl = "/";
+        }
+
+        // Set Location header for redirection
+        res.setHeaders("Location", redirectUrl);
+
+        // Set connection header
+        res.setHeaders("Connection", CONNECTION_CLOSE);
+
+        // Optional: Add a simple HTML body for browsers that don't follow redirects automatically
+        std::string body = "<!DOCTYPE html><html><head><title>Redirecting...</title></head><body>";
+        body += "<p>If you are not redirected automatically, <a href=\"" + redirectUrl + "\">click here</a>.</p>";
+        body += "</body></html>";
+
+        res.setBody(body);
+
+        // Set Content-Type header
+        res.setHeaders("Content-Type", CONTENT_TYPE_HTML);
+
     } catch (const std::exception& e) {
         // Unexpected error
         setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);

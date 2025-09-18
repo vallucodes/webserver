@@ -29,6 +29,8 @@ void Router::setupRouter() {
 	addRoute("GET", "/imgs/lhaas.png", get);
 	addRoute("GET", "/imgs/vlopatin.png", get);
 	addRoute("GET", "/imgs/imunaev-.png", get);
+	addRoute("GET", "/favicon.ico", get);
+	addRoute("HEAD", "/favicon.ico", get);
 
 	// Upload route - handles file uploads
 	addRoute("POST", "/uploads", post);
@@ -53,6 +55,13 @@ void Router::setupRouter() {
 	// This will catch any CGI files not explicitly listed above
 	// The CGI handler will check the file extension and handle accordingly
 
+	// Redirection routes
+	addRoute("GET", "/old-page", redirect);
+	addRoute("HEAD", "/old-page", redirect);
+	addRoute("GET", "/temp-redirect", redirect);
+	addRoute("HEAD", "/temp-redirect", redirect);
+	addRoute("GET", "/redirect-home", redirect);
+	addRoute("HEAD", "/redirect-home", redirect);
 
 	// Debug: List all available routes
 	listRoutes();
@@ -177,7 +186,7 @@ void Router::handleRequest(const Request& req, Response& res) const {
         return;
     }
 
-    // If handler not found, check if path exists
+    // If handler not found, check if path exists in routes
     auto path_it = _routes.find(path);
     if (path_it != _routes.end()) {
         // Path exists but method not allowed
@@ -192,8 +201,25 @@ void Router::handleRequest(const Request& req, Response& res) const {
         res.print();
         std::cout << "---------" << std::endl;
     } else {
-        // Path not found
-        std::cout << "Path '" << path << "' not found in routes" << std::endl;
+        // Path not found in routes - try to serve as static file
+        std::cout << "Path '" << path << "' not found in routes, trying to serve as static file" << std::endl;
+
+        // For GET requests, try to serve as static file
+        if (method == "GET") {
+            try {
+                get(req, res);
+                std::cout << "---------" << std::endl;
+                res.print();
+                std::cout << "---------" << std::endl;
+                return;
+            } catch (...) {
+                // Static file serving failed, return 404
+                std::cout << "Static file serving failed for path '" << path << "'" << std::endl;
+            }
+        }
+
+        // Path not found and not a static file
+        std::cout << "Path '" << path << "' not found in routes and not a valid static file" << std::endl;
         setErrorResponse(res, http::NOT_FOUND_404);
         std::cout << "---------" << std::endl;
         res.print();

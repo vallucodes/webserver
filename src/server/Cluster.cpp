@@ -166,6 +166,10 @@ void	Cluster::sendPendingData(size_t& i) {
 			// _fds[i].events |= POLLIN;
 			client_state.send_start = std::chrono::high_resolution_clock::time_point{};
 			client_state.waiting_response = false;
+			// Ilia added this
+			// Close connection after sending response (HTTP/1.0 style)
+			// or infinity loop
+			dropClient(i, " - Response sent, closing connection");
 		}
 		else if (sent < 0)
 			dropClient(i, CLIENT_SEND_ERROR);

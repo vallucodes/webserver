@@ -33,3 +33,8 @@ void del(const Request& req, Response& res);
 // @param req The incoming HTTP request
 // @param res The response object to populate
 void cgi(const Request& req, Response& res);
+
+// Handle HTTP redirection requests
+// @param req The incoming HTTP request
+// @param res The response object to populate
+void redirect(const Request& req, Response& res);

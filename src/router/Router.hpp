@@ -13,6 +13,8 @@ namespace http {
 
     // HTTP Status Messages
     const std::string STATUS_OK_200 = "200 OK";
+    const std::string STATUS_MOVED_PERMANENTLY_301 = "301 Moved Permanently";
+    const std::string STATUS_FOUND_302 = "302 Found";
     const std::string STATUS_NOT_FOUND_404 = "404 Not Found";
     const std::string STATUS_METHOD_NOT_ALLOWED_405 = "405 Method Not Allowed";
     const std::string STATUS_BAD_REQUEST_400 = "400 Bad Request";
@@ -21,6 +23,8 @@ namespace http {
 
     // HTTP Status Codes
     const int OK_200 = 200;
+    const int MOVED_PERMANENTLY_301 = 301;
+    const int FOUND_302 = 302;
     const int NOT_FOUND_404 = 404;
     const int METHOD_NOT_ALLOWED_405 = 405;
     const int BAD_REQUEST_400 = 400;
