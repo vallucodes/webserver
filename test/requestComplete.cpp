@@ -1,10 +1,12 @@
 #include <gtest/gtest.h>
 #include "../src/server/HelperFunctions.hpp"  // adjust path if needed
 
+#define MAX_BODY_SIZE 10000000
+
 // 1
 TEST(RequestCompleteTest, ReturnFalseForLargeBuffer) {
 	bool status = true;
-	std::string large_buffer(3 * 1024 * 1024, 'a'); // 3MB buffer
+	std::string large_buffer(11 * 1024 * 1024, 'a'); // 11MB buffer
 
 	EXPECT_FALSE(requestComplete(large_buffer, status));
 	EXPECT_FALSE(status);
@@ -73,7 +75,7 @@ TEST(RequestCompleteTest, ReturnTrueForCorrectBodySize) {
 }
 
 // 7
-TEST(RequestCompleteTest, ReturnFalseForBigBodySize) {
+TEST(RequestCompleteTest, ReturnTrueMoreThanOneRequest) {
 	bool status = true;
 	std::string buffer =
 		"POST / HTTP/1.1\r\n"
@@ -81,8 +83,8 @@ TEST(RequestCompleteTest, ReturnFalseForBigBodySize) {
 		"\r\n"
 		"12345678910";
 
-	EXPECT_FALSE(requestComplete(buffer, status));
-	EXPECT_FALSE(status);
+	EXPECT_TRUE(requestComplete(buffer, status));
+	EXPECT_TRUE(status);
 }
 
 // 8
@@ -95,15 +97,15 @@ TEST(RequestCompleteTest, ReturnFalseForEmptyRequest) {
 }
 
 //9
-TEST(RequestCompleteTest, ReturnFalseNoContentLengthBodyExists) {
+TEST(RequestCompleteTest, ReturnTrueMoreThanOneRequestOnlyHeader) {
 	bool status = true;
 	std::string buffer =
 		"POST / HTTP/1.1\r\n"
 		"\r\n"
 		"12345678910";
 
-	EXPECT_FALSE(requestComplete(buffer, status));
-	EXPECT_FALSE(status);
+	EXPECT_TRUE(requestComplete(buffer, status));
+	EXPECT_TRUE(status);
 }
 
 //10
