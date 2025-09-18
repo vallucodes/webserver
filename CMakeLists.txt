@@ -13,7 +13,7 @@ enable_testing()
 # Add test executable(s)
 # add_executable(<test name> <test/testFile.cpp> <file to be tested location>)
 add_executable(testRequestComplete test/requestComplete.cpp src/server/HelperFunctions.cpp)
-
+add_executable(testDecodeChunkedBody test/DecodeChunkedBody.cpp src/server/Cluster.cpp)
 add_executable(testParseRequest test/parseRequestTest.cpp src/parser/Parser.cpp src/request/Request.cpp src/parser/ParserUtils.cpp src/message/AMessage.cpp)
 
 

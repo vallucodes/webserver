@@ -303,10 +303,42 @@ bool	Cluster::isRequestBodyComplete(ClientRequestState& client_state, const std:
 	}
 }
 
-int	Cluster::isChunkedBodyComplete(const std::string& buffer, size_t header_end) {
+void	Cluster::decodeChunkedBody(std::string& buffer) {
+	std::string result;
+	size_t pos = 0;
+
+	size_t header_end = findHeader(buffer);
+	std::string headers = buffer.substr(0, header_end);
+	std::string body = buffer.substr(header_end);
+
+	while (pos < body.size()) {
+		size_t lineEnd = body.find("\r\n", pos);
+		if (lineEnd == std::string::npos)
+			break ;
+
+		std::string sizeLine = body.substr(pos, lineEnd - pos);
+		size_t chunkSize = 0;
+		std::istringstream(sizeLine) >> std::hex >> chunkSize;
+		pos = lineEnd + 2;
+
+		if (chunkSize == 0)
+			break ;
+
+		if (pos + chunkSize > body.size())
+			break ;
+
+		result.append(body.substr(pos, chunkSize));
+		pos += chunkSize + 2;
+	}
+
+	buffer = headers + result;
+}
+
+int	Cluster::isChunkedBodyComplete(std::string& buffer, size_t header_end) {
 	size_t pos = buffer.find("\r\nTransfer-Encoding: chunked\r\n");
 	if (pos != std::string::npos && pos < header_end) // search for body and only after we found the header
 	{
+		decodeChunkedBody(buffer);
 		pos = buffer.find("0\r\n\r\n", header_end); // TODO test this
 		if (pos == std::string::npos)
 			return false;

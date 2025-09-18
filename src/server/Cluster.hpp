@@ -55,9 +55,10 @@ class Cluster {
 		const Server&	findRelevantConfig(int client_fd, const std::string& buffer);
 		void			buildRequest(ClientRequestState& client_state);
 		bool			requestComplete(ClientRequestState& client_state);
-		int				isChunkedBodyComplete(const std::string& buffer, size_t header_end);
+		int				isChunkedBodyComplete(std::string& buffer, size_t header_end);
 		bool			isRequestBodyComplete(ClientRequestState& client_state, const std::string& buffer, size_t header_end);
 		std::string		popResponseChunk(ClientRequestState& client_state);
+		void			decodeChunkedBody(std::string& buffer);
 
 		void	handleNewClient(size_t i);
 		void	handleClientInData(size_t& i);
