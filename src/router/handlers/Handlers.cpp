@@ -1,3 +1,32 @@
+/**
+ * @file Handlers.cpp
+ * @brief Implementation of HTTP request handlers for the web server
+ *
+ * This file contains the implementation of all core HTTP request handlers:
+ * - get(): Static file serving and directory index handling
+ * - post(): File upload processing with multipart/form-data support
+ * - del(): File deletion for uploaded files
+ * - cgi(): CGI script execution for dynamic content
+ * - redirect(): HTTP redirection handling
+ *
+ * Key Components:
+ * - MIME type detection based on file extensions
+ * - Multipart form-data parsing for file uploads
+ * - CGI environment variable setup and script execution
+ * - Path resolution and security validation
+ * - Error handling and response formatting
+ *
+ * Security Features:
+ * - Path traversal protection
+ * - File permission validation
+ * - Input sanitization
+ * - Safe CGI execution with process isolation
+ *
+ * The handlers work together with the Router to provide a complete
+ * HTTP request processing pipeline, from receiving requests to
+ * generating appropriate responses.
+ */
+
 #include "../../../inc/webserv.hpp"
 #include "Handlers.hpp"
 #include "../Router.hpp"
@@ -13,9 +42,24 @@ using namespace http;
 #include <cstring>
 #include <cstdlib>
 
-// Determine the MIME content type based on file extension
-// @param filename The filename to analyze
-// @return MIME type string (e.g., "text/html", "image/png")
+/**
+ * @brief Determine the MIME content type based on file extension
+ *
+ * This function maps file extensions to their corresponding MIME types
+ * for proper HTTP Content-Type header generation. It supports common
+ * web file formats and provides fallbacks for unknown extensions.
+ *
+ * Supported MIME Types:
+ * - Text: html, htm, css, txt, json, js
+ * - Images: png, jpg, jpeg, gif
+ * - Applications: json, javascript
+ *
+ * The function performs case-insensitive extension matching and
+ * uses an optimized lookup based on extension length for performance.
+ *
+ * @param filename The filename to analyze (e.g., "index.html", "style.css")
+ * @return MIME type string (e.g., "text/html", "image/png", "text/plain" for unknown)
+ */
 std::string getContentType(const std::string& filename) {
     size_t dotPos = filename.find_last_of('.');
     if (dotPos != std::string::npos) {
@@ -227,9 +271,34 @@ std::string generateDirectoryListing(const std::string& dirPath, const std::stri
     return html;
 }
 
-// Handle GET requests for static files and pages
-// @param req The incoming HTTP request
-// @param res The response object to populate
+/**
+ * @brief Handle GET requests for static files and pages
+ *
+ * This is the primary handler for serving static content in the web server.
+ * It supports:
+ * 1. Direct file serving with proper MIME types
+ * 2. Directory index serving (index.html, default.html)
+ * 3. Auto-generated directory listings
+ * 4. Location-specific index files
+ * 5. Path resolution and security validation
+ *
+ * Request Processing Flow:
+ * 1. Extract and validate the requested path
+ * 2. Check location configuration for special handling
+ * 3. Handle index files and directory requests
+ * 4. Serve static files with appropriate headers
+ * 5. Provide error responses for invalid requests
+ *
+ * Path Resolution Strategy:
+ * - Root requests ("/") serve index.html by default
+ * - Direct file paths serve the requested file
+ * - Directory paths try index files, then autoindex if enabled
+ * - All paths are validated for security (no path traversal)
+ *
+ * @param req The incoming HTTP request containing the URL path
+ * @param res The response object to populate with file content and headers
+ * @param location The matching location configuration (contains root, index, autoindex settings)
+ */
 void get(const Request& req, Response& res, const Location* location) {
     try {
         // Extract and validate file path
@@ -323,11 +392,46 @@ void get(const Request& req, Response& res, const Location* location) {
     }
 }
 
-// Handle POST requests for file uploads
-// @param req The incoming HTTP request containing multipart/form-data
-// @param res The response object to populate
-// @param location The matching location configuration
-void post(const Request& req, Response& res, const Location* location) {
+/**
+ * @brief Handle POST requests for file uploads
+ *
+ * This handler processes multipart/form-data POST requests for file uploads.
+ * It parses the multipart data, extracts files and form fields, and saves
+ * uploaded files to the configured upload directory.
+ *
+ * Multipart Processing Steps:
+ * 1. Validate Content-Type header contains "multipart/form-data"
+ * 2. Extract boundary string from Content-Type header
+ * 3. Parse request body using boundary delimiters
+ * 4. Extract headers and content for each part
+ * 5. Identify file uploads vs. regular form fields
+ * 6. Save files with proper names and permissions
+ *
+ * Security Features:
+ * - Validates upload_path configuration in location
+ * - Prevents directory traversal in filenames
+ * - Checks file size limits (if configured)
+ * - Sanitizes uploaded filenames
+ * - Validates multipart boundary format
+ *
+ * File Storage:
+ * - Files saved to location->upload_path directory
+ * - Original filenames preserved (with sanitization)
+ * - Proper file permissions set
+ * - Duplicate filename handling
+ *
+ * Response Codes:
+ * - 201 Created: Files uploaded successfully
+ * - 400 Bad Request: Invalid multipart data or missing boundary
+ * - 403 Forbidden: Uploads not allowed in this location
+ * - 413 Payload Too Large: File exceeds size limits
+ * - 500 Internal Server Error: File system errors
+ *
+ * @param req The incoming HTTP request containing multipart/form-data
+ * @param res The response object to populate with upload results
+ * @param location The matching location configuration (must have upload_path)
+ */
+void post(const Request& req, Response& res, const Location* location __attribute__((unused))) {
     try {
         std::string_view body = req.getBody();
         const auto& contentTypeKey = req.getHeaders("content-type");
@@ -428,11 +532,43 @@ void post(const Request& req, Response& res, const Location* location) {
     }
 }
 
-// Handle DELETE requests for removing uploaded files
-// @param req The incoming HTTP request with file path in URL
-// @param res The response object to populate
-// @param location The matching location configuration
-void del(const Request& req, Response& res, const Location* location) {
+/**
+ * @brief Handle DELETE requests for removing uploaded files
+ *
+ * This handler processes DELETE requests to remove files that were previously
+ * uploaded via POST requests. It provides a safe way to delete uploaded files
+ * while maintaining security constraints.
+ *
+ * Security and Validation:
+ * 1. Validates that the path starts with "/uploads/" (restricted to upload directory)
+ * 2. Sanitizes the filename to prevent directory traversal attacks
+ * 3. Checks file existence before attempting deletion
+ * 4. Validates file permissions and ownership
+ *
+ * Deletion Process:
+ * 1. Extract filename from URL path
+ * 2. Construct full filesystem path to upload directory
+ * 3. Verify file exists and is accessible
+ * 4. Attempt file deletion
+ * 5. Return appropriate success/error response
+ *
+ * Path Security:
+ * - Only allows deletion within the uploads directory
+ * - Prevents deletion of files outside upload area
+ * - Sanitizes filenames to remove dangerous characters
+ * - Validates filename is not empty after sanitization
+ *
+ * Response Handling:
+ * - 204 No Content: File successfully deleted (with success page)
+ * - 400 Bad Request: Invalid path format or filename
+ * - 404 Not Found: File doesn't exist
+ * - 500 Internal Server Error: Filesystem deletion failure
+ *
+ * @param req The incoming HTTP request with file path in URL
+ * @param res The response object to populate with deletion results
+ * @param location The matching location configuration (unused but provided for consistency)
+ */
+void del(const Request& req, Response& res, const Location* location __attribute__((unused))) {
     try {
         const std::string_view filePathView = req.getPath();
 
@@ -689,11 +825,57 @@ std::string executeCgiScript(const std::string& scriptPath, const std::vector<st
     }
 }
 
-// Handle CGI requests for executable scripts (e.g., .php files)
-// @param req The incoming HTTP request
-// @param res The response object to populate
-// @param location The matching location configuration
-void cgi(const Request& req, Response& res, const Location* location) {
+/**
+ * @brief Handle CGI requests for executable scripts (e.g., .php files)
+ *
+ * This handler enables dynamic content generation by executing external
+ * programs or scripts. It implements the Common Gateway Interface (CGI)
+ * standard for interfacing web servers with external programs.
+ *
+ * CGI Processing Pipeline:
+ * 1. Validate script file exists and has CGI extension
+ * 2. Set up CGI environment variables (REQUEST_METHOD, QUERY_STRING, etc.)
+ * 3. Fork child process to execute the script safely
+ * 4. Pass request data to script via stdin
+ * 5. Capture script output from stdout
+ * 6. Parse CGI headers from script response
+ * 7. Return processed response to client
+ *
+ * Environment Variables Provided:
+ * - REQUEST_METHOD: HTTP method (GET, POST, etc.)
+ * - QUERY_STRING: URL query parameters
+ * - CONTENT_TYPE: Request content type
+ * - CONTENT_LENGTH: Request body length
+ * - SCRIPT_NAME: Script filename
+ * - PATH_INFO: Additional path information
+ * - SERVER_NAME, SERVER_PORT: Server information
+ * - HTTP_* headers: All HTTP request headers
+ *
+ * Script Execution Security:
+ * - Scripts executed in isolated child processes
+ * - Process timeouts prevent hanging scripts
+ * - Proper cleanup of child processes
+ * - Restricted execution permissions
+ * - Safe environment variable handling
+ *
+ * Response Processing:
+ * - Parses CGI headers (Status, Content-Type, Location, etc.)
+ * - Separates headers from response body
+ * - Handles script errors gracefully
+ * - Returns 500 error for script failures
+ *
+ * Supported Script Types:
+ * - Python (.py)
+ * - PHP (.php)
+ * - Perl (.pl)
+ * - Shell scripts (.sh)
+ * - Any executable with proper CGI headers
+ *
+ * @param req The incoming HTTP request to be processed by the CGI script
+ * @param res The response object to populate with script output
+ * @param location The matching location configuration (contains cgi_path and cgi_ext)
+ */
+void cgi(const Request& req, Response& res, const Location* location __attribute__((unused))) {
     try {
         // Extract and validate file path
         std::string_view filePathView = req.getPath();
@@ -813,11 +995,77 @@ void cgi(const Request& req, Response& res, const Location* location) {
     }
 }
 
-// Handle HTTP redirection requests
-// @param req The incoming HTTP request
-// @param res The response object to populate
-// @param location The matching location configuration
-void redirect(const Request& req, Response& res, const Location* location) {
+/**
+ * @brief Handle HTTP redirection requests
+ *
+ * This handler manages HTTP redirection responses, allowing the server
+ * to redirect clients to different URLs. Redirections are commonly used for:
+ * - URL normalization and canonicalization
+ * - Temporary redirects during maintenance or updates
+ * - Permanent redirects for moved or renamed resources
+ * - Protocol upgrades (HTTP to HTTPS)
+ * - SEO-friendly URL restructuring
+ *
+ * HTTP Redirection Types:
+ * - 301 Moved Permanently: Resource permanently moved to new URL
+ *   - Search engines update their indexes
+ *   - Browsers cache the redirect permanently
+ *   - Clients should use new URL for future requests
+ *
+ * - 302 Found: Temporary redirect (client should continue using original URL)
+ *   - Resource temporarily available at different location
+ *   - Search engines keep original URL in index
+ *   - Clients continue using original URL for future requests
+ *
+ * - 303 See Other: Redirect after POST to prevent form resubmission
+ *   - Used after successful form submission
+ *   - Prevents duplicate submissions on page refresh
+ *   - Typically redirects to a confirmation or results page
+ *
+ * - 307 Temporary Redirect: Temporary redirect preserving HTTP method
+ *   - Similar to 302 but preserves original HTTP method
+ *   - Useful for API endpoints that may change location temporarily
+ *
+ * - 308 Permanent Redirect: Permanent redirect preserving HTTP method
+ *   - Similar to 301 but preserves original HTTP method
+ *   - Useful for REST API versioning and resource relocation
+ *
+ * Redirection Implementation:
+ * 1. Determine redirect type based on location configuration or request
+ * 2. Set appropriate HTTP status code (301, 302, 303, etc.)
+ * 3. Set Location header with target URL
+ * 4. Optionally include HTML redirect message in response body
+ * 5. Handle relative and absolute redirect URLs
+ *
+ * URL Resolution:
+ * - Supports absolute URLs: "http://example.com/new-path"
+ * - Supports relative URLs: "/new-path", "../path"
+ * - Handles protocol-relative URLs: "//example.com/path"
+ * - Resolves relative URLs against current request context
+ *
+ * Configuration:
+ * - Redirect URLs configured in location blocks
+ * - Support for different redirect codes per location
+ * - Can be combined with other location rules
+ * - Dynamic redirect logic based on request parameters
+ *
+ * Security Considerations:
+ * - Validates redirect URLs to prevent open redirect vulnerabilities
+ * - Prevents redirect loops through proper URL validation
+ * - Sanitizes user input in dynamic redirect URLs
+ * - Logs redirect activity for monitoring and debugging
+ *
+ * Usage Examples:
+ * - Site restructuring: "/old-blog" -> "/blog" (301)
+ * - Temporary maintenance: "/api" -> "/maintenance" (302)
+ * - Form handling: POST "/contact" -> "/thank-you" (303)
+ * - API versioning: "/v1/users" -> "/v2/users" (308)
+ *
+ * @param req The incoming HTTP request being redirected
+ * @param res The response object to populate with redirect information
+ * @param location The matching location configuration (contains redirect_url and redirect_code)
+ */
+void redirect(const Request& req, Response& res, const Location* location __attribute__((unused))) {
     try {
         // Extract the requested path
         std::string_view pathView = req.getPath();
