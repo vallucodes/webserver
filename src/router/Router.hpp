@@ -7,6 +7,7 @@
 
 #include "../request/Request.hpp"
 #include "../response/Response.hpp"
+#include "../server/Server.hpp"
 
 // HTTP constants namespace
 namespace http {
@@ -63,22 +64,24 @@ class Router {
     using Handler = std::function<void(const Request&, Response&)>;
 
     // void setupRouter(someConfigData& data);
-    // Initialize the router with default routes for static files and upload endpoints
-    void setupRouter();
+    // Initialize the router with routes based on server configurations
+    void setupRouter(const std::vector<Server>& configs);
 
     // Debug method to list all routes
     void listRoutes() const;
 
-    // Register a new route with specific HTTP method and path
+    // Register a new route with specific HTTP method and path for a server
+    // @param server_name Name of the server this route belongs to
     // @param method HTTP method (GET, POST, etc.)
     // @param path URL path to match
     // @param handler Function to handle requests for this route
-    void addRoute(std::string_view method, std::string_view path, Handler handler);
+    void addRoute(std::string_view server_name, std::string_view method, std::string_view path, Handler handler);
 
     // Process an incoming HTTP request and route it to appropriate handler
+    // @param server The server configuration for this request
     // @param req The incoming HTTP request
     // @param res The response object to populate
-    void handleRequest(const Request& req, Response& res) const;
+    void handleRequest(const Server& server, const Request& req, Response& res) const;
 
     // Default error page generator
     // @param status HTTP status code
@@ -86,14 +89,15 @@ class Router {
     static std::string getDefaultErrorPage(int status);
 
   private:
-    // Find the handler function for a given method and path
+    // Find the handler function for a given server, method and path
+    // @param server_name Name of the server to search routes for
     // @param method HTTP method to match
     // @param path URL path to match
     // @return Pointer to handler function or nullptr if not found
-    const Handler* findHandler(const std::string& method, const std::string& path) const;
+    const Handler* findHandler(const std::string& server_name, const std::string& method, const std::string& path) const;
 
-    // Internal storage for route mappings
-    std::map<std::string, std::map<std::string, Handler>> _routes;
+    // Internal storage for route mappings: server_name -> path -> method -> handler
+    std::map<std::string, std::map<std::string, std::map<std::string, Handler>>> _routes;
 };
 
 // Utility functions for error handling

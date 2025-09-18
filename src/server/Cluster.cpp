@@ -21,7 +21,7 @@ void	Cluster::config(const std::string& config_file) {
 	_max_clients = 100;
 
 	// ASK ILIA to del this shit
-	_router.setupRouter();
+	_router.setupRouter(_configs);
 }
 
 void	Cluster::groupConfigs() {
@@ -164,7 +164,7 @@ void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 		Request req = parse.parseRequest(client_state.request);
 		Response res;
 		// Handle the request using the router
-		_router.handleRequest(req, res); // correct
+		_router.handleRequest(conf, req, res); // Pass server config for server-specific routing
 
 		//res.print(); //DEBUG PRINT
 

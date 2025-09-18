@@ -1,6 +1,7 @@
 #include "../../inc/webserv.hpp"
 #include "Router.hpp"
 #include "handlers/Handlers.hpp"
+#include <algorithm>
 
 Router::Router() {}
 
@@ -9,93 +10,130 @@ Router::~Router() {}
 // Debug method to list all routes
 void Router::listRoutes() const {
     std::cout << "Available routes:" << std::endl;
-    for (const auto& path_pair : _routes) {
-        std::cout << "  " << path_pair.first << " -> ";
-        for (const auto& method_pair : path_pair.second) {
-            std::cout << method_pair.first << " ";
+    for (const auto& server_pair : _routes) {
+        const std::string& server_name = server_pair.first;
+        std::cout << "Server: " << server_name << std::endl;
+
+        for (const auto& path_pair : server_pair.second) {
+            const std::string& path = path_pair.first;
+            std::cout << "  " << path << " -> ";
+            for (const auto& method_pair : path_pair.second) {
+                std::cout << method_pair.first << " ";
+            }
+            std::cout << std::endl;
         }
-        std::cout << std::endl;
     }
 }
 
-// Initialize the router with default routes for static files and upload endpoints
-void Router::setupRouter() {
-    addRoute("GET", "/", get);
-	addRoute("GET", "/index.html", get);
-	addRoute("GET", "/upload.html", get);
-	// addRoute("GET", "/upload_error.html", get);
-	// addRoute("GET", "/upload_success.html", get);
+// Initialize the router with routes based on server configurations
+void Router::setupRouter(const std::vector<Server>& configs) {
+    // Clear existing routes
+    _routes.clear();
 
-	addRoute("GET", "/imgs/lhaas.png", get);
-	addRoute("GET", "/imgs/vlopatin.png", get);
-	addRoute("GET", "/imgs/imunaev-.png", get);
-	addRoute("GET", "/favicon.ico", get);
-	addRoute("HEAD", "/favicon.ico", get);
+    // Iterate through each server configuration
+    for (const auto& server : configs) {
+        // Get server root directory for resolving relative paths
+        std::string server_root = server.getRoot();
 
-	// Upload route - handles file uploads
-	addRoute("POST", "/uploads", post);
-	addRoute("GET", "/uploads", get);
+        // Iterate through each location in the server
+        for (const auto& location : server.getLocations()) {
+            std::string location_path = location.location;
 
-	addRoute("GET", "/delete.html", get);
-	addRoute("DELETE", "/uploads", del);
+            // Handle different location types:
+            // 1. Root location "/"
+            // 2. Exact paths like "/favicon.ico"
+            // 3. Extension-based locations like ".py"
+            // 4. Prefix paths like "/upload"
 
-	// CGI routes - handle CGI scripts based on file extensions
-	// Since no parser exists yet, we manually add routes for CGI files
-	// These routes will be handled by the CGI handler which checks file extensions
-	addRoute("GET", "/cgi-bin/hello.py", cgi);
-	addRoute("POST", "/cgi-bin/hello.py", cgi);
-	addRoute("GET", "/cgi-bin/hello.c", cgi);
-	addRoute("POST", "/cgi-bin/hello.c", cgi);
-	addRoute("GET", "/cgi-bin/hello.ts", cgi);
-	addRoute("POST", "/cgi-bin/hello.ts", cgi);
-	addRoute("GET", "/cgi-bin/hello.js", cgi);
-	addRoute("POST", "/cgi-bin/hello.js", cgi);
+            // For each allowed method in this location, add a route
+            for (const auto& method : location.allowed_methods) {
+                // Choose the appropriate handler based on the location configuration
+                Handler handler;
 
-	// Generic CGI route for any file with CGI extension in www directory
-	// This will catch any CGI files not explicitly listed above
-	// The CGI handler will check the file extension and handle accordingly
+                // Determine handler based on location properties and HTTP method
+                if (!location.cgi_path.empty() && !location.cgi_ext.empty()) {
+                    // CGI location - handle CGI scripts for any method
+                    handler = cgi;
+                } else if (method == "POST" && !location.upload_path.empty()) {
+                    // POST to upload location - handle file uploads
+                    handler = post;
+                } else if (method == "DELETE" && !location.upload_path.empty()) {
+                    // DELETE from upload location - handle file deletions
+                    handler = del;
+                } else if (method == "GET" || method == "HEAD") {
+                    // GET/HEAD requests - handle static file serving
+                    handler = get;
+                } else {
+                    // Default handler for other methods
+                    handler = get;
+                }
 
-	// Redirection routes
-	addRoute("GET", "/old-page", redirect);
-	addRoute("HEAD", "/old-page", redirect);
-	addRoute("GET", "/temp-redirect", redirect);
-	addRoute("HEAD", "/temp-redirect", redirect);
-	addRoute("GET", "/redirect-home", redirect);
-	addRoute("HEAD", "/redirect-home", redirect);
+                // Add the route
+                addRoute(server.getName(), method, location_path, handler);
 
-	// Debug: List all available routes
-	listRoutes();
+                // For GET requests, also add HEAD support (HTTP convention)
+                // Only if HEAD is not already explicitly allowed
+                if (method == "GET" && std::find(location.allowed_methods.begin(),
+                    location.allowed_methods.end(), "HEAD") == location.allowed_methods.end()) {
+                    addRoute(server.getName(), "HEAD", location_path, handler);
+                }
+            }
+        }
+    }
+
+    // Debug: List all available routes
+    listRoutes();
 }
 
-// Register a new route with specific HTTP method and path
+// Register a new route with specific HTTP method and path for a server
+// @param server_name Name of the server this route belongs to
 // @param method HTTP method (GET, POST, etc.)
 // @param path URL path to match
 // @param handler Function to handle requests for this route
-void Router::addRoute(std::string_view method, std::string_view path, Handler handler) {
-    _routes[std::string(path)][std::string(method)] = std::move(handler);
+void Router::addRoute(std::string_view server_name, std::string_view method, std::string_view path, Handler handler) {
+    _routes[std::string(server_name)][std::string(path)][std::string(method)] = std::move(handler);
 }
 
-// Find the handler function for a given method and path
+// Find the handler function for a given server, method and path
+// @param server_name Name of the server to search routes for
 // @param method HTTP method to match
 // @param path URL path to match
 // @return Pointer to handler function or nullptr if not found
-const Router::Handler* Router::findHandler(const std::string& method, const std::string& path) const {
+const Router::Handler* Router::findHandler(const std::string& server_name, const std::string& method, const std::string& path) const {
+    // First find the server in our routes
+    auto server_it = _routes.find(server_name);
+    if (server_it == _routes.end()) {
+        return nullptr; // Server not found
+    }
+
+    const auto& server_routes = server_it->second;
+
     // First try exact match
-    auto path_it = _routes.find(path);
-    if (path_it != _routes.end()) {
+    auto path_it = server_routes.find(path);
+    if (path_it != server_routes.end()) {
         auto method_it = path_it->second.find(method);
         if (method_it != path_it->second.end()) {
             return &method_it->second;
         }
     }
 
-    // If no exact match, try prefix matching for uploads routes
-    for (const auto& route_pair : _routes) {
+    // If no exact match, try different location matching strategies
+    for (const auto& route_pair : server_routes) {
         const std::string& route_path = route_pair.first;
-        // Check if the route path is a prefix of the requested path
-        if (path.length() > route_path.length() &&
-            path.substr(0, route_path.length()) == route_path &&
-            (route_path == "/uploads" || route_path == "/uploads/")) {
+
+        // Check for extension-based matching (e.g., ".py" matches "/cgi-bin/script.py")
+        if (!route_path.empty() && route_path[0] == '.' && path.length() > route_path.length()) {
+            if (path.substr(path.length() - route_path.length()) == route_path) {
+                auto method_it = route_pair.second.find(method);
+                if (method_it != route_pair.second.end()) {
+                    return &method_it->second;
+                }
+            }
+        }
+        // Check for prefix matching (e.g., "/uploads" matches "/uploads/file.txt")
+        else if (path.length() > route_path.length() &&
+                 path.substr(0, route_path.length()) == route_path &&
+                 (route_path.back() == '/' || path[route_path.length()] == '/')) {
             auto method_it = route_pair.second.find(method);
             if (method_it != route_pair.second.end()) {
                 return &method_it->second;
@@ -148,9 +186,10 @@ void setErrorResponse(Response& res, int status){
 }
 
 // Process an incoming HTTP request and route it to appropriate handler
+// @param server The server configuration for this request
 // @param req The incoming HTTP request
 // @param res The response object to populate
-void Router::handleRequest(const Request& req, Response& res) const {
+void Router::handleRequest(const Server& server, const Request& req, Response& res) const {
     std::string_view method_view = req.getMethod();
     std::string_view path_view = req.getPath();
 
@@ -177,7 +216,7 @@ void Router::handleRequest(const Request& req, Response& res) const {
         std::cout << "Normalized path (removed fragment): " << path << std::endl;
     }
 
-    if (const Handler* h = findHandler(method, path)) {
+    if (const Handler* h = findHandler(server.getName(), method, path)) {
         try {
             (*h)(req, res);
         } catch (...) {
