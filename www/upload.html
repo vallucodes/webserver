@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Upload</title>
+  <style>
+    :root { --bg:#fff; --fg:#222; --accent:#633901; --btn:#000; }
+    * { box-sizing: border-box; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    body { margin: 0; background: var(--bg); color: var(--fg); display: grid; place-items: center; min-height: 100vh; padding: 16px; }
+    .card { width: 100%; max-width: 460px; padding: 16px; border: 1px solid #eee; border-radius: 10px; }
+    h1 { margin: 0 0 6px; font-size: 22px; }
+    p { margin: 0 0 16px; color: #2d2d2d; font-size: 14px; }
+    label { display: block; margin: 12px 0 6px; font-weight: 600; }
+    input[type="file"] { width: 100%; }
+    .row { display: flex; gap: 8px; align-items: center; margin-top: 12px; }
+    .hint { font-size: 12px; color: #666; }
+    .name { margin-top: 8px; font-size: 13px; color: #333; word-break: break-word; display: none; }
+    button {
+      width: 100%;
+      margin-top: 12px;
+      padding: 12px;
+      border: 0;
+      border-radius: 8px;
+      background: var(--btn);
+      color: #fff; /* button text is white */
+      font-weight: 700;
+      cursor: pointer;
+    }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+    .msg { margin-top: 10px; font-size: 13px; display: none; }
+    .ok { color: var(--accent); }
+    .err { color: #c62828; }
+    a { color: var(--accent); text-decoration: none; font-size: 14px; display: inline-block; margin-top: 16px; }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>Upload a file</h1>
+    <p>Max size: 1&nbsp;MB</p>
+
+    <form id="form" action="/uploads" method="POST" enctype="multipart/form-data">
+      <label for="file">File</label>
+      <input id="file" name="file" type="file" required />
+      <div id="name" class="name"></div>
+
+      <button id="btn" type="submit" disabled>Upload</button>
+      <div id="msg" class="msg"></div>
+    </form>
+
+    <a href="/">← Back</a>
+  </main>
+
+  <script>
+    const fileInput = document.getElementById('file');
+    const btn = document.getElementById('btn');
+    const nameBox = document.getElementById('name');
+    const msg = document.getElementById('msg');
+    const MAX = 1024 * 1024; // 1 MB
+
+    fileInput.addEventListener('change', () => {
+      msg.style.display = 'none';
+      const f = fileInput.files[0];
+      if (!f) { btn.disabled = true; nameBox.style.display = 'none'; return; }
+      nameBox.textContent = `📄 ${f.name} (${(f.size/1024).toFixed(1)} KB)`;
+      nameBox.style.display = 'block';
+      btn.disabled = f.size > MAX;
+      if (f.size > MAX) show('File is larger than 1 MB.', true);
+    });
+
+    document.getElementById('form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const f = fileInput.files[0];
+      if (!f) return;
+      if (f.size > MAX) return show('File is larger than 1 MB.', true);
+
+      btn.disabled = true; btn.textContent = 'Uploading...';
+      try {
+        const fd = new FormData(); fd.append('file', f);
+        const res = await fetch('/uploads', { method: 'POST', body: fd });
+        const text = await res.text();
+        if (res.ok && /Upload successful/i.test(text)) {
+          show('Upload successful.', false);
+          btn.textContent = 'Done';
+        } else {
+          show('Upload failed. Try again.', true);
+          btn.disabled = false; btn.textContent = 'Upload';
+        }
+      } catch {
+        show('Network error. Try again.', true);
+        btn.disabled = false; btn.textContent = 'Upload';
+      }
+    });
+
+    function show(t, error) {
+      msg.textContent = t;
+      msg.className = 'msg ' + (error ? 'err' : 'ok');
+      msg.style.display = 'block';
+    }
+  </script>
+</body>
+</html>

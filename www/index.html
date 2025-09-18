@@ -1,11 +1,83 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Static Site</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>My Static Site</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: system-ui, sans-serif;
+      background: #fff;
+      color: #222;
+      text-align: center;
+    }
+    h1 { margin: 0 0 20px; font-size: 26px; color: #2d2d2d; }
+    a.btn {
+      display: inline-block;
+      margin: 20px 0;
+      padding: 12px 24px;
+      border-radius: 6px;
+      background: #000;
+      color: #fff; /* button text is white */
+      text-decoration: none;
+      font-weight: 600;
+    }
+    a.btn:hover { background: #2d2d2d; }
+    .gallery {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin: 20px 0;
+    }
+    .gallery img {
+      width: 500px;
+      height: 200px;
+      object-fit: cover;
+      border-radius: 8px;
+    }
+    .desc {
+      max-width: 700px;
+      margin: 30px auto;
+      text-align: left;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+    .desc h2 { margin-top: 0; font-size: 20px; color: #2d2d2d; }
+    ul { margin: 10px 0; padding-left: 20px; }
+  </style>
 </head>
 <body>
-    <h1>Wellcome to the site!</h1>
+  <h1>Webserver Project</h1>
+
+  <a href="/upload.html" class="btn">Upload File</a>
+  <a href="/delete.html" class="btn">Delete File</a>
+
+  <div class="gallery">
+    <img src="imgs/imunaev-.png" alt="First image">
+    <img src="imgs/vlopatin.png" alt="Second image">
+    <img src="imgs/lhaas.png" alt="Third image">
+  </div>
+
+  <div class="desc">
+    <h2>About the Webserver Project</h2>
+    <p>
+      This is a custom C++ webserver built from scratch as part of the Hive Helsinki curriculum.
+      The goal is to understand how HTTP works by implementing request parsing, response handling, routing, and static file serving without external frameworks.
+    </p>
+    <p>Key features include:</p>
+    <ul>
+      <li>Support for multiple clients with non-blocking I/O</li>
+      <li>Serving static HTML, CSS, and images</li>
+      <li>Custom request parser and response builder</li>
+      <li>Error handling with status codes (200, 404, etc.)</li>
+      <li>POST request handling with form submissions</li>
+      <li><strong>File upload system (1MB limit)</strong></li>
+      <li><strong>File deletion system</strong></li>
+      <li>Multipart form-data processing</li>
+    </ul>
+  </div>
 </body>
 </html>

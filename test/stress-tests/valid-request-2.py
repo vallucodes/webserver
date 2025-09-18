@@ -1,18 +1,18 @@
 import socket
 
 HOST = "127.0.0.1"
-PORT = 5009
+PORT = 5007
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.connect((HOST, PORT))
 
 # Two GET requests concatenated
 requests = (
-	"GET / HTTP/1.1\r\n"
+	"GET /uploads HTTP/1.1\r\n"
 	"Host: localhost\r\n"
 	"Connection: keep-alive\r\n"
 	"\r\n"
-	"GET / HTTP/1.1\r\n"
+	"GET /uploads HTTP/1.1\r\n"
 	"Host: localhost\r\n"
 	"Connection: close\r\n"
 	"\r\n"

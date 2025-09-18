@@ -1,7 +1,9 @@
+#include "../../inc/webserv.hpp"
 #include "Cluster.hpp"
 #include "devHelpers.hpp"
 #include "../config/Config.hpp"
-#include <arpa/inet.h>
+#include "../parser/Parser.hpp"
+#include "../request/Request.hpp"
 
 void	Cluster::config(const std::string& config_file) {
 
@@ -123,17 +125,25 @@ void	Cluster::handleClientInData(size_t& i) {
 	}
 }
 
+std::string headersToString(const std::unordered_map<std::string, std::vector<std::string>>& headers) {
+    std::string result;
+    for (const auto& pair : headers) {
+        const std::string& key = pair.first;
+        const std::vector<std::string>& values = pair.second;
+        for (const auto& value : values) {
+            result += key + ": " + value + "\r\n";
+        }
+    }
+    return result;
+}
 
-#include <fstream>
-std::string readFileToString(const std::string& filename) {
-	std::ifstream file(filename);
-	if (!file) {
-		throw std::runtime_error("Could not open file: " + filename);
-	}
-
-	std::ostringstream buffer;
-	buffer << file.rdbuf();  // read whole file into buffer
-	return buffer.str();
+// Convert Response object to HTTP string
+std::string responseToString(const Response& res) {
+    std::string responseStr = "HTTP/1.1 " + std::string(res.getStatus()) + "\r\n";
+    responseStr += headersToString(res.getAllHeaders());
+		responseStr += "\r\n";
+    responseStr += std::string(res.getBody());
+    return responseStr;
 }
 
 void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
@@ -146,17 +156,22 @@ void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 		// call here the parser in future.
 		Server conf = findRelevantConfig(_fds[i].fd, client_state.buffer);
 		// printServerConfig(conf); // this is simulating what will be sent to parser later
+		Parser parse;
+		Request req = parse.parseRequest(client_state.request);
+		Response res;
+		// Handle the request using the router
+		_router.handleRequest(req, res); // correct
+
+		//res.print(); //DEBUG PRINT
+
+		// Convert response to HTTP string format
+		client_state.response = responseToString(res);
+
 		if (client_state.buffer.empty())
 			client_state.receive_start = {};
 		else
 			client_state.receive_start = std::chrono::high_resolution_clock::now();
 
-		std::string body = readFileToString("www/index.html");
-		client_state.response.append("HTTP/1.1 200 OK\r\n"
-			"Content-Type: text/html; charset=UTF-8\r\n"
-			"Content-Length: " + std::to_string(body.size()) + "\r\n"
-			"\r\n");
-		client_state.response.append(body);
 		_fds[i].events |= POLLOUT;			// start to listen if client is ready to receive response
 		client_state.send_start = std::chrono::high_resolution_clock::now(); //this should be moved to the response part of code
 		client_state.waiting_response = true;

@@ -16,6 +16,7 @@
 #include "webserv.hpp"
 #include "Server.hpp"
 #include "HelperFunctions.hpp"
+#include "../router/Router.hpp"
 
 struct ListenerGroup {
 	int	fd;
@@ -33,6 +34,7 @@ class Cluster {
 		std::vector<ListenerGroup>		_listener_groups;	// group of configs with same IP+port
 		std::map<int, ListenerGroup*>	_servers;			// fd of server and related ListenerGroup. Reason to have is to find quickly related ListeningGroup to key
 		std::map<int, ListenerGroup*>	_clients;			// fd of client and related config
+		Router							_router;			// HTTP router for handling requests
 
 		struct ClientRequestState {
 			std::chrono::time_point<std::chrono::high_resolution_clock>	receive_start {};
