@@ -289,104 +289,21 @@ void	Cluster::buildRequest(ClientRequestState& client_state) {
 	// std::cout << "buffer empty?: \n" << client_state.buffer.empty() << std::endl;
 }
 
-bool	Cluster::isRequestBodyComplete(ClientRequestState& client_state, const std::string& buffer, size_t header_end) {
-	size_t remainder = buffer.size() - header_end;
-	std::smatch match;
-	if (std::regex_search(buffer, match, std::regex(R"(Content-Length:\s*(\d+)\r?\n)"))) { // might be issue that this is in body
-		size_t body_expected_len = std::stoul(match[1].str());
-		if (remainder >= body_expected_len) {
-			// std::cout << "body received and there might another request starting after" << std::endl;
-			client_state.request_size = header_end + body_expected_len;
-			return true;
-		}
-		else {
-			// std::cout << "body not fully received" << std::endl;
-			return false;
-		}
-	}
-	else {
-		// std::cout << "only header received, possibly some bytes in body" << std::endl;
-		client_state.request_size = header_end;
-		return true;
-	}
-}
+// bool Cluster::requestComplete(ClientRequestState& client_state) {
+// 	return ::requestComplete(client_state);
+// }
 
-void	Cluster::decodeChunkedBody(std::string& buffer) {
-	std::string result;
-	size_t pos = 0;
+// // Replace your private decodeChunkedBody method with:
+// void Cluster::decodeChunkedBody(std::string& buffer) {
+// 	::decodeChunkedBody(buffer);
+// }
 
-	size_t header_end = findHeader(buffer);
-	std::string headers = buffer.substr(0, header_end);
-	std::string body = buffer.substr(header_end);
+// // Replace your private isChunkedBodyComplete method with:
+// int Cluster::isChunkedBodyComplete(std::string& buffer, size_t header_end) {
+// 	return ::isChunkedBodyComplete(buffer, header_end);
+// }
 
-	while (pos < body.size()) {
-		size_t lineEnd = body.find("\r\n", pos);
-		if (lineEnd == std::string::npos)
-			break ;
-
-		std::string sizeLine = body.substr(pos, lineEnd - pos);
-		size_t chunkSize = 0;
-		std::istringstream(sizeLine) >> std::hex >> chunkSize;
-		pos = lineEnd + 2;
-
-		if (chunkSize == 0)
-			break ;
-
-		if (pos + chunkSize > body.size())
-			break ;
-
-		result.append(body.substr(pos, chunkSize));
-		pos += chunkSize + 2;
-	}
-
-	buffer = headers + result;
-}
-
-int	Cluster::isChunkedBodyComplete(std::string& buffer, size_t header_end) {
-	size_t pos = buffer.find("\r\nTransfer-Encoding: chunked\r\n");
-	if (pos != std::string::npos && pos < header_end) // search for body and only after we found the header
-	{
-		decodeChunkedBody(buffer);
-		pos = buffer.find("0\r\n\r\n", header_end); // TODO test this
-		if (pos == std::string::npos)
-			return false;
-		else
-			return true;
-	}
-	return -1;
-}
-
-bool	Cluster::requestComplete(ClientRequestState& client_state) {
-	// std::cout << "Buffer to be parsed currently: " << std::endl;
-	// std::cout << buffer << std::endl;
-	std::string buffer = client_state.buffer;
-
-	if (buffer.size() > MAX_BUFFER_SIZE) {
-		client_state.data_validity = false;
-		return false;
-	}
-
-	size_t header_end = findHeader(buffer);
-	if (header_end == std::string::npos)
-		return false;
-	else if (header_end > MAX_HEADER_SIZE) {
-		client_state.data_validity = false;
-		return false;
-	}
-
-
-	// std::cout << "header end detected: " << pos2 << std::endl;
-
-	// if (buffer.size() - header_end > _max_client_body_size) { // check for body exceeding allowed length. Maybe parser will do it.
-	// 	data_validity = false;
-	// 	return false;
-	// }
-
-	int status = -1;
-	status = isChunkedBodyComplete(buffer, header_end);
-	if (status != -1)
-		return status;
-
-	status = isRequestBodyComplete(client_state, buffer, header_end);
-	return status;
-}
+// // Replace your private isRequestBodyComplete method with:
+// bool Cluster::isRequestBodyComplete(ClientRequestState& client_state, const std::string& buffer, size_t header_end) {
+// 	return ::isRequestBodyComplete(client_state, buffer, header_end);
+// }

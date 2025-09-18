@@ -24,6 +24,19 @@ struct ListenerGroup {
 	const Server*		default_config;
 };
 
+struct ClientRequestState {
+	std::chrono::time_point<std::chrono::high_resolution_clock>	receive_start {};
+	std::chrono::time_point<std::chrono::high_resolution_clock>	send_start {};
+	std::string	buffer;
+	std::string	request;
+	size_t		request_size;
+	std::string	response;
+	Server*		config;
+	bool		data_validity = 1;
+	bool		waiting_response = 0;
+
+};
+
 class Cluster {
 
 	private:
@@ -36,29 +49,19 @@ class Cluster {
 		std::map<int, ListenerGroup*>	_clients;			// fd of client and related config
 		Router							_router;			// HTTP router for handling requests
 
-		struct ClientRequestState {
-			std::chrono::time_point<std::chrono::high_resolution_clock>	receive_start {};
-			std::chrono::time_point<std::chrono::high_resolution_clock>	send_start {};
-			std::string	buffer;
-			std::string	request;
-			size_t		request_size;
-			std::string	response;
-			Server*		config;
-			bool		data_validity = 1;
-			bool		waiting_response = 0;
 
-		};
 		std::map<int, ClientRequestState>	_client_buffers;	// storing client related reuqest, and bool is 1:valid, 0 invalid
 
 		void			groupConfigs();
 		void			createGroup(const Server& conf);
 		const Server&	findRelevantConfig(int client_fd, const std::string& buffer);
 		void			buildRequest(ClientRequestState& client_state);
-		bool			requestComplete(ClientRequestState& client_state);
-		int				isChunkedBodyComplete(std::string& buffer, size_t header_end);
-		bool			isRequestBodyComplete(ClientRequestState& client_state, const std::string& buffer, size_t header_end);
 		std::string		popResponseChunk(ClientRequestState& client_state);
-		void			decodeChunkedBody(std::string& buffer);
+
+		// bool			requestComplete(ClientRequestState& client_state);
+		// int				isChunkedBodyComplete(std::string& buffer, size_t header_end);
+		// bool			isRequestBodyComplete(ClientRequestState& client_state, const std::string& buffer, size_t header_end);
+		// void			decodeChunkedBody(std::string& buffer);
 
 		void	handleNewClient(size_t i);
 		void	handleClientInData(size_t& i);
