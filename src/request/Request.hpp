@@ -3,10 +3,12 @@
 #include "../message/AMessage.hpp"
 #include <algorithm>
 
+
 class Request : public AMessage {
   private:
-    bool isError;
+    bool _isError;
     std::string _status;
+
   public:
     Request(void);
     ~Request(void);
@@ -17,6 +19,8 @@ class Request : public AMessage {
     std::string_view getStatus() const;
     void setStatus(const std::string& status);
 
+
     virtual std::string getMessageType() const override;
+    //remove print in the end!!!
     void print() const;
 };
