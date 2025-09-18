@@ -140,6 +140,7 @@ std::vector<std::string> ConfigValidator:: _methods = {
 
 std::vector<std::string> ConfigValidator::_cgi_extensions = {
 	".py",
+	".php",
 	".js"
 };
 
