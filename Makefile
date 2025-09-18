@@ -1,12 +1,16 @@
 NAME		= webserv
 CXX			= c++
-CXXFLAGS	= -g -std=c++17 -Wall -Wextra #-Werror
+CXXFLAGS	= -g -std=c++20 -Wall -Wextra #-Werror
 
 SRC_DIR		= src/
 OBJ_DIR		= obj/
 
 INCLUDES	= -I ./inc
 HEADERS		= inc/webserv.hpp \
+				src/config/Config.hpp \
+				src/config/ConfigExtractor.hpp \
+				src/config/ConfigValidator.hpp \
+				src/server/devHelpers.hpp \
 				src/server/HelperFunctions.hpp \
 				src/server/Cluster.hpp \
 				src/server/Server.hpp \
@@ -18,6 +22,10 @@ HEADERS		= inc/webserv.hpp \
 				src/parser/Parser.hpp
 
 SRCS		= src/main.cpp \
+				src/config/Config.cpp \
+				src/config/ConfigExtractor.cpp \
+				src/config/ConfigValidator.cpp \
+				src/server/devHelpers.cpp \
 				src/server/HelperFunctions.cpp \
 				src/server/Cluster.cpp \
 				src/server/Server.cpp \
