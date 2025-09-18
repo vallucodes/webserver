@@ -107,7 +107,7 @@ void	Cluster::handleNewClient(size_t i) {
 	std::cout << "New client connected: "
 			<< inet_ntoa(client_addr.sin_addr) << ":"
 			<< ntohs(client_addr.sin_port) << ". Assigned fd: "
-			<< client_fd << "\n";
+			<< client_fd << "\n\n";
 	_fds.push_back({client_fd, POLLIN, 0});
 	_clients[client_fd] = _servers[_fds[i].fd];
 }
@@ -166,7 +166,7 @@ void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 		// Handle the request using the router
 		_router.handleRequest(conf, req, res); // Pass server config for server-specific routing
 
-		//res.print(); //DEBUG PRINT
+		res.print(); //DEBUG PRINT
 
 		// Convert response to HTTP string format
 		client_state.response = responseToString(res);

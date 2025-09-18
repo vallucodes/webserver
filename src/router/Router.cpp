@@ -9,7 +9,7 @@ Router::~Router() {}
 
 // Debug method to list all routes
 void Router::listRoutes() const {
-    std::cout << "Available routes:" << std::endl;
+    std::cout << "[DEBUG]: Available routes:" << std::endl;
     for (const auto& server_pair : _routes) {
         const std::string& server_name = server_pair.first;
         std::cout << "Server: " << server_name << std::endl;
@@ -23,6 +23,7 @@ void Router::listRoutes() const {
             std::cout << std::endl;
         }
     }
+    std::cout << "[DEBUG]: ===  End of Available routes ===\n" << std::endl;
 }
 
 // Initialize the router with routes based on server configurations
@@ -144,6 +145,37 @@ const Router::Handler* Router::findHandler(const std::string& server_name, const
     return nullptr;
 }
 
+// Find the matching location for a given server and path
+// @param server The server configuration
+// @param path URL path to match
+// @return Pointer to matching location or nullptr if not found
+const Location* Router::findLocation(const Server& server, const std::string& path) const {
+    const auto& locations = server.getLocations();
+    const Location* best_match = nullptr;
+    size_t best_match_length = 0;
+
+    for (const auto& location : locations) {
+        const std::string& location_path = location.location;
+
+        // Exact match
+        if (location_path == path) {
+            return &location;
+        }
+
+        // Prefix match (e.g., "/admin" matches "/admin/page")
+        if (path.length() > location_path.length() &&
+            path.substr(0, location_path.length()) == location_path &&
+            (location_path.back() == '/' || path[location_path.length()] == '/')) {
+            if (location_path.length() > best_match_length) {
+                best_match = &location;
+                best_match_length = location_path.length();
+            }
+        }
+    }
+
+    return best_match;
+}
+
 // Default error page generator
 // @param status HTTP status code
 // @return HTML content for the error page
@@ -193,15 +225,15 @@ void Router::handleRequest(const Server& server, const Request& req, Response& r
     std::string_view method_view = req.getMethod();
     std::string_view path_view = req.getPath();
 
-    std::cout << "---------" << std::endl;
+    // std::cout << "---------" << std::endl;
     req.print();
-    std::cout << "---------" << std::endl;
+    // std::cout << "---------" << std::endl;
 
     std::string method(method_view);
     std::string path(path_view);
 
     // Debug logging
-    std::cout << "Request: " << method << " " << path << std::endl;
+    // std::cout << "Request: " << method << " " << path << std::endl;
 
     // Normalize path - remove query parameters and fragments
     size_t query_pos = path.find('?');
@@ -218,7 +250,8 @@ void Router::handleRequest(const Server& server, const Request& req, Response& r
 
     if (const Handler* h = findHandler(server.getName(), method, path)) {
         try {
-            (*h)(req, res);
+            const Location* location = findLocation(server, path);
+            (*h)(req, res, location);
         } catch (...) {
             setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
         }
@@ -246,7 +279,7 @@ void Router::handleRequest(const Server& server, const Request& req, Response& r
         // For GET requests, try to serve as static file
         if (method == "GET") {
             try {
-                get(req, res);
+                get(req, res, nullptr);
                 std::cout << "---------" << std::endl;
                 res.print();
                 std::cout << "---------" << std::endl;

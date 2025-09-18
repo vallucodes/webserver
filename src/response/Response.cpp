@@ -23,7 +23,7 @@ void Response::setHeaders(const std::string& key, const std::string& value) {
 }
 
 void Response::print() const {
-    std::cout << "=== HTTP Response ===\n";
+    std::cout << "[DEBUG]:=== HTTP Response ===\n";
     std::cout << "Status: " << _status << "\n";
 
     std::cout << "Headers:\n";
@@ -31,7 +31,7 @@ void Response::print() const {
         std::cout << pair.first << ": " << pair.second << "\n";
     }
 
-    std::cout << "Body: Uncommented for debugging in Response.cpp\n" << std::endl;
+    std::cout << "Body: Uncommented for debugging in Response.cpp" << std::endl;
     // std::cout << "Body:  << _body << std::endl;
-    std::cout << "===================\n" << std::endl;
+    std::cout << "[DEBUG]: ===  End of HTTP Response ===\n" << std::endl;
 }

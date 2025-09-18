@@ -61,7 +61,7 @@ class Router {
     ~Router();
 
     // Type alias for route handler functions
-    using Handler = std::function<void(const Request&, Response&)>;
+    using Handler = std::function<void(const Request&, Response&, const Location*)>;
 
     // void setupRouter(someConfigData& data);
     // Initialize the router with routes based on server configurations
@@ -95,6 +95,12 @@ class Router {
     // @param path URL path to match
     // @return Pointer to handler function or nullptr if not found
     const Handler* findHandler(const std::string& server_name, const std::string& method, const std::string& path) const;
+
+    // Find the matching location for a given server and path
+    // @param server The server configuration
+    // @param path URL path to match
+    // @return Pointer to matching location or nullptr if not found
+    const Location* findLocation(const Server& server, const std::string& path) const;
 
     // Internal storage for route mappings: server_name -> path -> method -> handler
     std::map<std::string, std::map<std::string, std::map<std::string, Handler>>> _routes;

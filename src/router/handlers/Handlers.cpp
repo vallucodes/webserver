@@ -127,10 +127,110 @@ std::string sanitizeFilename(std::string filename) {
     return filename;
 }
 
+// Generate HTML directory listing
+// @param dirPath Absolute path to the directory
+// @param requestPath The request path for breadcrumbs
+// @return HTML string with directory listing
+std::string generateDirectoryListing(const std::string& dirPath, const std::string& requestPath) {
+    std::string html = R"(
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Directory listing for )" + requestPath + R"(</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
+        h1 { color: #333; border-bottom: 2px solid #333; padding-bottom: 10px; }
+        .listing { background: white; border: 1px solid #ddd; border-radius: 5px; overflow: hidden; }
+        .item { padding: 12px 20px; border-bottom: 1px solid #eee; display: flex; align-items: center; }
+        .item:last-child { border-bottom: none; }
+        .item:hover { background: #f8f8f8; }
+        .name { flex: 1; text-decoration: none; color: #0066cc; }
+        .name:hover { text-decoration: underline; }
+        .size { color: #666; font-size: 0.9em; }
+        .date { color: #666; font-size: 0.9em; margin-left: 20px; }
+        .dir-icon { color: #f4a261; margin-right: 10px; font-size: 1.2em; }
+        .file-icon { color: #2a9d8f; margin-right: 10px; font-size: 1.2em; }
+        .back-link { margin-bottom: 20px; display: inline-block; color: #0066cc; text-decoration: none; }
+        .back-link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <h1>Directory listing for )" + requestPath + R"(</h1>
+)";
+
+    // Add parent directory link if not root
+    if (requestPath != "/") {
+        std::string parentPath = requestPath;
+        size_t lastSlash = parentPath.find_last_of('/');
+        if (lastSlash > 0) {
+            parentPath = parentPath.substr(0, lastSlash);
+            if (parentPath.empty()) parentPath = "/";
+            html += "    <a href=\"" + parentPath + "\" class=\"back-link\">← Parent directory</a>\n";
+        }
+    }
+
+    html += R"(
+    <div class="listing">
+)";
+
+    try {
+        for (const auto& entry : std::filesystem::directory_iterator(dirPath)) {
+            std::string name = entry.path().filename().string();
+            std::string linkPath = requestPath;
+            if (linkPath.back() != '/') linkPath += '/';
+            linkPath += name;
+
+            bool isDir = entry.is_directory();
+            std::string icon = isDir ? "📁" : "📄";
+            std::string cssClass = isDir ? "dir-icon" : "file-icon";
+
+            // Get file size
+            std::string sizeStr = "-";
+            if (!isDir) {
+                try {
+                    auto size = entry.file_size();
+                    if (size < 1024) sizeStr = std::to_string(size) + " B";
+                    else if (size < 1024 * 1024) sizeStr = std::to_string(size / 1024) + " KB";
+                    else sizeStr = std::to_string(size / (1024 * 1024)) + " MB";
+                } catch (...) {}
+            }
+
+            // Get last modified time
+            std::string dateStr = "-";
+            try {
+                auto time = entry.last_write_time();
+                auto time_t = std::chrono::system_clock::to_time_t(std::chrono::file_clock::to_sys(time));
+                char buffer[20];
+                strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M", localtime(&time_t));
+                dateStr = buffer;
+            } catch (...) {}
+
+            html += "        <div class=\"item\">\n";
+            html += "            <span class=\"" + cssClass + "\">" + icon + "</span>\n";
+            html += "            <a href=\"" + linkPath + "\" class=\"name\">" + name + "</a>\n";
+            html += "            <span class=\"size\">" + sizeStr + "</span>\n";
+            html += "            <span class=\"date\">" + dateStr + "</span>\n";
+            html += "        </div>\n";
+        }
+    } catch (const std::exception& e) {
+        html += "        <div class=\"item\">Error reading directory: " + std::string(e.what()) + "</div>\n";
+    }
+
+    html += R"(
+    </div>
+</body>
+</html>
+)";
+
+    return html;
+}
+
 // Handle GET requests for static files and pages
 // @param req The incoming HTTP request
 // @param res The response object to populate
-void get(const Request& req, Response& res) {
+void get(const Request& req, Response& res, const Location* location) {
     try {
         // Extract and validate file path
         std::string_view filePathView = req.getPath();
@@ -139,11 +239,50 @@ void get(const Request& req, Response& res) {
             return;
         }
 
+        std::string requestPath = std::string(filePathView);
         std::string filePath;
-        if (filePathView == page::ROOT_HTML || filePathView == page::INDEX_HTML_PATH) {
+
+        // If we have location configuration, use it
+        if (location != nullptr) {
+            // If location has an index directive, use it
+            if (!location->index.empty()) {
+                // For location-specific index, check in the location directory first
+                std::string indexPath = page::WWW + requestPath;
+                if (!indexPath.ends_with('/')) indexPath += '/';
+                indexPath += location->index;
+
+                // If location-specific index exists, use it
+                if (std::filesystem::exists(indexPath) && std::filesystem::is_regular_file(indexPath)) {
+                    std::string fileContent = readFileToString(indexPath);
+                    std::string contentType = getContentType(indexPath);
+                    setSuccessResponse(res, fileContent, contentType);
+                    return;
+                }
+
+                // Otherwise, use the global index file
+                std::string globalIndexPath = page::WWW + "/" + location->index;
+                if (std::filesystem::exists(globalIndexPath) && std::filesystem::is_regular_file(globalIndexPath)) {
+                    std::string fileContent = readFileToString(globalIndexPath);
+                    std::string contentType = getContentType(globalIndexPath);
+                    setSuccessResponse(res, fileContent, contentType);
+                    return;
+                }
+            }
+
+            // If location has autoindex enabled and path is a directory, generate directory listing
+            std::string dirPath = page::WWW + requestPath;
+            if (location->autoindex && std::filesystem::is_directory(dirPath)) {
+                std::string dirListing = generateDirectoryListing(dirPath, requestPath);
+                setSuccessResponse(res, dirListing, CONTENT_TYPE_HTML);
+                return;
+            }
+        }
+
+        // Default behavior: serve static files
+        if (requestPath == "/" || requestPath == "/index.html") {
             filePath = page::INDEX_HTML;
         } else {
-            filePath = page::WWW + std::string(filePathView);
+            filePath = page::WWW + requestPath;
         }
 
         // Check if the path is a directory and try to serve default files
@@ -161,7 +300,7 @@ void get(const Request& req, Response& res) {
                 }
             }
 
-            // If no default file was found, return 404
+            // If no default file was found and autoindex is not enabled, return 404
             if (std::filesystem::is_directory(filePath)) {
                 setErrorResponse(res, http::NOT_FOUND_404);
                 return;
@@ -187,7 +326,8 @@ void get(const Request& req, Response& res) {
 // Handle POST requests for file uploads
 // @param req The incoming HTTP request containing multipart/form-data
 // @param res The response object to populate
-void post(const Request& req, Response& res) {
+// @param location The matching location configuration
+void post(const Request& req, Response& res, const Location* location) {
     try {
         std::string_view body = req.getBody();
         const auto& contentTypeKey = req.getHeaders("content-type");
@@ -291,7 +431,8 @@ void post(const Request& req, Response& res) {
 // Handle DELETE requests for removing uploaded files
 // @param req The incoming HTTP request with file path in URL
 // @param res The response object to populate
-void del(const Request& req, Response& res) {
+// @param location The matching location configuration
+void del(const Request& req, Response& res, const Location* location) {
     try {
         const std::string_view filePathView = req.getPath();
 
@@ -551,7 +692,8 @@ std::string executeCgiScript(const std::string& scriptPath, const std::vector<st
 // Handle CGI requests for executable scripts (e.g., .php files)
 // @param req The incoming HTTP request
 // @param res The response object to populate
-void cgi(const Request& req, Response& res) {
+// @param location The matching location configuration
+void cgi(const Request& req, Response& res, const Location* location) {
     try {
         // Extract and validate file path
         std::string_view filePathView = req.getPath();
@@ -674,7 +816,8 @@ void cgi(const Request& req, Response& res) {
 // Handle HTTP redirection requests
 // @param req The incoming HTTP request
 // @param res The response object to populate
-void redirect(const Request& req, Response& res) {
+// @param location The matching location configuration
+void redirect(const Request& req, Response& res, const Location* location) {
     try {
         // Extract the requested path
         std::string_view pathView = req.getPath();

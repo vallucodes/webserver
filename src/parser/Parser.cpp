@@ -44,7 +44,7 @@ bool isBadRequest(const Request& req){
     if ( !isValidRequestTarget(req.getPath()))
         return true;
     if ( !isValidProtocol(req.getHttpVersion()))
-        return true; 
+        return true;
     return false;
 }
 
@@ -99,26 +99,26 @@ bool isBadHeader(Request& req) {
             return true;
         }
     }
-    return false; 
+    return false;
 }
 
 bool isBadMethod(Request& req){
     if (req.getHttpVersion() == "HTTP/1.1"){
         const auto& hostValues = req.getHeaders("host");
         if (hostValues.empty())
-            return true; 
+            return true;
     }
     if (req.getMethod() == "POST"){
         const auto& contentLength = req.getHeaders("content-length");
         const auto& transferEncoding = req.getHeaders("transfer-encoding");
         if (contentLength.empty() && transferEncoding.empty())
-            return true; 
+            return true;
     }
     if (req.getMethod() == "GET"){
         const auto& contentLength = req.getHeaders("content-length");
         const auto& transferEncoding = req.getHeaders("transfer-encoding");
         if (!contentLength.empty() && !transferEncoding.empty())
-            return true; 
+            return true;
     }
     return false;
 }
@@ -144,7 +144,7 @@ std::string decodeChunkedBody(std::string body){
 
         if (chunkSize == 0) break;
 
-        if (pos + chunkSize > body.size()) break; 
+        if (pos + chunkSize > body.size()) break;
 
         result.append(body.substr(pos, chunkSize));
         pos += chunkSize + 2;
@@ -156,9 +156,9 @@ std::string decodeChunkedBody(std::string body){
 Request Parser::parseRequest(const std::string& httpString) {
     Request req;
     std::string_view sv(httpString);
-    
-    std::cout << "\noriginal string is:" << httpString << std::endl;
-    std::cout << "end of string" <<  std::endl;
+
+    // std::cout << "\noriginal string is:" << httpString << std::endl;
+    // std::cout << "end of string" <<  std::endl;
 
     //Parse request line
     size_t pos = sv.find("\r\n");
@@ -179,7 +179,7 @@ Request Parser::parseRequest(const std::string& httpString) {
         req.setStatus("400 Bad Request");
         return req;
     }
-    
+
     //Parse headers
     size_t posEndHeader = sv.find("\r\n\r\n");
     std::string_view headerLines = sv.substr(pos + 2, (posEndHeader + 2) - (pos + 2));

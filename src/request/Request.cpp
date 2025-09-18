@@ -8,11 +8,11 @@ void Request::setStatus(const std::string& status) {
   _status = status;
 }
 
-bool Request::getError() const { 
-    return _isError; 
+bool Request::getError() const {
+    return _isError;
 }
 
-void Request::setError(bool val) { 
+void Request::setError(bool val) {
     _isError = val;
 }
 
@@ -25,7 +25,7 @@ std::string Request::getMessageType() const {
 }
 
 void Request::print() const {
-    std::cout << "=== HTTP Request ===\n";
+    std::cout << "[DEBUG]:=== HTTP Request ===\n";
     std::cout << "Method: " << _method << "\n";
     std::cout << "Path: " << _path << "\n";
     std::cout << "HTTP Version: " << _httpVersion << "\n";
@@ -40,6 +40,8 @@ void Request::print() const {
         }
     }
 
-    std::cout << "Body:\n" << _body << "\n";
-    std::cout << "==================\n";
+    // std::cout << "Body:\n" << _body << "\n";
+    std::cout << "Body: Uncommented for debugging in Request.cpp" << std::endl;
+    std::cout << "[DEBUG]: ===  End of HTTP Request ===\n" << std::endl;
+
 }

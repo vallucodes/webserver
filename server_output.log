@@ -1,0 +1,47 @@
+[DEBUG]: Available routes:
+Server: server_1
+   -> GET HEAD 
+  /admin -> GET HEAD 
+  /delete -> DELETE GET HEAD 
+  /favicon.ico -> GET HEAD 
+  /upload -> GET HEAD POST 
+Server: server_2
+   -> GET HEAD 
+  /api -> GET HEAD POST 
+  /errors -> GET HEAD 
+  /imgs -> GET HEAD 
+  /upload -> GET HEAD POST 
+[DEBUG]: ===  End of Available routes ===
+
+Initializing servers...
+Server created: Host[127.0.0.1] Port:[8080]
+Server created: Host[127.0.0.1] Port:[8081]
+New client connected: 127.0.0.1:59498. Assigned fd: 7
+
+[DEBUG]:=== HTTP Request ===
+Method: GET
+Path: /admin
+HTTP Version: HTTP/1.1
+Headers:
+accept: */*
+user-agent: curl/8.5.0
+host: localhost:8080
+Body: Uncommented for debugging in Request.cpp
+[DEBUG]: ===  End of HTTP Request ===
+
+DEBUG: Finding location for path '/admin', locations count: 5
+DEBUG: Checking location '', index='index.html', autoindex=0
+DEBUG: Checking location '/upload', index='upload.html', autoindex=0
+DEBUG: Checking location '/delete', index='delete.html', autoindex=0
+DEBUG: Checking location '/favicon.ico', index='index.html', autoindex=0
+DEBUG: Checking location '/admin', index='index.html', autoindex=0
+DEBUG: Exact match found for '/admin'
+[DEBUG]:=== HTTP Response ===
+Status: 200 OK
+Headers:
+Connection: close
+Content-Length: 2490
+Content-Type: text/html
+Body: Uncommented for debugging in Response.cpp
+[DEBUG]: ===  End of HTTP Response ===
+
