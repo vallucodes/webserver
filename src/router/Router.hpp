@@ -118,7 +118,7 @@ class Router {
      * This static method generates basic HTML error pages for common HTTP
      * status codes when custom error page files are not available.
      */
-    static std::string getDefaultErrorPage(int status);
+    // Now using router::utils::ErrorResponseBuilder::getErrorPageHtml instead
 
   private:
     /**
@@ -187,4 +187,4 @@ class Router {
  *
  * Used throughout the web server when errors need to be returned to clients.
  */
-void setErrorResponse(Response& res, int status);
+// Now using router::utils::ErrorResponseBuilder::setErrorResponse instead

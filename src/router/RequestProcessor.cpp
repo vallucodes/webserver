@@ -9,6 +9,7 @@
  */
 
 #include "RequestProcessor.hpp"
+#include "utils/ErrorResponseBuilder.hpp"
 #include "handlers/Handlers.hpp"
 #include <iostream>
 #include <algorithm>
@@ -44,7 +45,7 @@ void RequestProcessor::processRequest(const Server& server, const Request& req,
     // Validate and normalize the path
     if (!validatePath(path)) {
         logRequestProcessing(req, "validation_failed", "Invalid path: " + path);
-        generateErrorResponse(res, http::BAD_REQUEST_400, "Invalid request path");
+        router::utils::ErrorResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400);
         return;
     }
 
@@ -74,7 +75,7 @@ void RequestProcessor::processRequest(const Server& server, const Request& req,
 
     // All attempts failed - return 404
     logRequestProcessing(req, "not_found", "No handler or static file found");
-    generateErrorResponse(res, http::NOT_FOUND_404, "Resource not found: " + path);
+    router::utils::ErrorResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404);
 }
 
 /**
@@ -155,11 +156,11 @@ bool RequestProcessor::executeHandlerSafely(const Handler* handler, const Server
         return true;
     } catch (const std::exception& e) {
         logRequestProcessing(req, "handler_error", std::string("Exception: ") + e.what());
-        generateErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, "Handler execution failed");
+        router::utils::ErrorResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
         return false;
     } catch (...) {
         logRequestProcessing(req, "handler_error", "Unknown exception occurred");
-        generateErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, "Handler execution failed");
+        router::utils::ErrorResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
         return false;
     }
 }

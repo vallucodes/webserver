@@ -21,6 +21,7 @@
 
 #include "../../inc/webserv.hpp"
 #include "Router.hpp"
+#include "utils/ErrorResponseBuilder.hpp"
 #include "HttpConstants.hpp"
 #include "handlers/Handlers.hpp"
 #include <algorithm>
@@ -335,23 +336,7 @@ const Location* Router::findLocation(const Server& server, const std::string& pa
  * @param status HTTP status code (e.g., 404, 500)
  * @return HTML content string for the error page
  */
-std::string Router::getDefaultErrorPage(int status) {
-    switch (status) {
-        case http::NOT_FOUND_404:
-            return readFileToString(error_page::ERROR_PAGE_NOT_FOUND_404);
-        case http::METHOD_NOT_ALLOWED_405:
-            return readFileToString(error_page::ERROR_PAGE_METHOD_NOT_ALLOWED_405);
-        case http::BAD_REQUEST_400:
-            return readFileToString(error_page::ERROR_PAGE_BAD_REQUEST_400);
-        case http::PAYLOAD_TOO_LARGE_413:
-            return readFileToString(error_page::ERROR_PAGE_PAYLOAD_TOO_LARGE_413);
-        case http::INTERNAL_SERVER_ERROR_500:
-            return readFileToString(error_page::ERROR_PAGE_INTERNAL_SERVER_ERROR_500);
-        default:
-            // Fallback to generic 500 error for unknown status codes
-            return readFileToString(error_page::ERROR_PAGE_INTERNAL_SERVER_ERROR_500);
-    }
-}
+// Now using ErrorResponseBuilder::getErrorPageHtml instead
 
 /**
  * @brief Set up a complete error response with appropriate status, headers, and body
@@ -371,28 +356,7 @@ std::string Router::getDefaultErrorPage(int status) {
  * @param res Response object to configure with error details
  * @param status HTTP status code for the error (e.g., 404, 500)
  */
-void setErrorResponse(Response& res, int status){
-    // Set the HTTP status line based on the error code
-    if (status == http::NOT_FOUND_404) {
-        res.setStatus(http::STATUS_NOT_FOUND_404);
-    } else if (status == http::METHOD_NOT_ALLOWED_405) {
-        res.setStatus(http::STATUS_METHOD_NOT_ALLOWED_405);
-    } else if (status == http::BAD_REQUEST_400) {
-        res.setStatus(http::STATUS_BAD_REQUEST_400);
-    } else if (status == http::PAYLOAD_TOO_LARGE_413) {
-        res.setStatus(http::STATUS_PAYLOAD_TOO_LARGE_413);
-    } else if (status == http::INTERNAL_SERVER_ERROR_500) {
-        res.setStatus(http::STATUS_INTERNAL_SERVER_ERROR_500);
-    }
-
-    // Set standard headers for HTML error responses
-    res.setHeaders("Content-Type", "text/html");
-    res.setHeaders("Content-Length", std::to_string(Router::getDefaultErrorPage(status).length()));
-    res.setHeaders("Connection", "close");
-
-    // Set the response body with the error page HTML
-    res.setBody(Router::getDefaultErrorPage(status));
-}
+// Now using ErrorResponseBuilder::setErrorResponse instead
 
 /**
  * @brief Process an incoming HTTP request and route it to the appropriate handler

@@ -61,7 +61,7 @@
  * @return String containing the complete file contents
  * @throws std::runtime_error if file cannot be opened or read
  */
-std::string readFileToString(const std::string& filename);
+// Now using router::utils::FileUtils::readFileToString instead
 
 /**
  * @brief Handle GET requests for static files and pages
