@@ -221,7 +221,7 @@ void	Cluster::sendPendingData(size_t& i) {
 			// Ilia added this
 			// Close connection after sending response (HTTP/1.0 style)
 			// or infinity loop
-			dropClient(i, " - Response sent, closing connection");
+			dropClient(i, " - Response sent, closing connection\n");
 		}
 		else if (sent < 0)
 			dropClient(i, CLIENT_SEND_ERROR);

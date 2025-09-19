@@ -224,9 +224,9 @@ void RequestProcessor::generateErrorResponse(Response& res, int status,
  */
 void RequestProcessor::logRequestProcessing(const Request& req, const std::string& stage,
                                            const std::string& details) const {
-    std::cout << "[RequestProcessor] " << stage;
+    // std::cout << "[RequestProcessor] " << stage; // commented for debug
     if (!details.empty()) {
         std::cout << ": " << details;
     }
-    std::cout << " (Path: " << req.getPath() << ")" << std::endl;
+    // std::cout << " (Path: " << req.getPath() << ")" << std::endl; // commented for debug
 }

@@ -798,7 +798,7 @@ void cgi(const Request& req, Response& res, const Location* location) {
             router::utils::ErrorResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
             return;
         }
-        std::cout << "CGI: Script executed successfully" << std::endl;
+        // std::cout << "CGI: Script executed successfully" << std::endl;
 
         // Parse CGI output (simple parsing - in production you'd want more robust parsing)
         // CGI output format: headers followed by blank line, then body

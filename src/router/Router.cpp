@@ -22,7 +22,7 @@ Router::Router() {}
 Router::~Router() {}
 
 /**
- * @brief List all registered routes
+ * @brief List all registered routes (debug function)
  */
 void Router::listRoutes() const {
     std::cout << "[DEBUG]: Available routes:" << std::endl;
@@ -131,31 +131,21 @@ void Router::addRoute(std::string_view server_name, std::string_view method, std
  * @return Handler function or nullptr
  */
 const Router::Handler* Router::findHandler(const std::string& server_name, const std::string& method, const std::string& path) const {
-    // std::cout << "DEBUG ROUTER: Looking for server: " << server_name << ", method: " << method << ", path: " << path << std::endl;
-
     // Step 1: Find the server in our routing table
     auto server_it = _routes.find(server_name);
     if (server_it == _routes.end()) {
-        std::cout << "DEBUG ROUTER: Server not found in routing table" << std::endl;
         return nullptr; // Server not found in routing table
     }
 
     const auto& server_routes = server_it->second;
-    std::cout << "DEBUG ROUTER: Server found, checking " << server_routes.size() << " routes" << std::endl;
 
     // Step 2: Try exact path match first (highest priority)
     auto path_it = server_routes.find(path);
     if (path_it != server_routes.end()) {
-        std::cout << "DEBUG ROUTER: Exact path match found for: " << path << std::endl;
         auto method_it = path_it->second.find(method);
         if (method_it != path_it->second.end()) {
-            std::cout << "DEBUG ROUTER: Handler found for method: " << method << std::endl;
             return &method_it->second; // Exact match found
-        } else {
-            std::cout << "DEBUG ROUTER: Method " << method << " not found for path " << path << std::endl;
         }
-    } else {
-        std::cout << "DEBUG ROUTER: No exact path match for: " << path << std::endl;
     }
 
     // Step 3: If no exact match, try advanced matching strategies
@@ -246,8 +236,6 @@ const Location* Router::findLocation(const Server& server, const std::string& pa
  * @param res Response object
  */
 void Router::handleRequest(const Server& server, const Request& req, Response& res) const {
-    std::cout << "=== ROUTER HANDLE REQUEST START ===" << std::endl;
-
     // Extract method and path from the request
     std::string_view method_view = req.getMethod();
     std::string_view path_view = req.getPath();
@@ -255,24 +243,14 @@ void Router::handleRequest(const Server& server, const Request& req, Response& r
     std::string method(method_view);
     std::string path(path_view);
 
-    std::cout << "DEBUG ROUTER handleRequest: Server: " << server.getName() << ", Method: " << method << ", Path: " << path << std::endl;
-
-    // Debug: Print the incoming request details
-    // std::cout << "---------" << std::endl;
-    req.print();
-    // std::cout << "---------" << std::endl;
-
     // Find the appropriate handler for this request
     const Handler* handler = findHandler(server.getName(), method, path);
 
     // Find the matching location configuration for this request
     const Location* location = findLocation(server, path);
-    std::cout << "DEBUG ROUTER: Found location: " << (location ? location->location : "nullptr") << std::endl;
 
     // Delegate to RequestProcessor for execution and fallback handling
     _requestProcessor.processRequest(server, req, handler, res, location);
-
-    std::cout << "=== ROUTER HANDLE REQUEST END ===" << std::endl;
 }
 
 
