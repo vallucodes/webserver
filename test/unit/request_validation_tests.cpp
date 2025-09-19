@@ -179,3 +179,133 @@ TEST(DecodeChunkedBodyTest, DecodeLargeHexChunkSize) {
 	EXPECT_EQ(buffer, expected);
 	EXPECT_TRUE(data_validity);
 }
+
+#define MAX_BODY_SIZE 10000000
+
+TEST(RequestCompleteTest, ReturnFalseForLargeBuffer) {
+	ClientRequestState client_state;
+	client_state.buffer = std::string(11 * 1024 * 1024, 'a'); // 11MB buffer
+
+	EXPECT_FALSE(requestComplete(client_state));
+	EXPECT_FALSE(client_state.data_validity);
+}
+
+// Test 2: No header end should return false
+TEST(RequestCompleteTest, ReturnFalseIfNoHeaderEnd) {
+	ClientRequestState client_state;
+	client_state.buffer = "GET / HTTP/1.1\r\nContent-Length: 10"; // no \r\n\r\n
+
+	EXPECT_FALSE(requestComplete(client_state));
+	EXPECT_TRUE(client_state.data_validity); // Should remain true
+}
+
+// Test 3: Valid chunked request should return true
+TEST(RequestCompleteTest, ReturnTrueForValidChunkedRequest) {
+	ClientRequestState client_state;
+	client_state.buffer =
+		"GET / HTTP/1.1\r\n"
+		"Transfer-Encoding: chunked\r\n"
+		"\r\n"
+		"4\r\nWiki\r\n"
+		"0\r\n\r\n";
+
+	EXPECT_TRUE(requestComplete(client_state));
+	EXPECT_TRUE(client_state.data_validity);
+}
+
+// Test 4: Missing body should return false
+TEST(RequestCompleteTest, ReturnFalseNoBody) {
+	ClientRequestState client_state;
+	client_state.buffer =
+		"GET / HTTP/1.1\r\n"
+		"Transfer-Encoding: chunked\r\n"
+		"4\r\nWiki\r\n"
+		"0\r\n\r\n"; // Missing \r\n\r\n after headers
+
+	EXPECT_FALSE(requestComplete(client_state));
+	EXPECT_TRUE(client_state.data_validity);
+}
+
+// Test 5: Short body should return false
+TEST(RequestCompleteTest, ReturnFalseForShortBody) {
+	ClientRequestState client_state;
+	client_state.buffer =
+		"POST / HTTP/1.1\r\n"
+		"Content-Length: 10\r\n"
+		"\r\n"
+		"12345"; // Only 5 chars, expecting 10
+
+	EXPECT_FALSE(requestComplete(client_state));
+	EXPECT_TRUE(client_state.data_validity);
+}
+
+// Test 6: Correct body size should return true
+TEST(RequestCompleteTest, ReturnTrueForCorrectBodySize) {
+	ClientRequestState client_state;
+	client_state.buffer =
+		"POST / HTTP/1.1\r\n"
+		"Content-Length: 5\r\n"
+		"\r\n"
+		"12345";
+
+	EXPECT_TRUE(requestComplete(client_state));
+	EXPECT_TRUE(client_state.data_validity);
+}
+
+// Test 7: More than one request should return true
+TEST(RequestCompleteTest, ReturnTrueMoreThanOneRequest) {
+	ClientRequestState client_state;
+	client_state.buffer =
+		"POST / HTTP/1.1\r\n"
+		"Content-Length: 5\r\n"
+		"\r\n"
+		"12345678910"; // Extra data beyond Content-Length
+
+	EXPECT_TRUE(requestComplete(client_state));
+	EXPECT_TRUE(client_state.data_validity);
+}
+
+// Test 8: Empty request should return false
+TEST(RequestCompleteTest, ReturnFalseForEmptyRequest) {
+	ClientRequestState client_state;
+	client_state.buffer = "";
+
+	EXPECT_FALSE(requestComplete(client_state));
+	EXPECT_TRUE(client_state.data_validity); // Empty is not invalid, just incomplete
+}
+
+// Test 9: Header only request should return true
+TEST(RequestCompleteTest, ReturnTrueMoreThanOneRequestOnlyHeader) {
+	ClientRequestState client_state;
+	client_state.buffer =
+		"POST / HTTP/1.1\r\n"
+		"\r\n"
+		"12345678910";
+
+	EXPECT_TRUE(requestComplete(client_state));
+	EXPECT_TRUE(client_state.data_validity);
+}
+
+// Test 10: CRLF in body should not affect completion
+TEST(RequestCompleteTest, ReturnFalseCRLFCRLFInBodyStatusTrue) {
+	ClientRequestState client_state;
+	client_state.buffer =
+		"POST / HTTP/1.1\r\n"
+		"Content-Length: 500\r\n"
+		"\r\n"
+		"12345678910\r\n\r\n2134256"; // Body contains CRLF but not 500 chars
+
+	EXPECT_FALSE(requestComplete(client_state)); // Not enough body content
+	EXPECT_TRUE(client_state.data_validity);
+}
+
+// Test 11: Only header should return true
+TEST(RequestCompleteTest, ReturnTrueOnlyHeader) {
+	ClientRequestState client_state;
+	client_state.buffer =
+		"POST / HTTP/1.1\r\n"
+		"\r\n";
+
+	EXPECT_TRUE(requestComplete(client_state));
+	EXPECT_TRUE(client_state.data_validity);
+}

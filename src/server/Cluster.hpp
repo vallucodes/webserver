@@ -49,7 +49,6 @@ class Cluster {
 		std::map<int, ListenerGroup*>	_clients;			// fd of client and related config
 		Router							_router;			// HTTP router for handling requests
 
-
 		std::map<int, ClientRequestState>	_client_buffers;	// storing client related reuqest, and bool is 1:valid, 0 invalid
 
 		void			groupConfigs();
