@@ -81,13 +81,14 @@ class RequestProcessor {
      * @param req The incoming HTTP request
      * @param handler The matched handler function (can be nullptr)
      * @param res The response object to populate
+     * @param location The matching location configuration (can be nullptr)
      *
      * This is the main entry point for request processing. It orchestrates
      * the entire request processing pipeline including validation, handler
      * execution, and fallback mechanisms.
      */
     void processRequest(const Server& server, const Request& req,
-                       const Handler* handler, Response& res) const;
+                       const Handler* handler, Response& res, const Location* location) const;
 
     /**
      * @brief Validate and preprocess a request path
@@ -122,11 +123,12 @@ class RequestProcessor {
      * @param req The request object
      * @param res The response object
      * @param path The normalized request path
+     * @param location The matching location configuration
      * @return true if execution successful, false if error occurred
      */
     bool executeHandlerSafely(const Handler* handler, const Server& server,
                              const Request& req, Response& res,
-                             const std::string& path) const;
+                             const std::string& path, const Location* location) const;
 
     /**
      * @brief Attempt to serve a request as a static file

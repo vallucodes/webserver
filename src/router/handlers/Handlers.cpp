@@ -168,54 +168,58 @@ std::string sanitizeFilename(std::string filename) {
     return filename;
 }
 
-// Generate HTML directory listing
+// Helper function to replace all occurrences of a substring
+std::string replaceAll(std::string str, const std::string& from, const std::string& to) {
+    size_t start_pos = 0;
+    while((start_pos = str.find(from, start_pos)) != std::string::npos) {
+        str.replace(start_pos, from.length(), to);
+        start_pos += to.length();
+    }
+    return str;
+}
+
+// Generate HTML directory listing using template
 // @param dirPath Absolute path to the directory
 // @param requestPath The request path for breadcrumbs
 // @return HTML string with directory listing
 std::string generateDirectoryListing(const std::string& dirPath, const std::string& requestPath) {
-    std::string html = R"(
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Directory listing for )" + requestPath + R"(</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
-        h1 { color: #333; border-bottom: 2px solid #333; padding-bottom: 10px; }
-        .listing { background: white; border: 1px solid #ddd; border-radius: 5px; overflow: hidden; }
-        .item { padding: 12px 20px; border-bottom: 1px solid #eee; display: flex; align-items: center; }
-        .item:last-child { border-bottom: none; }
-        .item:hover { background: #f8f8f8; }
-        .name { flex: 1; text-decoration: none; color: #0066cc; }
-        .name:hover { text-decoration: underline; }
-        .size { color: #666; font-size: 0.9em; }
-        .date { color: #666; font-size: 0.9em; margin-left: 20px; }
-        .dir-icon { color: #f4a261; margin-right: 10px; font-size: 1.2em; }
-        .file-icon { color: #2a9d8f; margin-right: 10px; font-size: 1.2em; }
-        .back-link { margin-bottom: 20px; display: inline-block; color: #0066cc; text-decoration: none; }
-        .back-link:hover { text-decoration: underline; }
-    </style>
-</head>
-<body>
-    <h1>Directory listing for )" + requestPath + R"(</h1>
-)";
+    // Load template file
+    std::string templatePath = page::WWW + "/autoindex_template.html";
+    std::string html;
 
-    // Add parent directory link if not root
+    try {
+        html = readFileToString(templatePath);
+    } catch (const std::exception& e) {
+        // Fallback to fallback template file if main template fails
+        std::cout << "Warning: Could not load autoindex template: " << e.what() << std::endl;
+        std::string fallbackPath = page::WWW + "/autoindex_fallback.html";
+        try {
+            html = readFileToString(fallbackPath);
+        } catch (const std::exception& e2) {
+            // If both templates fail, return a simple error message
+            std::cout << "Error: Could not load fallback template: " << e2.what() << std::endl;
+            return "<html><body><h1>Error</h1><p>Could not load directory listing template.</p></body></html>";
+        }
+    }
+
+    // Replace placeholders
+    html = replaceAll(html, "{{PATH}}", requestPath);
+
+    // Generate parent directory link
+    std::string parentLink = "";
     if (requestPath != "/") {
         std::string parentPath = requestPath;
         size_t lastSlash = parentPath.find_last_of('/');
         if (lastSlash > 0) {
             parentPath = parentPath.substr(0, lastSlash);
             if (parentPath.empty()) parentPath = "/";
-            html += "    <a href=\"" + parentPath + "\" class=\"back-link\">← Parent directory</a>\n";
+            parentLink = "    <a href=\"" + parentPath + "\" class=\"back-link\">← Parent directory</a>\n";
         }
     }
+    html = replaceAll(html, "{{PARENT_LINK}}", parentLink);
 
-    html += R"(
-    <div class="listing">
-)";
-
+    // Generate directory items
+    std::string items = "";
     try {
         for (const auto& entry : std::filesystem::directory_iterator(dirPath)) {
             std::string name = entry.path().filename().string();
@@ -248,22 +252,18 @@ std::string generateDirectoryListing(const std::string& dirPath, const std::stri
                 dateStr = buffer;
             } catch (...) {}
 
-            html += "        <div class=\"item\">\n";
-            html += "            <span class=\"" + cssClass + "\">" + icon + "</span>\n";
-            html += "            <a href=\"" + linkPath + "\" class=\"name\">" + name + "</a>\n";
-            html += "            <span class=\"size\">" + sizeStr + "</span>\n";
-            html += "            <span class=\"date\">" + dateStr + "</span>\n";
-            html += "        </div>\n";
+            items += "        <div class=\"item\">\n";
+            items += "            <span class=\"" + cssClass + "\">" + icon + "</span>\n";
+            items += "            <a href=\"" + linkPath + "\" class=\"name\">" + name + "</a>\n";
+            items += "            <span class=\"size\">" + sizeStr + "</span>\n";
+            items += "            <span class=\"date\">" + dateStr + "</span>\n";
+            items += "        </div>\n";
         }
     } catch (const std::exception& e) {
-        html += "        <div class=\"item\">Error reading directory: " + std::string(e.what()) + "</div>\n";
+        items += "        <div class=\"item\">Error reading directory: " + std::string(e.what()) + "</div>\n";
     }
 
-    html += R"(
-    </div>
-</body>
-</html>
-)";
+    html = replaceAll(html, "{{ITEMS}}", items);
 
     return html;
 }
@@ -297,6 +297,8 @@ std::string generateDirectoryListing(const std::string& dirPath, const std::stri
  * @param location The matching location configuration (contains root, index, autoindex settings)
  */
 void get(const Request& req, Response& res, const Location* location) {
+    std::cout << "=== GET HANDLER START ===" << std::endl;
+    std::cout << "GET HANDLER CALLED: path=" << req.getPath() << ", location=" << (location ? location->location : "nullptr") << std::endl;
     try {
         // Extract and validate file path
         std::string_view filePathView = req.getPath();
@@ -308,39 +310,56 @@ void get(const Request& req, Response& res, const Location* location) {
         std::string requestPath = std::string(filePathView);
         std::string filePath;
 
-        // If we have location configuration, use it
-        if (location != nullptr) {
-            // If location has an index directive, use it
-            if (!location->index.empty()) {
-                // For location-specific index, check in the location directory first
-                std::string indexPath = page::WWW + requestPath;
-                if (!indexPath.ends_with('/')) indexPath += '/';
-                indexPath += location->index;
-
-                // If location-specific index exists, use it
-                if (std::filesystem::exists(indexPath) && std::filesystem::is_regular_file(indexPath)) {
-                    std::string fileContent = readFileToString(indexPath);
-                    std::string contentType = getContentType(indexPath);
-                    setSuccessResponse(res, fileContent, contentType);
-                    return;
-                }
-
-                // Otherwise, use the global index file
-                std::string globalIndexPath = page::WWW + "/" + location->index;
-                if (std::filesystem::exists(globalIndexPath) && std::filesystem::is_regular_file(globalIndexPath)) {
-                    std::string fileContent = readFileToString(globalIndexPath);
-                    std::string contentType = getContentType(globalIndexPath);
-                    setSuccessResponse(res, fileContent, contentType);
-                    return;
-                }
-            }
-
-            // If location has autoindex enabled and path is a directory, generate directory listing
-            std::string dirPath = page::WWW + requestPath;
-            if (location->autoindex && std::filesystem::is_directory(dirPath)) {
-                std::string dirListing = generateDirectoryListing(dirPath, requestPath);
+        // TEMPORARY: Force autoindex for /imgs path for debugging
+        if (requestPath == "/imgs" || requestPath == "/imgs/") {
+            std::string dirPath = page::WWW + "/imgs";
+            std::cout << "DEBUG: Forced autoindex for /imgs path, requestPath: " << requestPath << std::endl;
+            if (std::filesystem::is_directory(dirPath)) {
+                std::string dirListing = generateDirectoryListing(dirPath, "/imgs");
                 setSuccessResponse(res, dirListing, http::CONTENT_TYPE_HTML);
                 return;
+            }
+        }
+
+        // If we have location configuration, use it
+        if (location != nullptr) {
+            std::string dirPath = page::WWW + requestPath;
+
+            // Check if it's a directory first
+            if (std::filesystem::is_directory(dirPath)) {
+                std::cout << "DEBUG: Directory found: " << dirPath << ", autoindex: " << location->autoindex << ", index: " << location->index << std::endl;
+                // If location has autoindex enabled, generate directory listing
+                if (location->autoindex) {
+                    std::cout << "DEBUG: Generating autoindex for " << requestPath << std::endl;
+                    std::string dirListing = generateDirectoryListing(dirPath, requestPath);
+                    setSuccessResponse(res, dirListing, http::CONTENT_TYPE_HTML);
+                    return;
+                }
+
+                // If autoindex is disabled, try to serve index files
+                if (!location->index.empty()) {
+                    // For location-specific index, check in the location directory first
+                    std::string indexPath = dirPath;
+                    if (!indexPath.ends_with('/')) indexPath += '/';
+                    indexPath += location->index;
+
+                    // If location-specific index exists, use it
+                    if (std::filesystem::exists(indexPath) && std::filesystem::is_regular_file(indexPath)) {
+                        std::string fileContent = readFileToString(indexPath);
+                        std::string contentType = getContentType(indexPath);
+                        setSuccessResponse(res, fileContent, contentType);
+                        return;
+                    }
+
+                    // Otherwise, use the global index file (only for non-autoindex locations)
+                    std::string globalIndexPath = page::WWW + "/" + location->index;
+                    if (std::filesystem::exists(globalIndexPath) && std::filesystem::is_regular_file(globalIndexPath)) {
+                        std::string fileContent = readFileToString(globalIndexPath);
+                        std::string contentType = getContentType(globalIndexPath);
+                        setSuccessResponse(res, fileContent, contentType);
+                        return;
+                    }
+                }
             }
         }
 
@@ -387,6 +406,7 @@ void get(const Request& req, Response& res, const Location* location) {
         // Unexpected error
         setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
     }
+    std::cout << "=== GET HANDLER END ===" << std::endl;
 }
 
 /**

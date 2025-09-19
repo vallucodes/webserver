@@ -31,7 +31,7 @@ RequestProcessor::~RequestProcessor() {
  * @brief Main request processing method
  */
 void RequestProcessor::processRequest(const Server& server, const Request& req,
-                                     const Handler* handler, Response& res) const {
+                                     const Handler* handler, Response& res, const Location* location) const {
     // Extract and validate request components
     std::string_view method_view = req.getMethod();
     std::string_view path_view = req.getPath();
@@ -52,9 +52,17 @@ void RequestProcessor::processRequest(const Server& server, const Request& req,
     logRequestProcessing(req, "normalized", "Normalized path: " + path);
 
     // Execute handler if available
-    if (handler && executeHandlerSafely(handler, server, req, res, path)) {
-        logRequestProcessing(req, "handler_executed", "Handler executed successfully");
-        return;
+    std::cout << "DEBUG: Handler found: " << (handler ? "YES" : "NO") << ", Server: " << server.getName() << ", Path: " << path << std::endl;
+    if (handler) {
+        std::cout << "DEBUG: Executing handler for path: " << path << std::endl;
+        if (executeHandlerSafely(handler, server, req, res, path, location)) {
+            logRequestProcessing(req, "handler_executed", "Handler executed successfully");
+            return;
+        } else {
+            std::cout << "DEBUG: Handler execution failed" << std::endl;
+        }
+    } else {
+        std::cout << "DEBUG: No handler found, trying static file fallback" << std::endl;
     }
 
     // Fallback: try to serve as static file
@@ -123,6 +131,12 @@ void RequestProcessor::normalizePath(std::string& path) const {
     if (!path.empty() && path[0] != '/') {
         path = "/" + path;
     }
+
+    // Normalize trailing slash for directory requests
+    // Remove trailing slash unless it's the root path
+    if (path.length() > 1 && path.back() == '/') {
+        path.pop_back();
+    }
 }
 
 /**
@@ -130,17 +144,13 @@ void RequestProcessor::normalizePath(std::string& path) const {
  */
 bool RequestProcessor::executeHandlerSafely(const Handler* handler, const Server& server __attribute__((unused)),
                                            const Request& req, Response& res,
-                                           const std::string& path __attribute__((unused))) const {
+                                           const std::string& path __attribute__((unused)), const Location* location) const {
     if (!handler) {
         return false;
     }
 
     try {
-        // Find matching location (this would need to be passed or looked up)
-        // For now, we'll pass nullptr as location since we're refactoring
-        const Location* location = nullptr; // TODO: Implement location lookup
-
-        // Execute the handler
+        // Execute the handler with the passed location
         (*handler)(req, res, location);
         return true;
     } catch (const std::exception& e) {

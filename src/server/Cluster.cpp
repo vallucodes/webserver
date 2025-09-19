@@ -276,6 +276,16 @@ const Server&	Cluster::findRelevantConfig(int client_fd, const std::string& buff
 			return conf;
 	}
 	return *conf->default_config;
+
+	// Ilia added this for testing purposes:
+	// NEW PORT-BASED SERVER SELECTION:
+	// For port-based server differentiation, just return the default server
+	// since the client is already associated with the correct server group
+	// based on which port they connected to
+	/*
+	ListenerGroup*	conf = _clients[client_fd];
+	return *conf->default_config;
+	*/
 }
 
 const	std::set<int>& Cluster::getServerFds() const {
