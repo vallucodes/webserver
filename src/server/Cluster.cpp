@@ -129,25 +129,25 @@ void	Cluster::handleClientInData(size_t& i) {
 	}
 }
 
-std::string headersToString(const std::unordered_map<std::string, std::vector<std::string>>& headers) {
-    std::string result;
-    for (const auto& pair : headers) {
-        const std::string& key = pair.first;
-        const std::vector<std::string>& values = pair.second;
-        for (const auto& value : values) {
-            result += key + ": " + value + "\r\n";
-        }
-    }
-    return result;
+std::string	headersToString(const std::unordered_map<std::string, std::vector<std::string>>& headers) {
+	std::string result;
+	for (const auto& pair : headers) {
+		const std::string& key = pair.first;
+		const std::vector<std::string>& values = pair.second;
+		for (const auto& value : values) {
+			result += key + ": " + value + "\r\n";
+		}
+	}
+	return result;
 }
 
 // Convert Response object to HTTP string
-std::string responseToString(const Response& res) {
-    std::string responseStr = "HTTP/1.1 " + std::string(res.getStatus()) + "\r\n";
-    responseStr += headersToString(res.getAllHeaders());
+std::string	responseToString(const Response& res) {
+	std::string responseStr = "HTTP/1.1 " + std::string(res.getStatus()) + "\r\n";
+	responseStr += headersToString(res.getAllHeaders());
 		responseStr += "\r\n";
-    responseStr += std::string(res.getBody());
-    return responseStr;
+	responseStr += std::string(res.getBody());
+	return responseStr;
 }
 
 void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
@@ -185,20 +185,6 @@ void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 		// send response that payload is too large, 413
 		dropClient(i, CLIENT_MALFORMED_REQUEST);
 	}
-}
-
-std::string	Cluster::popResponseChunk(ClientRequestState& client_state) {
-	std::string response;
-	if (client_state.response.size() > MAX_RESPONSE_SIZE) {
-		response = client_state.response.substr(0, MAX_RESPONSE_SIZE);
-		// std::cout << "request: \n" << client_state.request << std::endl;
-		client_state.response = client_state.response.substr(MAX_RESPONSE_SIZE);
-	}
-	else {
-		response = client_state.response;
-		client_state.response.erase();
-	}
-	return response;
 }
 
 void	Cluster::sendPendingData(size_t& i) {
@@ -282,28 +268,4 @@ const	std::set<int>& Cluster::getServerFds() const {
 	return _server_fds;
 }
 
-void	Cluster::buildRequest(ClientRequestState& client_state) {
-	client_state.request = client_state.buffer.substr(0, client_state.request_size);
-	// std::cout << "request: \n" << client_state.request << std::endl;
-	client_state.buffer = client_state.buffer.substr(client_state.request_size);
-	// std::cout << "buffer empty?: \n" << client_state.buffer.empty() << std::endl;
-}
 
-// bool Cluster::requestComplete(ClientRequestState& client_state) {
-// 	return ::requestComplete(client_state);
-// }
-
-// // Replace your private decodeChunkedBody method with:
-// void Cluster::decodeChunkedBody(std::string& buffer) {
-// 	::decodeChunkedBody(buffer);
-// }
-
-// // Replace your private isChunkedBodyComplete method with:
-// int Cluster::isChunkedBodyComplete(std::string& buffer, size_t header_end) {
-// 	return ::isChunkedBodyComplete(buffer, header_end);
-// }
-
-// // Replace your private isRequestBodyComplete method with:
-// bool Cluster::isRequestBodyComplete(ClientRequestState& client_state, const std::string& buffer, size_t header_end) {
-// 	return ::isRequestBodyComplete(client_state, buffer, header_end);
-// }

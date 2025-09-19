@@ -55,20 +55,13 @@ class Cluster {
 		void			groupConfigs();
 		void			createGroup(const Server& conf);
 		const Server&	findRelevantConfig(int client_fd, const std::string& buffer);
-		void			buildRequest(ClientRequestState& client_state);
-		std::string		popResponseChunk(ClientRequestState& client_state);
-
-		// bool			requestComplete(ClientRequestState& client_state);
-		// int				isChunkedBodyComplete(std::string& buffer, size_t header_end);
-		// bool			isRequestBodyComplete(ClientRequestState& client_state, const std::string& buffer, size_t header_end);
-		// void			decodeChunkedBody(std::string& buffer);
 
 		void	handleNewClient(size_t i);
 		void	handleClientInData(size_t& i);
 		void	sendPendingData(size_t& i);
+		void	checkForTimeouts();
 		void	dropClient(size_t& i, const std::string& msg);
 		void	processReceivedData(size_t& i, const char* buffer, int bytes);
-		void	checkForTimeouts();
 
 	public:
 

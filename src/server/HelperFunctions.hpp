@@ -13,6 +13,9 @@ uint64_t	getMaxClients();
 size_t		findHeader(const std::string& buffer);
 
 bool	requestComplete(ClientRequestState& client_state);
-void	decodeChunkedBody(std::string& buffer);
-int		isChunkedBodyComplete(std::string& buffer, size_t header_end);
+void	decodeChunkedBody(std::string& buffer, bool& data_validity);
+int		isChunkedBodyComplete(bool& data_validity, std::string& buffer, size_t header_end);
 bool	isRequestBodyComplete(ClientRequestState& client_state, const std::string& buffer, size_t header_end);
+
+std::string		popResponseChunk(ClientRequestState& client_state);
+void			buildRequest(ClientRequestState& client_state);
