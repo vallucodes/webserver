@@ -71,41 +71,29 @@ void Router::setupRouter(const std::vector<Server>& configs) {
                 Handler handler;
 
                 // Handler selection logic based on location properties:
-                std::cout << "Registering route: " << location_path << " -> " << method << std::endl;
-                std::cout << "Location CGI Path: '" << location.cgi_path << "'" << std::endl;
-                std::cout << "Location CGI Extensions: ";
-                for (const auto& ext : location.cgi_ext) {
-                    std::cout << "'" << ext << "' ";
-                }
-                std::cout << std::endl;
 
                 if (!location.return_url.empty()) {
                     // Redirect location: return_url is configured
                     // Use redirect handler for all HTTP methods
                     handler = redirect;
-                    std::cout << "Selected REDIRECT handler" << std::endl;
                 } else if (!location.cgi_path.empty() && !location.cgi_ext.empty()) {
                     // CGI location: Both CGI path and extension are configured
                     // Use CGI handler for script execution (supports any HTTP method)
                     handler = cgi;
-                    std::cout << "Selected CGI handler" << std::endl;
                 } else if (method == "POST" && !location.upload_path.empty()) {
                     // POST request to upload location: Handle file uploads
                     handler = post;
-                    std::cout << "Selected POST handler" << std::endl;
                 } else if (method == "DELETE" && !location.upload_path.empty()) {
                     // DELETE request from upload location: Handle file deletions
                     handler = del;
-                    std::cout << "Selected DELETE handler" << std::endl;
                 } else if (method == "GET" || method == "HEAD") {
                     // GET/HEAD requests: Handle static file serving
                     // HEAD is identical to GET but without response body
                     handler = get;
-                    std::cout << "Selected GET handler" << std::endl;
                 } else {
                     // Default handler for other methods or configurations
                     handler = get;
-                    std::cout << "Selected DEFAULT GET handler" << std::endl;
+
                 }
 
                 // Register the route in the routing table

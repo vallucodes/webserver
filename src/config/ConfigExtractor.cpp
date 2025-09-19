@@ -5,7 +5,6 @@ void	ConfigExtractor::extractFields(std::vector<Server>& servs, std::ifstream& c
 	Server		serv;
 
 	while (std::getline(cfg, line)) {
-		// std::cout << line << std::endl;
 		if (line.find("server {") != std::string::npos) {
 			serv = Server();
 			continue ;
@@ -57,7 +56,6 @@ void	ConfigExtractor::extractPort(Server& serv, const std::string& line) {
 	std::smatch	match;
 	if (std::regex_search(line, match, re))
 	{
-		// std::cout << "port found: " << match[1] << std::endl;
 		serv.setPort(std::stoi(match[1]));
 	}
 }

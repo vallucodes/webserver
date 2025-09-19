@@ -130,12 +130,13 @@ std::vector<std::string> ConfigValidator:: _methods = {
 	"GET",
 	"POST",
 	"DELETE",
-	"HEAD",
-	"PUT",
-	"PATCH",
-	"OPTIONS",
-	"CONNECT",
-	"TRACE"
+	"HEAD"
+
+	// "PUT",
+	// "PATCH",
+	// "OPTIONS",
+	// "CONNECT",
+	// "TRACE"
 };
 
 std::vector<std::string> ConfigValidator::_cgi_extensions = {
