@@ -39,6 +39,8 @@ gtest_discover_tests(testDecodeChunkedBody)
 
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
+set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
 
 # cmake -S . -B build
 # cmake --build build
