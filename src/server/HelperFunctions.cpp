@@ -57,10 +57,10 @@ uint64_t	getMaxClients() {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool	requestComplete(ClientRequestState& client_state) {
+bool	requestComplete(ClientRequestState& client_state, std::string& buffer) {
 	// std::cout << "Buffer to be parsed currently: " << std::endl;
 	// std::cout << buffer << std::endl;
-	std::string buffer = client_state.buffer;
+	buffer = client_state.buffer;
 
 	if (buffer.size() > MAX_BUFFER_SIZE) {
 		client_state.data_validity = false;
@@ -84,7 +84,7 @@ bool	requestComplete(ClientRequestState& client_state) {
 	// }
 
 	int status = -1;
-	status = isChunkedBodyComplete(client_state.data_validity, buffer, header_end);
+	status = isChunkedBodyComplete(client_state, buffer, header_end);
 	if (status != -1)
 		return status;
 
@@ -92,48 +92,65 @@ bool	requestComplete(ClientRequestState& client_state) {
 	return status;
 }
 
-void	decodeChunkedBody(std::string& buffer, bool& data_validity) {
+bool	decodeChunkedBody(std::string& buffer, ClientRequestState& client_state) {
 	std::string result;
 	size_t pos = 0;
-
 	size_t header_end = findHeader(buffer);
 	std::string headers = buffer.substr(0, header_end);
 	std::string body = buffer.substr(header_end);
+	bool endReq = false;
 	while (pos < body.size()) {
 		size_t lineEnd = body.find("\r\n", pos);
 		if (lineEnd == std::string::npos) {
-			data_validity = false;
+			client_state.data_validity = false;
 			break ;
 		}
 
 		std::string sizeLine = body.substr(pos, lineEnd - pos);
 		size_t chunkSize = 0;
 		std::istringstream(sizeLine) >> std::hex >> chunkSize;
+		
+
+		if (chunkSize == 0) {
+			size_t trailersEnd = body.find("\r\n\r\n", pos);
+			if (trailersEnd == std::string::npos) {
+				client_state.data_validity = false;
+				break;
+			}
+			pos = trailersEnd + 4;
+			endReq = true;
+			break;
+		}
+
 		pos = lineEnd + 2;
-
-		if (chunkSize == 0)
-			break ;
-
-		if (pos + chunkSize > body.size())
-			break ;
+		// if (pos + chunkSize + 2 > body.size()) {
+		// 	std::cout << "ASAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n";
+        //     //data_validity = false;
+        //     break;
+        // }
 
 		result.append(body.substr(pos, chunkSize));
 		pos += chunkSize + 2;
 	}
 
 	buffer = headers + result;
+	client_state.request_size = buffer.size();
+	// if (endReq ==  false && data_validity == true)
+	// 	std::cout << buffer << std::endl;
+	return (endReq);
 }
 
-int	isChunkedBodyComplete(bool& data_validity, std::string& buffer, size_t header_end) {
+int	isChunkedBodyComplete(ClientRequestState& client_state, std::string& buffer, size_t header_end) {
 	size_t pos = buffer.find("\r\nTransfer-Encoding: chunked\r\n");
 	if (pos != std::string::npos && pos < header_end) // search for body and only after we found the header
 	{
-		decodeChunkedBody(buffer, data_validity);
-		pos = buffer.find("0\r\n\r\n", header_end); // TODO test this
-		if (pos == std::string::npos)
-			return false;
-		else
-			return true;
+		// decodeChunkedBody(buffer, data_validity);
+		// pos = buffer.find("0\r\n\r\n", header_end); // TODO test this
+		// if (pos == std::string::npos)
+		// 	return false;
+		// else
+		// 	return true;
+		return(decodeChunkedBody(buffer, client_state));
 	}
 	return -1;
 }
@@ -174,9 +191,9 @@ std::string	popResponseChunk(ClientRequestState& client_state) {
 	return response;
 }
 
-void	buildRequest(ClientRequestState& client_state) {
-	client_state.request = client_state.buffer.substr(0, client_state.request_size);
+void	buildRequest(ClientRequestState& client_state, std::string& buffer) {
+	client_state.request = buffer.substr(0, client_state.request_size);
 	// std::cout << "request: \n" << client_state.request << std::endl;
-	client_state.buffer = client_state.buffer.substr(client_state.request_size);
+	buffer = client_state.buffer.substr(client_state.request_size);
 	// std::cout << "buffer empty?: \n" << client_state.buffer.empty() << std::endl;
 }

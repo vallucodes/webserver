@@ -21,8 +21,8 @@ TEST(DecodeChunkedBodyTest, DecodeSimpleChunkedBody) {
 		"Wikipedia";
 
 	bool data_validity = true;
-	decodeChunkedBody(buffer, data_validity);
 
+	EXPECT_TRUE(decodeChunkedBody(buffer, data_validity));
 	EXPECT_EQ(buffer, expected);
 	EXPECT_TRUE(data_validity);
 }
@@ -43,7 +43,7 @@ TEST(DecodeChunkedBodyTest, DecodeSingleChunk) {
 		"Hello World";
 
 	bool data_validity = true;
-	decodeChunkedBody(buffer, data_validity);
+	EXPECT_TRUE(decodeChunkedBody(buffer, data_validity));
 
 	EXPECT_EQ(buffer, expected);
 	EXPECT_TRUE(data_validity);
@@ -152,7 +152,7 @@ TEST(DecodeChunkedBodyTest, HandleIncompleteChunk) {
 		"\r\n";
 
 	bool data_validity = true;
-	decodeChunkedBody(buffer, data_validity);
+	EXPECT_FALSE(decodeChunkedBody(buffer, data_validity));
 
 	// EXPECT_EQ(buffer, expected);
 	EXPECT_FALSE(data_validity); // invalid chunk
@@ -172,6 +172,29 @@ TEST(DecodeChunkedBodyTest, DecodeLargeHexChunkSize) {
 		"POST / HTTP/1.1\r\n"
 		"Content-Type: text/plain\r\n"
 		"\r\n" + large_data;
+
+	bool data_validity = true;
+	decodeChunkedBody(buffer, data_validity);
+
+	EXPECT_EQ(buffer, expected);
+	EXPECT_TRUE(data_validity);
+}
+
+// Test 9: Large chunk size in hex
+TEST(DecodeChunkedBodyTest, DecodeLargeHexChunkSize) {
+	std::string buffer =
+		"POST / HTTP/1.1\r\n"
+		"Content-Type: application/json\r\n"
+		"\r\n"
+		"F\r\n{\"test\":\"data\"}\r\n"
+		"B\r\n, \"more\":1}\r\n"
+		"0\r\n\r\n";
+
+	std::string expected =
+		"POST / HTTP/1.1\r\n"
+		"Content-Type: application/json\r\n"
+		"\r\n"
+		"{\"test\":\"data\"}, \"more\":1}";
 
 	bool data_validity = true;
 	decodeChunkedBody(buffer, data_validity);

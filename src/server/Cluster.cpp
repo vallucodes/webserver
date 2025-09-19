@@ -154,9 +154,10 @@ void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 	ClientRequestState& client_state = _client_buffers[_fds[i].fd];
 	client_state.buffer.append(buffer, bytes);
 	client_state.receive_start = std::chrono::high_resolution_clock::now();
+	std::string cleaned_buffer;
 
-	while (requestComplete(client_state)) {
-		buildRequest(client_state);
+	while (requestComplete(client_state, cleaned_buffer)) {
+		buildRequest(client_state, cleaned_buffer);
 		// call here the parser in future.
 		Server conf = findRelevantConfig(_fds[i].fd, client_state.buffer);
 		// printServerConfig(conf); // this is simulating what will be sent to parser later

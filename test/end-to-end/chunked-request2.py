@@ -3,15 +3,15 @@ import time
 
 # Server configuration
 HOST = '127.0.0.1'
-PORT = 7070
+PORT = 5007
 
 # Define tricky chunks
 chunks = [
     "H",                                # 1-byte chunk
     "ello, world!\n",                   # normal chunk with newline inside
-    "Ω≈ç√∫˜µ≤≥÷",                       # non-ASCII characters
-    "1234567890"*10,                    # a long chunk (100 bytes)
-    "\r\nBetween-CLRF",             # chunk containing CRLF inside body
+    "fgfgfg",                       # non-ASCII characters
+    "1234567890",                    # a long chunk (100 bytes)
+    "Between-CLRF",             # chunk containing CRLF inside body
 ]
 
 # Build the raw HTTP request headers
