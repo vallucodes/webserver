@@ -98,8 +98,6 @@ namespace page {
 
     // Upload-related Pages
     const std::string UPLOAD_HTML = "www/upload.html";
-    const std::string UPLOAD_ERROR_HTML = "www/upload_error.html";
-    const std::string UPLOAD_SUCCESS_HTML = "www/upload_success.html";
 
     // Default Files
     const std::vector<std::string> DEFAULT_INDEX_FILES = {

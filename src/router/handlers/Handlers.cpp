@@ -81,36 +81,22 @@ void setCommonHeaders(Response& res, const std::string& contentType, size_t cont
 // Now using StringUtils::replacePlaceholder instead
 
 /**
- * @brief Create error HTML response
- * @param errorMessage Error message
- * @return HTML error page
- */
-std::string createErrorHtml(const std::string& errorMessage) {
-    std::string html = router::utils::FileUtils::readFileToString(page::UPLOAD_ERROR_HTML);
-    return router::utils::StringUtils::replacePlaceholder(html, "ERROR_MESSAGE_PLACEHOLDER", errorMessage);
-}
-
-/**
- * @brief Create success HTML response
+ * @brief Create simple success message
  * @param filename Processed filename
- * @param filesize File size information
- * @return HTML success page
+ * @param action Action performed (uploaded/deleted)
+ * @return Simple success message
  */
-std::string createSuccessHtml(const std::string& filename, const std::string& filesize) {
-    std::string html = router::utils::FileUtils::readFileToString(page::UPLOAD_SUCCESS_HTML);
-    html = router::utils::StringUtils::replacePlaceholder(html, "FILENAME_PLACEHOLDER", filename);
-    html = router::utils::StringUtils::replacePlaceholder(html, "FILESIZE_PLACEHOLDER", filesize);
-    return html;
+std::string createSuccessMessage(const std::string& filename, const std::string& action) {
+    return "File '" + filename + "' " + action + " successfully!";
 }
 
 /**
- * @brief Create deletion success HTML response
- * @param filename Deleted filename
- * @return HTML deletion success page
+ * @brief Create simple error message
+ * @param errorMessage Error message
+ * @return Simple error message
  */
-std::string createDeletionSuccessHtml(const std::string& filename) {
-    std::string html = createSuccessHtml(filename, "deleted");
-    return router::utils::StringUtils::replacePlaceholder(html, "Upload Successful", "Deletion Successful");
+std::string createErrorMessage(const std::string& errorMessage) {
+    return "Error: " + errorMessage;
 }
 
 // Sanitize filename by removing path separators and other dangerous characters
@@ -434,9 +420,11 @@ void post(const Request& req, Response& res, const Location* location) {
         outFile.write(fileContent.c_str(), fileContent.length());
         outFile.close();
 
-        // Success response
-        const std::string fileSizeStr = std::to_string(fileContent.length() / 1024.0).substr(0, 4) + " KB";
-        router::utils::ErrorResponseBuilder::setSuccessResponse(res, createSuccessHtml(filename, fileSizeStr), http::CONTENT_TYPE_HTML);
+        // Success response - redirect to upload page
+        res.setStatus(http::STATUS_OK_200);
+        res.setHeaders("Location", "/upload.html");
+        res.setBody(createSuccessMessage(filename, "uploaded"));
+        res.setHeaders("Content-Type", http::CONTENT_TYPE_TEXT);
 
     } catch (const std::exception&) {
         router::utils::ErrorResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
@@ -484,7 +472,11 @@ void del(const Request& req, Response& res, const Location* location) {
 
         // Attempt deletion
         if (std::filesystem::remove(filePath)) {
-            router::utils::ErrorResponseBuilder::setSuccessResponse(res, createDeletionSuccessHtml(filename), http::CONTENT_TYPE_HTML);
+            // Success response - redirect to upload page
+            res.setStatus(http::STATUS_OK_200);
+            res.setHeaders("Location", "/upload.html");
+            res.setBody(createSuccessMessage(filename, "deleted"));
+            res.setHeaders("Content-Type", http::CONTENT_TYPE_TEXT);
         } else {
             router::utils::ErrorResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
         }
