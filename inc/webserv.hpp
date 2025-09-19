@@ -29,13 +29,15 @@ inline std::string readFileToString(const std::string& filename) {
 }
 
 #define TIME_OUT_POLL		100
-#define TIME_OUT_REQUEST	5000
-#define TIME_OUT_RESPONSE	10000
+#define TIME_OUT_REQUEST	5000000
+#define TIME_OUT_RESPONSE	1000000
 #define MAX_CLIENTS			900
 #define MAX_BUFFER_SIZE		10000000
 #define MAX_BODY_SIZE		10000000
 #define MAX_HEADER_SIZE		8192
-#define MAX_RESPONSE_SIZE	1024
+#ifndef MAX_RESPONSE_SIZE
+# define MAX_RESPONSE_SIZE	1024 // Default value for non-test builds
+#endif
 
 #define CLIENT_DISCONNECT			" disconnected.\n"
 #define CLIENT_TIMEOUT				" dropped by the server: Timeout.\n"

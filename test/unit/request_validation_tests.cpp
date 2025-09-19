@@ -180,6 +180,7 @@ TEST(DecodeChunkedBodyTest, DecodeLargeHexChunkSize) {
 	EXPECT_TRUE(data_validity);
 }
 
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #define MAX_BODY_SIZE 10000000
 
 TEST(RequestCompleteTest, ReturnFalseForLargeBuffer) {
@@ -308,4 +309,88 @@ TEST(RequestCompleteTest, ReturnTrueOnlyHeader) {
 
 	EXPECT_TRUE(requestComplete(client_state));
 	EXPECT_TRUE(client_state.data_validity);
+}
+
+// Test 12: Fake content length in body, request not complete
+TEST(RequestCompleteTest, ReturnFalseFakeContentLengthInBody) {
+	ClientRequestState client_state;
+	client_state.buffer =
+		"POST / HTTP/1.1\r\n"
+		"Content-Length: 500\r\n"
+		"\r\n"
+		"12345678910\r\n\r\n2134256\r\nContent-Length: 5\r\n\r\n12345"; // Body contains fake "Content-Length: "
+
+	EXPECT_FALSE(requestComplete(client_state)); // Not enough body content
+	EXPECT_TRUE(client_state.data_validity);
+}
+
+// Test 13: Ignore Fake Content-Length in Body, Request Completes Successfully
+TEST(RequestCompleteTest, ReturnTrueIgnoreFakeContentLengthInBody) {
+	ClientRequestState client_state;
+	client_state.buffer =
+		"POST / HTTP/1.1\r\n"
+		"Content-Length: 5\r\n"
+		"\r\n"
+		"12345\r\nContent-Length: 500\r\n";
+		// Fake "Content-Length" appears *after* the real body
+
+	EXPECT_TRUE(requestComplete(client_state));    // Request complete
+	EXPECT_TRUE(client_state.data_validity);       // Still valid request
+	EXPECT_EQ(client_state.request_size, client_state.buffer.find("\r\n\r\n") + 4 + 5);
+	// request_size points just past the real body
+}
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+TEST(PopResponseChunk, ResponseSmallerThanMax) {
+	ClientRequestState client;
+	client.response = "Hello";
+
+	std::string chunk = popResponseChunk(client);
+
+	EXPECT_EQ(chunk, "Hello");
+	EXPECT_TRUE(client.response.empty());
+}
+
+TEST(PopResponseChunk, ResponseEqualToMax) {
+	ClientRequestState client;
+	client.response = "12345678";
+
+	std::string chunk = popResponseChunk(client);
+
+	EXPECT_EQ(chunk, "12345678");
+	EXPECT_TRUE(client.response.empty());
+}
+
+TEST(PopResponseChunk, ResponseLargerThanMax) {
+	ClientRequestState client;
+	client.response = "ABCDEFGHIJK";
+
+	std::string chunk = popResponseChunk(client);
+
+	EXPECT_EQ(chunk, "ABCDEFGH");
+	EXPECT_EQ(client.response, "IJK");
+}
+
+TEST(PopResponseChunk, MultipleCallsConsumeAll) {
+	ClientRequestState client;
+	client.response = "ABCDEFGHIJKLMNOP";
+
+	std::string first = popResponseChunk(client);
+	std::string second = popResponseChunk(client);
+
+	EXPECT_EQ(first, "ABCDEFGH");
+	EXPECT_EQ(second, "IJKLMNOP");
+	EXPECT_TRUE(client.response.empty());
+}
+
+TEST(PopResponseChunk, EmptyResponse) {
+	ClientRequestState client;
+	client.response = "";
+
+	std::string chunk = popResponseChunk(client);
+
+	EXPECT_EQ(chunk, "");
+	EXPECT_TRUE(client.response.empty());
 }

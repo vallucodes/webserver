@@ -15,21 +15,23 @@ enable_testing()
 # Use the general structure
 file(GLOB TEST_SOURCES test/unit/*.cpp)
 foreach(test_file ${TEST_SOURCES})
-    get_filename_component(test_name ${test_file} NAME_WE)
-    add_executable(${test_name} ${test_file} src/server/HelperFunctions.cpp)
+	get_filename_component(test_name ${test_file} NAME_WE)
+	add_executable(${test_name} ${test_file} src/server/HelperFunctions.cpp)
 
-    # Add include directories for each test
-    target_include_directories(${test_name} PRIVATE
-        ${CMAKE_SOURCE_DIR}/src/server
-        ${CMAKE_SOURCE_DIR}/inc
-        ${CMAKE_SOURCE_DIR}/parser
-        ${CMAKE_SOURCE_DIR}/request
-        ${CMAKE_SOURCE_DIR}/response
-        ${CMAKE_SOURCE_DIR}/message
-    )
+	# Add include directories for each test
+	target_include_directories(${test_name} PRIVATE
+		${CMAKE_SOURCE_DIR}/src/server
+		${CMAKE_SOURCE_DIR}/inc
+		${CMAKE_SOURCE_DIR}/parser
+		${CMAKE_SOURCE_DIR}/request
+		${CMAKE_SOURCE_DIR}/response
+		${CMAKE_SOURCE_DIR}/message
+	)
 
-    target_link_libraries(${test_name} PRIVATE gtest_main)
-    gtest_discover_tests(${test_name})
+	target_compile_definitions(${test_name} PRIVATE MAX_RESPONSE_SIZE=8)
+
+	target_link_libraries(${test_name} PRIVATE gtest_main)
+	gtest_discover_tests(${test_name})
 endforeach()
 
 # Debug build settings
