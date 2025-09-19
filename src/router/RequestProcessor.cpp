@@ -52,7 +52,7 @@ void RequestProcessor::processRequest(const Server& server, const Request& req,
     logRequestProcessing(req, "normalized", "Normalized path: " + path);
 
     // Execute handler if available
-    std::cout << "DEBUG: Handler found: " << (handler ? "YES" : "NO") << ", Server: " << server.getName() << ", Path: " << path << std::endl;
+    // std::cout << "DEBUG: Handler found: " << (handler ? "YES" : "NO") << ", Server: " << server.getName() << ", Path: " << path << std::endl;
     if (handler) {
         std::cout << "DEBUG: Executing handler for path: " << path << std::endl;
         if (executeHandlerSafely(handler, server, req, res, path, location)) {

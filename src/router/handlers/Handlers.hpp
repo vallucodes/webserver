@@ -268,3 +268,11 @@ void cgi(const Request& req, Response& res, const Location* location = nullptr);
  * @param location The matching location configuration (contains redirect_url and redirect_code)
  */
 void redirect(const Request& req, Response& res, const Location* location = nullptr);
+
+/**
+ * @brief Check if file extension indicates CGI script using location configuration
+ * @param filename The filename to check
+ * @param location The location configuration containing allowed CGI extensions
+ * @return true if file should be handled by CGI
+ */
+bool isCgiScriptWithLocation(const std::string& filename, const Location* location);

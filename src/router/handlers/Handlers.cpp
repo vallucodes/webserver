@@ -448,8 +448,14 @@ void get(const Request& req, Response& res, const Location* location) {
  * @param res The response object to populate with upload results
  * @param location The matching location configuration (must have upload_path)
  */
-void post(const Request& req, Response& res, const Location* location __attribute__((unused))) {
+void post(const Request& req, Response& res, const Location* location) {
     try {
+        // Validate location configuration
+        if (!location || location->upload_path.empty()) {
+            setErrorResponse(res, http::FORBIDDEN_403);
+            return;
+        }
+
         std::string_view body = req.getBody();
         const auto& contentTypeKey = req.getHeaders("content-type");
 
@@ -525,11 +531,11 @@ void post(const Request& req, Response& res, const Location* location __attribut
             return;
         }
 
-        // Save file
-        const std::string filePath = page::WWW + "/uploads/" + filename;
+        // Use location-configured upload path
+        const std::string filePath = location->upload_path + "/" + filename;
 
-        // Ensure uploads directory exists
-        std::filesystem::create_directories(page::WWW + "/uploads/");
+        // Ensure upload directory exists
+        std::filesystem::create_directories(location->upload_path);
 
         std::ofstream outFile(filePath, std::ios::binary);
         if (!outFile) {
@@ -585,23 +591,32 @@ void post(const Request& req, Response& res, const Location* location __attribut
  * @param res The response object to populate with deletion results
  * @param location The matching location configuration (unused but provided for consistency)
  */
-void del(const Request& req, Response& res, const Location* location __attribute__((unused))) {
+void del(const Request& req, Response& res, const Location* location) {
     try {
+        // Validate location configuration
+        if (!location || location->upload_path.empty()) {
+            setErrorResponse(res, http::FORBIDDEN_403);
+            return;
+        }
+
         const std::string_view filePathView = req.getPath();
 
-        // Validate path
-        if (filePathView.length() < 9 || filePathView.substr(0, 9) != "/uploads/") {
+        // Extract the expected upload path prefix from location
+        std::string uploadPrefix = "/uploads";
+        if (filePathView.length() < uploadPrefix.length() + 1 ||
+            filePathView.substr(0, uploadPrefix.length() + 1) != uploadPrefix + "/") {
             setErrorResponse(res, http::BAD_REQUEST_400);
             return;
         }
 
-        std::string filename = sanitizeFilename(std::string(filePathView.substr(9)));
+        std::string filename = sanitizeFilename(std::string(filePathView.substr(uploadPrefix.length() + 1)));
         if (filename.empty()) {
             setErrorResponse(res, http::BAD_REQUEST_400);
             return;
         }
 
-        const std::string filePath = page::WWW + "/uploads/" + filename;
+        // Use location-configured upload path
+        const std::string filePath = location->upload_path + "/" + filename;
 
         // Check if file exists
         if (!std::filesystem::exists(filePath)) {
@@ -637,6 +652,37 @@ bool isCgiScript(const std::string& filename) {
         // CGI extensions
         // return ext == "py" || ext == "cgi" || ext == "ts" || ext == "js";
         return ext == "py" || ext == "cgi" || ext == "js";
+    }
+    return false;
+}
+
+// Check if file extension indicates CGI script using location configuration
+// @param filename The filename to check
+// @param location The location configuration containing allowed CGI extensions
+// @return true if file should be handled by CGI
+bool isCgiScriptWithLocation(const std::string& filename, const Location* location) {
+    if (!location || location->cgi_ext.empty()) {
+        return false;
+    }
+
+    size_t dotPos = filename.find_last_of('.');
+    if (dotPos != std::string::npos) {
+        std::string ext = filename.substr(dotPos + 1);
+        // Convert to lowercase for case-insensitive comparison
+        for (char& c : ext) {
+            c = std::tolower(c);
+        }
+
+        // Check against location-configured extensions
+        for (const auto& allowedExt : location->cgi_ext) {
+            std::string allowedExtLower = allowedExt;
+            for (char& c : allowedExtLower) {
+                c = std::tolower(c);
+            }
+            if (ext == allowedExtLower) {
+                return true;
+            }
+        }
     }
     return false;
 }
@@ -892,8 +938,14 @@ std::string executeCgiScript(const std::string& scriptPath, const std::vector<st
  * @param res The response object to populate with script output
  * @param location The matching location configuration (contains cgi_path and cgi_ext)
  */
-void cgi(const Request& req, Response& res, const Location* location __attribute__((unused))) {
+void cgi(const Request& req, Response& res, const Location* location) {
     try {
+        // Validate location configuration
+        if (!location || location->cgi_path.empty() || location->cgi_ext.empty()) {
+            setErrorResponse(res, http::FORBIDDEN_403);
+            return;
+        }
+
         // Extract and validate file path
         std::string_view filePathView = req.getPath();
         if (filePathView.empty()) {
@@ -905,7 +957,8 @@ void cgi(const Request& req, Response& res, const Location* location __attribute
         if (filePathView == page::ROOT_HTML || filePathView == page::INDEX_HTML_PATH) {
             filePath = page::INDEX_HTML;
         } else {
-            filePath = page::WWW + std::string(filePathView);
+            // Use location-configured CGI path
+            filePath = location->cgi_path + std::string(filePathView);
         }
 
         // Check if file exists and is executable
@@ -914,8 +967,8 @@ void cgi(const Request& req, Response& res, const Location* location __attribute
             return;
         }
 
-        // Verify it's a CGI script
-        if (!isCgiScript(filePath)) {
+        // Verify it's a CGI script using location-configured extensions
+        if (!isCgiScriptWithLocation(filePath, location)) {
             // Not a CGI script, handle as regular file
             std::string fileContent = readFileToString(filePath);
             std::string contentType = getContentType(filePath);
@@ -1082,28 +1135,24 @@ void cgi(const Request& req, Response& res, const Location* location __attribute
  * @param res The response object to populate with redirect information
  * @param location The matching location configuration (contains redirect_url and redirect_code)
  */
-void redirect(const Request& req, Response& res, const Location* location __attribute__((unused))) {
+void redirect(const Request& req, Response& res, const Location* location) {
     try {
-        // Extract the requested path
-        std::string_view pathView = req.getPath();
-
-        // Define redirection rules based on path
-        std::string redirectUrl;
-
-        // Example redirections - you can customize these
-        if (pathView == "/old-page") {
-            // Permanent redirect (301)
-            res.setStatus(http::STATUS_MOVED_PERMANENTLY_301);
-            redirectUrl = "/index.html";
-        } else if (pathView == "/temp-redirect") {
-            // Temporary redirect (302)
-            res.setStatus(http::STATUS_FOUND_302);
-            redirectUrl = "/upload.html";
-        } else {
-            // Default: redirect to home page if no specific rule matches
-            res.setStatus(http::STATUS_FOUND_302);
-            redirectUrl = "/";
+        // Validate location configuration
+        if (!location || location->return_url.empty()) {
+            setErrorResponse(res, http::NOT_FOUND_404);
+            return;
         }
+
+        // Use location-configured redirect URL
+        std::string redirectUrl = location->return_url;
+
+        // Log the redirect for debugging
+        std::cout << "REDIRECT: " << req.getPath() << " -> " << redirectUrl << std::endl;
+
+        // Set appropriate redirect status code (default to 302 if not specified)
+        // In a real implementation, you might want to support different status codes
+        // based on location configuration
+        res.setStatus(http::STATUS_FOUND_302);
 
         // Set Location header for redirection
         res.setHeaders("Location", redirectUrl);

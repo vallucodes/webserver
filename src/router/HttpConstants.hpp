@@ -38,6 +38,7 @@ namespace http {
     const std::string STATUS_FOUND_302 = "302 Found";
     const std::string STATUS_SEE_OTHER_303 = "303 See Other";
     const std::string STATUS_NOT_FOUND_404 = "404 Not Found";
+    const std::string STATUS_FORBIDDEN_403 = "403 Forbidden";
     const std::string STATUS_METHOD_NOT_ALLOWED_405 = "405 Method Not Allowed";
     const std::string STATUS_BAD_REQUEST_400 = "400 Bad Request";
     const std::string STATUS_PAYLOAD_TOO_LARGE_413 = "413 Payload Too Large";
@@ -50,6 +51,7 @@ namespace http {
     const int FOUND_302 = 302;
     const int SEE_OTHER_303 = 303;
     const int NOT_FOUND_404 = 404;
+    const int FORBIDDEN_403 = 403;
     const int METHOD_NOT_ALLOWED_405 = 405;
     const int BAD_REQUEST_400 = 400;
     const int PAYLOAD_TOO_LARGE_413 = 413;

@@ -125,7 +125,11 @@ void Router::setupRouter(const std::vector<Server>& configs) {
                 Handler handler;
 
                 // Handler selection logic based on location properties:
-                if (!location.cgi_path.empty() && !location.cgi_ext.empty()) {
+                if (!location.return_url.empty()) {
+                    // Redirect location: return_url is configured
+                    // Use redirect handler for all HTTP methods
+                    handler = redirect;
+                } else if (!location.cgi_path.empty() && !location.cgi_ext.empty()) {
                     // CGI location: Both CGI path and extension are configured
                     // Use CGI handler for script execution (supports any HTTP method)
                     handler = cgi;
@@ -204,7 +208,7 @@ void Router::addRoute(std::string_view server_name, std::string_view method, std
  * @return Pointer to handler function or nullptr if no matching route found
  */
 const Router::Handler* Router::findHandler(const std::string& server_name, const std::string& method, const std::string& path) const {
-    std::cout << "DEBUG ROUTER: Looking for server: " << server_name << ", method: " << method << ", path: " << path << std::endl;
+    // std::cout << "DEBUG ROUTER: Looking for server: " << server_name << ", method: " << method << ", path: " << path << std::endl;
 
     // Step 1: Find the server in our routing table
     auto server_it = _routes.find(server_name);

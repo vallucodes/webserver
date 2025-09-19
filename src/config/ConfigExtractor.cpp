@@ -46,6 +46,9 @@ void	ConfigExtractor::extractLocationFields(Server& serv, Location& loc, std::if
 		extractCgiPath(loc, line);
 		extractCgiExt(loc, line);
 		extractUploadPath(loc, line);
+
+		// Ilia added for redirect
+		extractReturn(loc, line);
 	}
 }
 
@@ -202,5 +205,16 @@ void	ConfigExtractor::extractUploadPath(Location& loc, const std::string& line) 
 	{
 		// std::cout << "cgi_path found: " << match[1] << std::endl;
 		loc.upload_path = match[1];
+	}
+}
+
+// Ilia added for redirect
+void	ConfigExtractor::extractReturn(Location& loc, const std::string& line) {
+	std::regex	re("^\\s*return\\s+(\\S+)$");
+	std::smatch	match;
+	if (std::regex_search(line, match, re))
+	{
+		// std::cout << "return_url found: " << match[1] << std::endl;
+		loc.return_url = match[1];
 	}
 }
