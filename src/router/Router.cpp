@@ -1,22 +1,6 @@
 /**
  * @file Router.cpp
- * @brief Implementation of the HTTP Router class for request routing and handling
- *
- * This file contains the implementation of the Router class which provides:
- * - Route registration and management for multiple servers
- * - HTTP request routing based on server name, method, and path
- * - Location-based configuration matching
- * - Error response generation and handling
- * - Support for CGI scripts, file uploads, and static file serving
- *
- * The router implements sophisticated path matching algorithms including:
- * - Exact path matching
- * - Prefix-based matching (e.g., "/admin" matches "/admin/users")
- * - Extension-based matching (e.g., ".py" matches "/cgi/script.py")
- * - Automatic HEAD method support for GET routes
- *
- * Route lookup is performed hierarchically: server -> path -> method
- * for efficient O(log n) performance using std::map containers.
+ * @brief Implementation of HTTP Router class
  */
 
 #include "../../inc/webserv.hpp"
@@ -28,35 +12,17 @@
 
 
 /**
- * @brief Default constructor for Router
- *
- * Initializes an empty router with no routes configured.
+ * @brief Default constructor
  */
 Router::Router() {}
 
 /**
- * @brief Destructor for Router
- *
- * Cleans up router resources. Since std::map handles its own memory
- * management, no explicit cleanup is required.
+ * @brief Destructor
  */
 Router::~Router() {}
 
 /**
- * @brief Debug method to list all registered routes to console
- *
- * This method provides a comprehensive view of all registered routes
- * organized by server name. For each server, it displays:
- * - Server name
- * - Route paths and their supported HTTP methods
- *
- * Output format:
- * Server: server_name
- *   /path -> GET POST DELETE
- *   /another -> GET HEAD
- *
- * Useful for debugging routing configuration and verifying
- * that routes are registered correctly.
+ * @brief List all registered routes
  */
 void Router::listRoutes() const {
     std::cout << "[DEBUG]: Available routes:" << std::endl;
@@ -77,28 +43,7 @@ void Router::listRoutes() const {
 }
 
 /**
- * @brief Initialize the router with routes based on server configurations
- *
- * This method processes all server configurations and creates appropriate routes
- * for each location defined in each server. It implements the core routing logic:
- *
- * 1. Handler Selection Logic:
- *    - CGI locations: Use CGI handler for script execution
- *    - POST + upload_path: Use POST handler for file uploads
- *    - DELETE + upload_path: Use DELETE handler for file deletion
- *    - GET/HEAD: Use GET handler for static file serving
- *
- * 2. Route Registration:
- *    - Registers routes for each allowed HTTP method per location
- *    - Automatically adds HEAD support for GET routes (HTTP convention)
- *    - Organizes routes hierarchically: server -> path -> method
- *
- * 3. Location Types Supported:
- *    - Root location ("/"): Default server behavior
- *    - Exact paths ("/favicon.ico"): Specific file handling
- *    - Extension-based (".py"): CGI script matching
- *    - Prefix paths ("/upload/"): Directory-based routing
- *
+ * @brief Initialize router with server configurations
  * @param configs Vector of Server configuration objects
  */
 void Router::setupRouter(const std::vector<Server>& configs) {
@@ -168,45 +113,22 @@ void Router::setupRouter(const std::vector<Server>& configs) {
 }
 
 /**
- * @brief Register a new route with specific HTTP method and path for a server
- *
- * This method adds a route mapping to the internal routing table.
- * Routes are stored hierarchically using std::map for efficient lookup:
- *
- * _routes[server_name][path][method] = handler_function
- *
- * The use of std::move ensures efficient transfer of the handler function
- * without unnecessary copying.
- *
- * @param server_name Name of the server this route belongs to
- * @param method HTTP method (GET, POST, DELETE, etc.)
- * @param path URL path pattern to match
- * @param handler Function to handle requests for this route
+ * @brief Register a new route
+ * @param server_name Server name
+ * @param method HTTP method
+ * @param path URL path pattern
+ * @param handler Handler function
  */
 void Router::addRoute(std::string_view server_name, std::string_view method, std::string_view path, Handler handler) {
     _routes[std::string(server_name)][std::string(path)][std::string(method)] = std::move(handler);
 }
 
 /**
- * @brief Find the handler function for a given server, method and path
- *
- * This method implements sophisticated route matching with multiple strategies:
- *
- * 1. Exact Match: Direct path equality (highest priority)
- * 2. Extension Match: File extension matching (e.g., ".py" routes match "*.py" files)
- * 3. Prefix Match: Directory prefix matching (e.g., "/uploads" matches "/uploads/file.txt")
- *
- * Matching Priority (most specific first):
- * - Exact path match: "/exact/path" == "/exact/path"
- * - Extension match: ".py" matches "/script.py", "/cgi/script.py"
- * - Prefix match: "/admin" matches "/admin/users", "/admin/settings"
- *
- * The method returns the first matching handler found, respecting priority order.
- *
- * @param server_name Name of the server to search routes for
- * @param method HTTP method to match (GET, POST, etc.)
- * @param path URL path to match against registered routes
- * @return Pointer to handler function or nullptr if no matching route found
+ * @brief Find handler for server/method/path
+ * @param server_name Server name
+ * @param method HTTP method
+ * @param path URL path
+ * @return Handler function or nullptr
  */
 const Router::Handler* Router::findHandler(const std::string& server_name, const std::string& method, const std::string& path) const {
     // std::cout << "DEBUG ROUTER: Looking for server: " << server_name << ", method: " << method << ", path: " << path << std::endl;
@@ -269,26 +191,10 @@ const Router::Handler* Router::findHandler(const std::string& server_name, const
 
 
 /**
- * @brief Find the matching location configuration for a given server and path
- *
- * This method searches through all location blocks in a server configuration
- * to find the most specific location that matches the requested path.
- *
- * Location Matching Logic:
- * 1. Exact Match: Direct path equality (highest priority)
- * 2. Prefix Match: Find the longest prefix match
- *
- * Examples:
- * - Path "/admin/users" with locations ["/", "/admin", "/admin/users"]
- *   -> Matches "/admin/users" (exact) or "/admin" (longest prefix)
- * - Path "/api/v1/users" with locations ["/", "/api"]
- *   -> Matches "/api" (longest prefix match)
- *
- * The method returns the most specific (longest) matching location.
- *
- * @param server The server configuration object to search in
- * @param path URL path to match against location patterns
- * @return Pointer to matching location or nullptr if no match found
+ * @brief Find matching location configuration
+ * @param server Server configuration
+ * @param path URL path
+ * @return Location or nullptr
  */
 const Location* Router::findLocation(const Server& server, const std::string& path) const {
     const auto& locations = server.getLocations();
@@ -320,59 +226,24 @@ const Location* Router::findLocation(const Server& server, const std::string& pa
 }
 
 /**
- * @brief Generate HTML content for default error pages
- *
- * This method loads custom error page templates from the filesystem
- * based on HTTP status codes. If a specific error page file doesn't
- * exist or can't be read, it falls back to the generic 500 error page.
- *
- * Supported error pages:
- * - 400 Bad Request
- * - 404 Not Found
- * - 405 Method Not Allowed
- * - 413 Payload Too Large
- * - 500 Internal Server Error (fallback for all others)
- *
- * @param status HTTP status code (e.g., 404, 500)
- * @return HTML content string for the error page
+ * @brief Generate HTML error page
+ * @param status HTTP status code
+ * @return HTML content string
  */
 // Now using ErrorResponseBuilder::getErrorPageHtml instead
 
 /**
- * @brief Set up a complete error response with appropriate status, headers, and body
- *
- * This utility function configures a Response object with all necessary components
- * for a proper HTTP error response:
- *
- * 1. Sets the appropriate HTTP status line (e.g., "404 Not Found")
- * 2. Sets Content-Type header to "text/html"
- * 3. Sets Content-Length header with the size of the error page
- * 4. Sets Connection header to "close" to terminate the connection
- * 5. Sets the response body with the appropriate HTML error page
- *
- * This function is used throughout the web server whenever an error condition
- * requires sending an error response to the client.
- *
- * @param res Response object to configure with error details
- * @param status HTTP status code for the error (e.g., 404, 500)
+ * @brief Set up error response
+ * @param res Response object
+ * @param status HTTP status code
  */
 // Now using ErrorResponseBuilder::setErrorResponse instead
 
 /**
- * @brief Process an incoming HTTP request and route it to the appropriate handler
- *
- * This is the main entry point for request processing in the web server.
- * The method coordinates between routing and request processing by:
- * 1. Finding the appropriate handler for the request
- * 2. Delegating execution to the RequestProcessor
- * 3. Providing fallback mechanisms when no handler is found
- *
- * The Router focuses on routing logic while RequestProcessor handles
- * the complex request processing pipeline.
- *
- * @param server The server configuration for this request
- * @param req The incoming HTTP request object
- * @param res The response object to be populated by the handler
+ * @brief Process HTTP request and route to handler
+ * @param server Server configuration
+ * @param req HTTP request
+ * @param res Response object
  */
 void Router::handleRequest(const Server& server, const Request& req, Response& res) const {
     std::cout << "=== ROUTER HANDLE REQUEST START ===" << std::endl;

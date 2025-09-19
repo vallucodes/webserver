@@ -1,11 +1,6 @@
 /**
  * @file RequestProcessor.cpp
- * @brief Implementation of the RequestProcessor class
- *
- * This file contains the implementation of the RequestProcessor class which
- * handles the complete HTTP request processing pipeline. It provides clean
- * separation of concerns and improved testability compared to embedding
- * all logic directly in the Router class.
+ * @brief Implementation of RequestProcessor class
  */
 
 #include "RequestProcessor.hpp"
@@ -15,21 +10,21 @@
 #include <algorithm>
 
 /**
- * @brief Default constructor for RequestProcessor
+ * @brief Default constructor
  */
 RequestProcessor::RequestProcessor() {
     // Constructor can be used for initialization if needed
 }
 
 /**
- * @brief Destructor for RequestProcessor
+ * @brief Destructor
  */
 RequestProcessor::~RequestProcessor() {
     // Destructor can be used for cleanup if needed
 }
 
 /**
- * @brief Main request processing method
+ * @brief Process HTTP request
  */
 void RequestProcessor::processRequest(const Server& server, const Request& req,
                                      const Handler* handler, Response& res, const Location* location) const {
@@ -79,7 +74,7 @@ void RequestProcessor::processRequest(const Server& server, const Request& req,
 }
 
 /**
- * @brief Validate request path for security issues
+ * @brief Validate request path
  */
 bool RequestProcessor::validatePath(const std::string& path) const {
     // Check for null bytes (security issue)
@@ -141,7 +136,7 @@ void RequestProcessor::normalizePath(std::string& path) const {
 }
 
 /**
- * @brief Execute handler with proper error handling
+ * @brief Execute handler
  */
 bool RequestProcessor::executeHandlerSafely(const Handler* handler, const Server& server __attribute__((unused)),
                                            const Request& req, Response& res,
@@ -166,7 +161,7 @@ bool RequestProcessor::executeHandlerSafely(const Handler* handler, const Server
 }
 
 /**
- * @brief Try to serve request as static file
+ * @brief Serve static file
  */
 bool RequestProcessor::tryServeAsStaticFile(const Request& req, Response& res,
                                            const std::string& method) const {
@@ -225,7 +220,7 @@ void RequestProcessor::generateErrorResponse(Response& res, int status,
 }
 
 /**
- * @brief Log request processing information
+ * @brief Log request processing
  */
 void RequestProcessor::logRequestProcessing(const Request& req, const std::string& stage,
                                            const std::string& details) const {

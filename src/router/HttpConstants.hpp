@@ -1,21 +1,6 @@
 /**
  * @file HttpConstants.hpp
- * @brief HTTP Protocol Constants and Configuration
- *
- * This header file centralizes all HTTP-related constants used throughout
- * the web server. It includes status codes, status messages, file paths,
- * and other HTTP protocol constants.
- *
- * Organization:
- * - http namespace: HTTP status codes and messages
- * - error_page namespace: Error page file paths
- * - page namespace: Web server content paths
- *
- * Benefits:
- * - Single source of truth for HTTP constants
- * - Improved maintainability and consistency
- * - Better organization and readability
- * - Easier testing and debugging
+ * @brief HTTP Protocol Constants
  */
 
 #pragma once
@@ -25,11 +10,7 @@
 
 /**
  * @namespace http
- * @brief HTTP protocol constants including status codes and messages
- *
- * This namespace provides standardized HTTP status codes and their corresponding
- * status messages used throughout the web server for consistent response formatting.
- * All constants follow HTTP/1.1 specification standards.
+ * @brief HTTP protocol constants
  */
 namespace http {
     // HTTP Status Messages (Complete Status Lines)
@@ -90,14 +71,7 @@ namespace http {
 
 /**
  * @namespace error_page
- * @brief File paths for custom error page templates
- *
- * This namespace centralizes the paths to HTML error page templates
- * that are served when specific HTTP errors occur. These templates
- * provide user-friendly error messages instead of generic responses.
- *
- * Error page files should be placed in the www/errors/ directory
- * relative to the web server root.
+ * @brief Error page file paths
  */
 namespace error_page {
     const std::string ERROR_PAGE_NOT_FOUND_404 = "www/errors/not_found_404.html";
@@ -109,11 +83,7 @@ namespace error_page {
 
 /**
  * @namespace page
- * @brief Default file paths and web server content constants
- *
- * This namespace defines standard paths and filenames used by the web server
- * for serving default content, index pages, and handling special routes.
- * These constants provide a centralized location for web server configuration.
+ * @brief Web server content constants
  */
 namespace page {
     // Directory Structure
