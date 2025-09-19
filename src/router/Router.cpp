@@ -71,27 +71,41 @@ void Router::setupRouter(const std::vector<Server>& configs) {
                 Handler handler;
 
                 // Handler selection logic based on location properties:
+                std::cout << "Registering route: " << location_path << " -> " << method << std::endl;
+                std::cout << "Location CGI Path: '" << location.cgi_path << "'" << std::endl;
+                std::cout << "Location CGI Extensions: ";
+                for (const auto& ext : location.cgi_ext) {
+                    std::cout << "'" << ext << "' ";
+                }
+                std::cout << std::endl;
+
                 if (!location.return_url.empty()) {
                     // Redirect location: return_url is configured
                     // Use redirect handler for all HTTP methods
                     handler = redirect;
+                    std::cout << "Selected REDIRECT handler" << std::endl;
                 } else if (!location.cgi_path.empty() && !location.cgi_ext.empty()) {
                     // CGI location: Both CGI path and extension are configured
                     // Use CGI handler for script execution (supports any HTTP method)
                     handler = cgi;
+                    std::cout << "Selected CGI handler" << std::endl;
                 } else if (method == "POST" && !location.upload_path.empty()) {
                     // POST request to upload location: Handle file uploads
                     handler = post;
+                    std::cout << "Selected POST handler" << std::endl;
                 } else if (method == "DELETE" && !location.upload_path.empty()) {
                     // DELETE request from upload location: Handle file deletions
                     handler = del;
+                    std::cout << "Selected DELETE handler" << std::endl;
                 } else if (method == "GET" || method == "HEAD") {
                     // GET/HEAD requests: Handle static file serving
                     // HEAD is identical to GET but without response body
                     handler = get;
+                    std::cout << "Selected GET handler" << std::endl;
                 } else {
                     // Default handler for other methods or configurations
                     handler = get;
+                    std::cout << "Selected DEFAULT GET handler" << std::endl;
                 }
 
                 // Register the route in the routing table
@@ -148,35 +162,47 @@ const Router::Handler* Router::findHandler(const std::string& server_name, const
         }
     }
 
-    // Step 3: If no exact match, try advanced matching strategies
+    // Step 3: Find the best advanced match (longest prefix or extension match)
+    const Handler* best_handler = nullptr;
+    size_t best_match_length = 0;
+    bool is_extension_match = false;
+
     for (const auto& route_pair : server_routes) {
         const std::string& route_path = route_pair.first;
 
+        // Check if this route has the requested method
+        auto method_it = route_pair.second.find(method);
+        if (method_it == route_pair.second.end()) {
+            continue;
+        }
+
         // Strategy A: Extension-based matching
         // Example: Route ".py" should match "/cgi-bin/script.py" or "/script.py"
-        // Condition: route_path starts with '.', path is longer, ends with route_path
         if (!route_path.empty() && route_path[0] == '.' && path.length() > route_path.length()) {
             if (path.substr(path.length() - route_path.length()) == route_path) {
-                auto method_it = route_pair.second.find(method);
-                if (method_it != route_pair.second.end()) {
-                    return &method_it->second; // Extension match found
+                // Extension matches have higher priority than prefix matches
+                if (!is_extension_match || route_path.length() > best_match_length) {
+                    best_handler = &method_it->second;
+                    best_match_length = route_path.length();
+                    is_extension_match = true;
                 }
             }
         }
         // Strategy B: Prefix-based matching
         // Example: Route "/uploads" should match "/uploads/file.txt"
-        // Condition: path starts with route_path, followed by '/' or end of string
-        else if (path.length() > route_path.length() &&
+        else if (!route_path.empty() &&
+                 path.length() >= route_path.length() &&
                  path.substr(0, route_path.length()) == route_path &&
-                 (route_path.back() == '/' || path[route_path.length()] == '/')) {
-            auto method_it = route_pair.second.find(method);
-            if (method_it != route_pair.second.end()) {
-                return &method_it->second; // Prefix match found
+                 (route_path.back() == '/' || path.length() == route_path.length() || path[route_path.length()] == '/')) {
+            // For prefix matches, prefer longer routes (more specific)
+            if (!is_extension_match && route_path.length() > best_match_length) {
+                best_handler = &method_it->second;
+                best_match_length = route_path.length();
             }
         }
     }
 
-    return nullptr; // No matching route found
+    return best_handler;
 }
 
 
@@ -252,6 +278,7 @@ void Router::handleRequest(const Server& server, const Request& req, Response& r
     // Delegate to RequestProcessor for execution and fallback handling
     _requestProcessor.processRequest(server, req, handler, res, location);
 }
+
 
 
 

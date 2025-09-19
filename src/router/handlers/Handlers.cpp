@@ -516,6 +516,10 @@ bool isCgiScriptWithLocation(const std::string& filename, const Location* locati
             for (char& c : allowedExtLower) {
                 c = std::tolower(c);
             }
+            // Remove leading dot from allowed extension for comparison
+            if (allowedExtLower.length() > 0 && allowedExtLower[0] == '.') {
+                allowedExtLower = allowedExtLower.substr(1);
+            }
             if (ext == allowedExtLower) {
                 return true;
             }
@@ -647,7 +651,7 @@ std::string executeCgiScript(const std::string& scriptPath, const std::vector<st
             chdir(scriptDir.c_str());
         }
 
-        // Execute CGI script based on file extension
+        // Execute CGI script based on file extension using execve()
         size_t dotPos = scriptName.find_last_of('.');
         if (dotPos != std::string::npos) {
             std::string ext = scriptName.substr(dotPos + 1);
@@ -659,34 +663,40 @@ std::string executeCgiScript(const std::string& scriptPath, const std::vector<st
             // std::cout << "CGI Child: Executing " << ext << " script: " << scriptName << " from dir: " << scriptDir << std::endl;
 
             if (ext == "py") {
-                execl("/usr/bin/python3", "python3", scriptName.c_str(), nullptr);
+                // Execute Python script with execve()
+                char* args[] = {
+                    const_cast<char*>("python3"),
+                    const_cast<char*>(scriptName.c_str()),
+                    nullptr
+                };
+                execve("/usr/bin/python3", args, envp.data());
             } else if (ext == "js") {
-                // For JavaScript files, execute with Node.js
-                execl("/usr/bin/node", "node", scriptName.c_str(), nullptr);
-            // } else if (ext == "ts") {
-            //     // For TypeScript files, check if compiled JS exists, otherwise try direct execution
-            //     std::string jsFileName = scriptName.substr(0, scriptName.length() - 3) + ".js";
-            //     std::cout << "CGI Child: TypeScript script: " << scriptName << std::endl;
-            //     std::cout << "CGI Child: Looking for JS file: " << jsFileName << std::endl;
-            //     std::cout << "CGI Child: JS file exists: " << std::filesystem::exists(jsFileName) << std::endl;
-            //     if (std::filesystem::exists(jsFileName)) {
-            //         // Use compiled JavaScript if it exists
-            //         std::cout << "CGI Child: Executing compiled JS: " << jsFileName << std::endl;
-            //         execl("/usr/bin/node", "node", jsFileName.c_str(), nullptr);
-            //     } else {
-            //         // Try direct execution with node (might work with newer Node versions)
-            //         std::cout << "CGI Child: JS file not found, trying direct TS execution" << std::endl;
-            //         execl("/usr/bin/node", "node", scriptName.c_str(), nullptr);
-            //     }
+                // Execute JavaScript script with Node.js using execve()
+                char* args[] = {
+                    const_cast<char*>("node"),
+                    const_cast<char*>(scriptName.c_str()),
+                    nullptr
+                };
+                execve("/usr/bin/node", args, envp.data());
             } else {
-                // For unknown extensions, try direct execution
-                execl(scriptName.c_str(), scriptName.c_str(), nullptr);
+                // For unknown extensions, try direct execution with execve()
+                char* args[] = {
+                    const_cast<char*>(scriptName.c_str()),
+                    const_cast<char*>(scriptName.c_str()),
+                    nullptr
+                };
+                execve(scriptName.c_str(), args, envp.data());
             }
         } else {
-            // No extension, try direct execution
-            execl(scriptName.c_str(), scriptName.c_str(), nullptr);
+            // No extension, try direct execution with execve()
+            char* args[] = {
+                const_cast<char*>(scriptName.c_str()),
+                const_cast<char*>(scriptName.c_str()),
+                nullptr
+            };
+            execve(scriptName.c_str(), args, envp.data());
         }
-        std::cout << "CGI Child: execl failed" << std::endl;
+        std::cout << "CGI Child: execve failed" << std::endl;
 
         // Clean up environment variables on failure
         for (auto& ptr : envp) {
@@ -755,7 +765,17 @@ void cgi(const Request& req, Response& res, const Location* location) {
             filePath = page::INDEX_HTML;
         } else {
             // Use location-configured CGI path
-            filePath = location->cgi_path + std::string(filePathView);
+            // Strip the location prefix from the request path
+            std::string requestPath = std::string(filePathView);
+            std::string locationPrefix = location->location;
+
+            // Remove the location prefix from the request path
+            if (requestPath.length() > locationPrefix.length() &&
+                requestPath.substr(0, locationPrefix.length()) == locationPrefix) {
+                requestPath = requestPath.substr(locationPrefix.length());
+            }
+
+            filePath = location->cgi_path + requestPath;
         }
 
         // Check if file exists and is executable

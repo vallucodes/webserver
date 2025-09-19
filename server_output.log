@@ -1,47 +1,156 @@
+Registering route: / -> GET
+Location CGI Path: ''
+Location CGI Extensions: 
+Selected GET handler
+Registering route: / -> HEAD
+Location CGI Path: ''
+Location CGI Extensions: 
+Selected GET handler
+Registering route: /cgi-bin -> GET
+Location CGI Path: '/home/ilyam/42/webserver/www/cgi-bin'
+Location CGI Extensions: '.py' '.js' 
+Selected CGI handler
+Registering route: /cgi-bin -> HEAD
+Location CGI Path: '/home/ilyam/42/webserver/www/cgi-bin'
+Location CGI Extensions: '.py' '.js' 
+Selected CGI handler
+Registering route: /cgi-bin -> POST
+Location CGI Path: '/home/ilyam/42/webserver/www/cgi-bin'
+Location CGI Extensions: '.py' '.js' 
+Selected CGI handler
 [DEBUG]: Available routes:
-Server: server_1
-   -> GET HEAD 
-  /admin -> GET HEAD 
-  /delete -> DELETE GET HEAD 
-  /favicon.ico -> GET HEAD 
-  /upload -> GET HEAD POST 
-Server: server_2
-   -> GET HEAD 
-  /api -> GET HEAD POST 
-  /errors -> GET HEAD 
-  /imgs -> GET HEAD 
-  /upload -> GET HEAD POST 
+Server: test_server
+  / -> GET HEAD 
+  /cgi-bin -> GET HEAD POST 
 [DEBUG]: ===  End of Available routes ===
 
 Initializing servers...
-Server created: Host[127.0.0.1] Port:[8080]
-Server created: Host[127.0.0.1] Port:[8081]
-New client connected: 127.0.0.1:59498. Assigned fd: 7
+Server created: Host[0.0.0.0] Port:[5000]
+New client connected: 127.0.0.1:35534. Assigned fd: 6
 
-[DEBUG]:=== HTTP Request ===
-Method: GET
-Path: /admin
-HTTP Version: HTTP/1.1
-Headers:
-accept: */*
-user-agent: curl/8.5.0
-host: localhost:8080
-Body: Uncommented for debugging in Request.cpp
-[DEBUG]: ===  End of HTTP Request ===
-
-DEBUG: Finding location for path '/admin', locations count: 5
-DEBUG: Checking location '', index='index.html', autoindex=0
-DEBUG: Checking location '/upload', index='upload.html', autoindex=0
-DEBUG: Checking location '/delete', index='delete.html', autoindex=0
-DEBUG: Checking location '/favicon.ico', index='index.html', autoindex=0
-DEBUG: Checking location '/admin', index='index.html', autoindex=0
-DEBUG: Exact match found for '/admin'
-[DEBUG]:=== HTTP Response ===
+=== ROUTER handleRequest ===
+Router: method='GET', path='/cgi-bin/hello.py', server='test_server'
+findHandler: Looking for server='test_server', method='GET', path='/cgi-bin/hello.py'
+findHandler: Server found, checking 2 routes
+findHandler: Trying exact path match for '/cgi-bin/hello.py'
+findHandler: No exact path match
+findHandler: Looking for best advanced match
+findHandler: Checking route '/'
+findHandler: Prefix match found: '/' for path '/cgi-bin/hello.py' (length 1)
+findHandler: New best prefix match: '/' (length 1)
+findHandler: Checking route '/cgi-bin'
+findHandler: Prefix match found: '/cgi-bin' for path '/cgi-bin/hello.py' (length 8)
+findHandler: New best prefix match: '/cgi-bin' (length 8)
+findHandler: Returning best match with length 8
+Router: handler found: YES
+Router: location found: /cgi-bin
+: Method: GET, Path: /cgi-bin/hello.py: Normalized path: /cgi-bin/hello.pyRequestProcessor: Handler found: YES, Server: test_server, Path: /cgi-bin/hello.py
+RequestProcessor: Executing handler
+=== CGI HANDLER START ===
+CGI HANDLER: path=/cgi-bin/hello.py, location=/cgi-bin
+CGI HANDLER: filePathView='/cgi-bin/hello.py'
+CGI HANDLER: requestPath='/cgi-bin/hello.py', locationPrefix='/cgi-bin'
+CGI HANDLER: After stripping prefix, requestPath='/hello.py'
+CGI HANDLER: Final filePath='/home/ilyam/42/webserver/www/cgi-bin/hello.py'
+CGI HANDLER: File exists: /home/ilyam/42/webserver/www/cgi-bin/hello.py
+CGI HANDLER: isCgiScriptWithLocation returned: 1
+CGI HANDLER: Confirmed CGI script, proceeding with execution
+CGI: Executing script: /home/ilyam/42/webserver/www/cgi-bin/hello.py
+CGI: executeCgiScript called for: /home/ilyam/42/webserver/www/cgi-bin/hello.py
+CGI: Fork successful, child PID: 197449
+CGI: Fork successful, child PID: 0
+CGI: Script output length: 404
+: Handler executed successfully[DEBUG]:=== HTTP Response ===
 Status: 200 OK
 Headers:
-Connection: close
-Content-Length: 2490
 Content-Type: text/html
+X-CGI-Test: Python
+Body: Uncommented for debugging in Response.cpp
+[DEBUG]: ===  End of HTTP Response ===
+
+[1;36mClient 6 - Response sent, closing connection
+[0mNew client connected: 127.0.0.1:59584. Assigned fd: 6
+
+=== ROUTER handleRequest ===
+Router: method='GET', path='/cgi-bin/hello.py', server='test_server'
+findHandler: Looking for server='test_server', method='GET', path='/cgi-bin/hello.py'
+findHandler: Server found, checking 2 routes
+findHandler: Trying exact path match for '/cgi-bin/hello.py'
+findHandler: No exact path match
+findHandler: Looking for best advanced match
+findHandler: Checking route '/'
+findHandler: Prefix match found: '/' for path '/cgi-bin/hello.py' (length 1)
+findHandler: New best prefix match: '/' (length 1)
+findHandler: Checking route '/cgi-bin'
+findHandler: Prefix match found: '/cgi-bin' for path '/cgi-bin/hello.py' (length 8)
+findHandler: New best prefix match: '/cgi-bin' (length 8)
+findHandler: Returning best match with length 8
+Router: handler found: YES
+Router: location found: /cgi-bin
+: Method: GET, Path: /cgi-bin/hello.py: Normalized path: /cgi-bin/hello.pyRequestProcessor: Handler found: YES, Server: test_server, Path: /cgi-bin/hello.py
+RequestProcessor: Executing handler
+=== CGI HANDLER START ===
+CGI HANDLER: path=/cgi-bin/hello.py, location=/cgi-bin
+CGI HANDLER: filePathView='/cgi-bin/hello.py'
+CGI HANDLER: requestPath='/cgi-bin/hello.py', locationPrefix='/cgi-bin'
+CGI HANDLER: After stripping prefix, requestPath='/hello.py'
+CGI HANDLER: Final filePath='/home/ilyam/42/webserver/www/cgi-bin/hello.py'
+CGI HANDLER: File exists: /home/ilyam/42/webserver/www/cgi-bin/hello.py
+CGI HANDLER: isCgiScriptWithLocation returned: 1
+CGI HANDLER: Confirmed CGI script, proceeding with execution
+CGI: Executing script: /home/ilyam/42/webserver/www/cgi-bin/hello.py
+CGI: executeCgiScript called for: /home/ilyam/42/webserver/www/cgi-bin/hello.py
+CGI: Fork successful, child PID: 197524
+CGI: Fork successful, child PID: 0
+CGI: Script output length: 404
+: Handler executed successfully[DEBUG]:=== HTTP Response ===
+Status: 200 OK
+Headers:
+Content-Type: text/html
+X-CGI-Test: Python
+Body: Uncommented for debugging in Response.cpp
+[DEBUG]: ===  End of HTTP Response ===
+
+[1;36mClient 6 - Response sent, closing connection
+[0mNew client connected: 127.0.0.1:59590. Assigned fd: 6
+
+=== ROUTER handleRequest ===
+Router: method='GET', path='/cgi-bin/hello.js', server='test_server'
+findHandler: Looking for server='test_server', method='GET', path='/cgi-bin/hello.js'
+findHandler: Server found, checking 2 routes
+findHandler: Trying exact path match for '/cgi-bin/hello.js'
+findHandler: No exact path match
+findHandler: Looking for best advanced match
+findHandler: Checking route '/'
+findHandler: Prefix match found: '/' for path '/cgi-bin/hello.js' (length 1)
+findHandler: New best prefix match: '/' (length 1)
+findHandler: Checking route '/cgi-bin'
+findHandler: Prefix match found: '/cgi-bin' for path '/cgi-bin/hello.js' (length 8)
+findHandler: New best prefix match: '/cgi-bin' (length 8)
+findHandler: Returning best match with length 8
+Router: handler found: YES
+Router: location found: /cgi-bin
+: Method: GET, Path: /cgi-bin/hello.js: Normalized path: /cgi-bin/hello.jsRequestProcessor: Handler found: YES, Server: test_server, Path: /cgi-bin/hello.js
+RequestProcessor: Executing handler
+=== CGI HANDLER START ===
+CGI HANDLER: path=/cgi-bin/hello.js, location=/cgi-bin
+CGI HANDLER: filePathView='/cgi-bin/hello.js'
+CGI HANDLER: requestPath='/cgi-bin/hello.js', locationPrefix='/cgi-bin'
+CGI HANDLER: After stripping prefix, requestPath='/hello.js'
+CGI HANDLER: Final filePath='/home/ilyam/42/webserver/www/cgi-bin/hello.js'
+CGI HANDLER: File exists: /home/ilyam/42/webserver/www/cgi-bin/hello.js
+CGI HANDLER: isCgiScriptWithLocation returned: 1
+CGI HANDLER: Confirmed CGI script, proceeding with execution
+CGI: Executing script: /home/ilyam/42/webserver/www/cgi-bin/hello.js
+CGI: executeCgiScript called for: /home/ilyam/42/webserver/www/cgi-bin/hello.js
+CGI: Fork successful, child PID: 197536
+CGI: Fork successful, child PID: 0
+CGI: Script output length: 345
+: Handler executed successfully[DEBUG]:=== HTTP Response ===
+Status: 200 OK
+Headers:
+Content-Type: text/html
+X-CGI-Test: JavaScript
 Body: Uncommented for debugging in Response.cpp
 [DEBUG]: ===  End of HTTP Response ===
 

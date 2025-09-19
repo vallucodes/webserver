@@ -163,6 +163,8 @@ void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 		Parser parse;
 		Request req = parse.parseRequest(client_state.request);
 		Response res;
+
+
 		// Handle the request using the router
 		_router.handleRequest(conf, req, res); // Pass server config for server-specific routing
 
