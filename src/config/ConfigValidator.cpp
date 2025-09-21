@@ -129,9 +129,8 @@ ConfigValidator::ConfigValidator() {
 std::vector<std::string> ConfigValidator:: _methods = {
 	"GET",
 	"POST",
-	"DELETE",
-	"HEAD"
-
+	"DELETE"
+	// "HEAD"
 	// "PUT",
 	// "PATCH",
 	// "OPTIONS",

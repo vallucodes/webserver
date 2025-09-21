@@ -204,8 +204,8 @@ std::string generateDirectoryListing(const std::string& dirPath, const std::stri
  * @param location Location configuration
  */
 void get(const Request& req, Response& res, const Location* location) {
-    std::cout << "=== GET HANDLER START ===" << std::endl;
-    std::cout << "GET HANDLER CALLED: path=" << req.getPath() << ", location=" << (location ? location->location : "nullptr") << std::endl;
+    // std::cout << "=== GET HANDLER START ===" << std::endl;
+    // std::cout << "GET HANDLER CALLED: path=" << req.getPath() << ", location=" << (location ? location->location : "nullptr") << std::endl;
     try {
         // Extract and validate file path
         std::string_view filePathView = req.getPath();

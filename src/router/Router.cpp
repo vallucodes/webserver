@@ -25,7 +25,8 @@ Router::~Router() {}
  * @brief List all registered routes (debug function)
  */
 void Router::listRoutes() const {
-    std::cout << "[DEBUG]: Available routes:" << std::endl;
+
+    std::cout << "=== Available routes: ===" << std::endl;
     for (const auto& server_pair : _routes) {
         const std::string& server_name = server_pair.first;
         std::cout << "Server: " << server_name << std::endl;
@@ -39,7 +40,7 @@ void Router::listRoutes() const {
             std::cout << std::endl;
         }
     }
-    std::cout << "[DEBUG]: ===  End of Available routes ===\n" << std::endl;
+    std::cout << "=========================\n" << std::endl;
 }
 
 /**
@@ -53,7 +54,7 @@ void Router::setupRouter(const std::vector<Server>& configs) {
     // Iterate through each server configuration
     for (const auto& server : configs) {
         // Get server root directory for resolving relative paths
-        std::string server_root = server.getRoot();
+        // std::string server_root = server.getRoot(); // maybe needed in the future
 
         // Process each location block in the server configuration
         for (const auto& location : server.getLocations()) {
@@ -86,31 +87,31 @@ void Router::setupRouter(const std::vector<Server>& configs) {
                 } else if (method == "DELETE" && !location.upload_path.empty()) {
                     // DELETE request from upload location: Handle file deletions
                     handler = del;
-                } else if (method == "GET" || method == "HEAD") {
-                    // GET/HEAD requests: Handle static file serving
-                    // HEAD is identical to GET but without response body
-                    handler = get;
+                // if HEAD method needed
+                // } else if (method == "GET" || method == "HEAD") {
+                //     // GET/HEAD requests: Handle static file serving
+                //     // HEAD is identical to GET but without response body
+                //     handler = get;
                 } else {
                     // Default handler for other methods or configurations
                     handler = get;
-
                 }
 
                 // Register the route in the routing table
                 addRoute(server.getName(), method, location_path, handler);
 
+                // if HEAD method needed
                 // HTTP convention: Automatically add HEAD support for GET routes
                 // HEAD requests should return the same headers as GET but no body
                 // Only add if HEAD is not already explicitly allowed in location config
-                if (method == "GET" && std::find(location.allowed_methods.begin(),
-                    location.allowed_methods.end(), "HEAD") == location.allowed_methods.end()) {
-                    addRoute(server.getName(), "HEAD", location_path, handler);
-                }
+                // if (method == "GET" && std::find(location.allowed_methods.begin(),
+                //     location.allowed_methods.end(), "HEAD") == location.allowed_methods.end()) {
+                //     addRoute(server.getName(), "HEAD", location_path, handler);
+                // }
             }
         }
     }
-
-    // Debug: Display all registered routes for verification
+    // Display all registered routes for verification
     listRoutes();
 }
 

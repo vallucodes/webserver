@@ -49,7 +49,7 @@ class Router {
     /** Find matching location configuration */
     const Location* findLocation(const Server& server, const std::string& path) const;
 
-    /** Route storage: server -> path -> method -> handler */
+    /** Route storage: server name → path → HTTP method → Handler */
     std::map<std::string, std::map<std::string, std::map<std::string, Handler>>> _routes;
 
     /** Request processor for complex request logic */
