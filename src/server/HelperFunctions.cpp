@@ -114,6 +114,7 @@ bool	decodeChunkedBody(ClientRequestState& client_state) {
 				break;
 			}
 			pos = trailersEnd + 4;
+			client_state.buffer = body.substr(pos);
 			endReq = true;
 			break;
 		}
@@ -129,8 +130,8 @@ bool	decodeChunkedBody(ClientRequestState& client_state) {
 		pos += chunkSize + 2;
 	}
 
-	client_state.clean_buffer.append(headers + result);
-	client_state.request_size = client_state.buffer.size();
+	client_state.clean_buffer = headers + result;
+	client_state.request_size = client_state.clean_buffer.size();
 	// if (endReq ==  false && data_validity == true)
 	// 	std::cout << buffer << std::endl;
 	return (endReq);
@@ -160,6 +161,7 @@ bool	isRequestBodyComplete(ClientRequestState& client_state, size_t header_end) 
 		if (remainder >= body_expected_len) {
 			// std::cout << "body received and there might another request starting after" << std::endl;
 			client_state.request_size = header_end + body_expected_len;
+			client_state.buffer = client_state.clean_buffer.substr(client_state.request_size);
 			return true;
 		}
 		else {
@@ -170,6 +172,7 @@ bool	isRequestBodyComplete(ClientRequestState& client_state, size_t header_end) 
 	else {
 		// std::cout << "only header received, possibly some bytes in body that are part of next request" << std::endl;
 		client_state.request_size = header_end;
+		client_state.buffer = client_state.clean_buffer.substr(client_state.request_size);
 		return true;
 	}
 }
@@ -191,7 +194,7 @@ std::string	popResponseChunk(ClientRequestState& client_state) {
 void	buildRequest(ClientRequestState& client_state) {
 	client_state.request = client_state.clean_buffer.substr(0, client_state.request_size);
 	// std::cout << "request: \n" << client_state.request << std::endl;
-	client_state.buffer = client_state.clean_buffer.substr(client_state.request_size);
+	// client_state.buffer = client_state.clean_buffer.substr(client_state.request_size); // this is unnescessary in chunked case because buffer has uncleaned leftovers
 	// buffer = client_state.buffer.substr(client_state.request_size);
 	// std::cout << "buffer empty?: \n" << client_state.buffer.empty() << std::endl;
 }

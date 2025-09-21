@@ -193,7 +193,7 @@ void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 void	Cluster::sendPendingData(size_t& i) {
 	// --- Send minimal HTTP response ---
 	ClientRequestState& client_state = _client_buffers[_fds[i].fd];
-	// std::cout << "in sendPendingData(). Response now: \n" << client_state.response << std::endl;
+	std::cout << "in sendPendingData(). Response: \n" << client_state.response << std::endl;
 	if (!client_state.response.size())
 		return ;
 
@@ -234,7 +234,7 @@ void	Cluster::checkForTimeouts() {
 		if (_client_buffers[_fds[i].fd].receive_start != std::chrono::high_resolution_clock::time_point{}) {
 			auto elapsed = now - _client_buffers[_fds[i].fd].receive_start;
 			auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count();
-			std::cout << "Timeout checker request:" << elapsed_ms << std::endl;
+			// std::cout << "Timeout checker request:" << elapsed_ms << std::endl;
 			if (elapsed_ms > TIME_OUT_REQUEST && _client_buffers[_fds[i].fd].clean_buffer.size() > 0)
 				dropClient(i, CLIENT_TIMEOUT);
 		}
@@ -242,7 +242,7 @@ void	Cluster::checkForTimeouts() {
 		if (_client_buffers[_fds[i].fd].send_start != std::chrono::high_resolution_clock::time_point{}) {
 			auto elapsed = now - _client_buffers[_fds[i].fd].send_start;
 			auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count();
-			std::cout << "Timeout checker response:" << elapsed_ms << std::endl;
+			// std::cout << "Timeout checker response:" << elapsed_ms << std::endl;
 			if (elapsed_ms > TIME_OUT_RESPONSE && _client_buffers[_fds[i].fd].response.size() > 0)
 				dropClient(i, CLIENT_TIMEOUT);
 		}
@@ -270,5 +270,3 @@ const Server&	Cluster::findRelevantConfig(int client_fd, const std::string& buff
 const	std::set<int>& Cluster::getServerFds() const {
 	return _server_fds;
 }
-
-

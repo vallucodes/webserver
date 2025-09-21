@@ -1,7 +1,7 @@
 import socket
 
 HOST = "127.0.0.1"
-PORT = 7070
+PORT = 8080
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.connect((HOST, PORT))
@@ -24,7 +24,7 @@ sock.sendall(requests.encode())
 print("Start of waiting for responses")
 response = b""
 while True:
-	data = sock.recv(1024)
+	data = sock.recv(8192)
 	if not data:
 		break
 	print(f"Client received chunk:\n{data.decode()}")
