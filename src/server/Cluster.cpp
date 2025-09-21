@@ -154,12 +154,11 @@ void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 	ClientRequestState& client_state = _client_buffers[_fds[i].fd];
 	client_state.buffer.append(buffer, bytes);
 	client_state.receive_start = std::chrono::high_resolution_clock::now();
-	std::string cleaned_buffer;
 
-	while (requestComplete(client_state, cleaned_buffer)) {
-		buildRequest(client_state, cleaned_buffer);
+	while (requestComplete(client_state)) {
+		buildRequest(client_state);
 		// call here the parser in future.
-		Server conf = findRelevantConfig(_fds[i].fd, client_state.buffer);
+		Server conf = findRelevantConfig(_fds[i].fd, client_state.clean_buffer);
 		// printServerConfig(conf); // this is simulating what will be sent to parser later
 		Parser parse;
 		Request req = parse.parseRequest(client_state.request);
@@ -175,7 +174,10 @@ void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 		if (client_state.buffer.empty())
 			client_state.receive_start = {};
 		else
+		{
+			std::cout << "clock started\n";
 			client_state.receive_start = std::chrono::high_resolution_clock::now();
+		}
 
 		_fds[i].events |= POLLOUT;			// start to listen if client is ready to receive response
 		client_state.send_start = std::chrono::high_resolution_clock::now(); //this should be moved to the response part of code
@@ -208,7 +210,7 @@ void	Cluster::sendPendingData(size_t& i) {
 			// Ilia added this
 			// Close connection after sending response (HTTP/1.0 style)
 			// or infinity loop
-			dropClient(i, " - Response sent, closing connection");
+			// dropClient(i, " - Response sent, closing connection");
 		}
 		else if (sent < 0)
 			dropClient(i, CLIENT_SEND_ERROR);
@@ -229,21 +231,21 @@ void	Cluster::checkForTimeouts() {
 	for (size_t i = 0; i < _fds.size(); ++i) {
 		if (isServerSocket(_fds[i].fd, getServerFds()))
 			continue ;
-		if (_client_buffers[_fds[i].fd].receive_start == std::chrono::high_resolution_clock::time_point{} &&
-		_client_buffers[_fds[i].fd].send_start == std::chrono::high_resolution_clock::time_point{})
-			continue ;
+		if (_client_buffers[_fds[i].fd].receive_start != std::chrono::high_resolution_clock::time_point{}) {
+			auto elapsed = now - _client_buffers[_fds[i].fd].receive_start;
+			auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count();
+			std::cout << "Timeout checker request:" << elapsed_ms << std::endl;
+			if (elapsed_ms > TIME_OUT_REQUEST && _client_buffers[_fds[i].fd].clean_buffer.size() > 0)
+				dropClient(i, CLIENT_TIMEOUT);
+		}
 
-		auto elapsed = now - _client_buffers[_fds[i].fd].receive_start;
-		auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count();
-		// std::cout << "Timeout checker request:" << elapsed_ms << std::endl;
-		if (elapsed_ms > TIME_OUT_REQUEST && _client_buffers[_fds[i].fd].buffer.size() > 0)
-			dropClient(i, CLIENT_TIMEOUT);
-
-		elapsed = now - _client_buffers[_fds[i].fd].send_start;
-		elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count();
-		// std::cout << "Timeout checker response:" << elapsed_ms << std::endl;
-		if (elapsed_ms > TIME_OUT_RESPONSE && _client_buffers[_fds[i].fd].response.size() > 0)
-			dropClient(i, CLIENT_TIMEOUT);
+		if (_client_buffers[_fds[i].fd].send_start != std::chrono::high_resolution_clock::time_point{}) {
+			auto elapsed = now - _client_buffers[_fds[i].fd].send_start;
+			auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count();
+			std::cout << "Timeout checker response:" << elapsed_ms << std::endl;
+			if (elapsed_ms > TIME_OUT_RESPONSE && _client_buffers[_fds[i].fd].response.size() > 0)
+				dropClient(i, CLIENT_TIMEOUT);
+		}
 	}
 }
 

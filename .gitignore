@@ -1,6 +1,9 @@
 # program executable
 webserv
 
+# swap files
+*.swp
+
 # Tester build
 build/
 Testing/

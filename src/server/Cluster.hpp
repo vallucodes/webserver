@@ -27,8 +27,9 @@ struct ListenerGroup {
 struct ClientRequestState {
 	std::chrono::time_point<std::chrono::high_resolution_clock>	receive_start {};
 	std::chrono::time_point<std::chrono::high_resolution_clock>	send_start {};
-	std::string	buffer;
-	std::string	request;
+	std::string	clean_buffer;	// normal part of (buffer or chunked cleaned)
+	std::string	buffer;			// storage for non-cleaned buffer
+	std::string	request;		// full request
 	size_t		request_size;
 	std::string	response;
 	Server*		config;
@@ -44,7 +45,7 @@ class Cluster {
 		std::vector<pollfd>				_fds;				// servers and clients fds list for poll()
 		std::set<int>					_server_fds;		// only servers fds
 		std::vector<Server>				_configs;			// parsed configs
-		std::vector<ListenerGroup>		_listener_groups;	// group of configs with same IP+port
+		std::vector<ListenerGroup>		_listener_groups;	// groups of configs with same IP+port
 		std::map<int, ListenerGroup*>	_servers;			// fd of server and related ListenerGroup. Reason to have is to find quickly related ListeningGroup to key
 		std::map<int, ListenerGroup*>	_clients;			// fd of client and related config
 		Router							_router;			// HTTP router for handling requests

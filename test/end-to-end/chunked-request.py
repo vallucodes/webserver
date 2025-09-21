@@ -3,7 +3,7 @@ import time
 
 # Server configuration
 HOST = '127.0.0.1'
-PORT = 8080
+PORT = 7070
 
 # Define tricky chunks
 chunks = [
