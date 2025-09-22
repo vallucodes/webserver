@@ -50,6 +50,7 @@ namespace http {
 
     // Connection Values
     const std::string CONNECTION_CLOSE = "close";
+    const std::string CONNECTION_KEEP_ALIVE = "keep-alive";
 
     // Content Types
     const std::string CONTENT_TYPE_HTML = "text/html";
