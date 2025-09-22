@@ -6,7 +6,9 @@
 
 // Test 1: Simple chunked body decoding
 TEST(DecodeChunkedBodyTest, DecodeSimpleChunkedBody) {
-	std::string buffer =
+	ClientRequestState client_state;
+
+	client_state.buffer =
 		"POST / HTTP/1.1\r\n"
 		"Transfer-Encoding: chunked\r\n"
 		"\r\n"
@@ -20,16 +22,18 @@ TEST(DecodeChunkedBodyTest, DecodeSimpleChunkedBody) {
 		"\r\n"
 		"Wikipedia";
 
-	bool data_validity = true;
+	client_state.data_validity = true;
 
-	EXPECT_TRUE(decodeChunkedBody(buffer, data_validity));
-	EXPECT_EQ(buffer, expected);
-	EXPECT_TRUE(data_validity);
+	EXPECT_TRUE(decodeChunkedBody(client_state));
+	EXPECT_EQ(client_state.clean_buffer, expected);
+	EXPECT_TRUE(client_state.data_validity);
 }
 
 // Test 2: Single chunk
 TEST(DecodeChunkedBodyTest, DecodeSingleChunk) {
-	std::string buffer =
+	ClientRequestState client_state;
+
+	client_state.buffer =
 		"POST / HTTP/1.1\r\n"
 		"Content-Type: text/plain\r\n"
 		"\r\n"
@@ -42,16 +46,18 @@ TEST(DecodeChunkedBodyTest, DecodeSingleChunk) {
 		"\r\n"
 		"Hello World";
 
-	bool data_validity = true;
-	EXPECT_TRUE(decodeChunkedBody(buffer, data_validity));
+	client_state.data_validity = true;
+	EXPECT_TRUE(decodeChunkedBody(client_state));
 
-	EXPECT_EQ(buffer, expected);
-	EXPECT_TRUE(data_validity);
+	EXPECT_EQ(client_state.clean_buffer, expected);
+	EXPECT_TRUE(client_state.data_validity);
 }
 
 // Test 3: Empty chunks (only terminator)
 TEST(DecodeChunkedBodyTest, DecodeEmptyChunks) {
-	std::string buffer =
+	ClientRequestState client_state;
+
+	client_state.buffer =
 		"GET / HTTP/1.1\r\n"
 		"Host: example.com\r\n"
 		"\r\n"
@@ -62,16 +68,18 @@ TEST(DecodeChunkedBodyTest, DecodeEmptyChunks) {
 		"Host: example.com\r\n"
 		"\r\n";
 
-	bool data_validity = true;
-	decodeChunkedBody(buffer, data_validity);
+	client_state.data_validity = true;
+	decodeChunkedBody(client_state);
 
-	EXPECT_EQ(buffer, expected);
-	EXPECT_TRUE(data_validity);
+	EXPECT_EQ(client_state.clean_buffer, expected);
+	EXPECT_TRUE(client_state.data_validity);
 }
 
 // Test 4: Hexadecimal chunk sizes
 TEST(DecodeChunkedBodyTest, DecodeHexadecimalChunkSizes) {
-	std::string buffer =
+	ClientRequestState client_state;
+
+	client_state.buffer =
 		"POST / HTTP/1.1\r\n"
 		"Content-Type: application/json\r\n"
 		"\r\n"
@@ -85,16 +93,18 @@ TEST(DecodeChunkedBodyTest, DecodeHexadecimalChunkSizes) {
 		"\r\n"
 		"{\"test\":\"data\"}, \"more\":1}";
 
-	bool data_validity = true;
-	decodeChunkedBody(buffer, data_validity);
+	client_state.data_validity = true;
+	decodeChunkedBody(client_state);
 
-	EXPECT_EQ(buffer, expected);
-	EXPECT_TRUE(data_validity);
+	EXPECT_EQ(client_state.clean_buffer, expected);
+	EXPECT_TRUE(client_state.data_validity);
 }
 
 // Test 5: Multiple small chunks
 TEST(DecodeChunkedBodyTest, DecodeMultipleSmallChunks) {
-	std::string buffer =
+	ClientRequestState client_state;
+
+	client_state.buffer =
 		"POST /upload HTTP/1.1\r\n"
 		"Host: example.com\r\n"
 		"\r\n"
@@ -111,16 +121,18 @@ TEST(DecodeChunkedBodyTest, DecodeMultipleSmallChunks) {
 		"\r\n"
 		"Hello";
 
-	bool data_validity = true;
-	decodeChunkedBody(buffer, data_validity);
+	client_state.data_validity = true;
+	decodeChunkedBody(client_state);
 
-	EXPECT_EQ(buffer, expected);
-	EXPECT_TRUE(data_validity);
+	EXPECT_EQ(client_state.clean_buffer, expected);
+	EXPECT_TRUE(client_state.data_validity);
 }
 
 // Test 6: Chunked body with binary data
 TEST(DecodeChunkedBodyTest, DecodeChunkedBinaryData) {
-	std::string buffer =
+	ClientRequestState client_state;
+
+	client_state.buffer =
 		"POST /binary HTTP/1.1\r\n"
 		"Content-Type: application/octet-stream\r\n"
 		"\r\n"
@@ -134,16 +146,18 @@ TEST(DecodeChunkedBodyTest, DecodeChunkedBinaryData) {
 		"\r\n"
 		"\x01\x02\x03\xFF\xFE";
 
-	bool data_validity = true;
-	decodeChunkedBody(buffer, data_validity);
+	client_state.data_validity = true;
+	decodeChunkedBody(client_state);
 
-	EXPECT_EQ(buffer, expected);
-	EXPECT_TRUE(data_validity);
+	EXPECT_EQ(client_state.clean_buffer, expected);
+	EXPECT_TRUE(client_state.data_validity);
 }
 
 // Test 7: Malformed chunk (incomplete)
 TEST(DecodeChunkedBodyTest, HandleIncompleteChunk) {
-	std::string buffer =
+	ClientRequestState client_state;
+
+	client_state.buffer =
 		"POST / HTTP/1.1\r\nContent-Type: text/plain\r\n\r\n5\r\nHello"; // Missing \r\n and terminator
 
 	std::string expected =
@@ -151,17 +165,19 @@ TEST(DecodeChunkedBodyTest, HandleIncompleteChunk) {
 		"Content-Type: text/plain\r\n"
 		"\r\n";
 
-	bool data_validity = true;
-	EXPECT_FALSE(decodeChunkedBody(buffer, data_validity));
+	client_state.data_validity = true;
+	EXPECT_FALSE(decodeChunkedBody(client_state));
 
-	// EXPECT_EQ(buffer, expected);
-	EXPECT_FALSE(data_validity); // invalid chunk
+	// EXPECT_EQ(client_state.clean_buffer, expected);
+	EXPECT_FALSE(client_state.data_validity); // invalid chunk
 }
 
 // Test 8: Large chunk size in hex
 TEST(DecodeChunkedBodyTest, DecodeLargeHexChunkSize) {
+	ClientRequestState client_state;
+
 	std::string large_data(255, 'A'); // 255 characters of 'A'
-	std::string buffer =
+	client_state.buffer =
 		"POST / HTTP/1.1\r\n"
 		"Content-Type: text/plain\r\n"
 		"\r\n"
@@ -173,35 +189,37 @@ TEST(DecodeChunkedBodyTest, DecodeLargeHexChunkSize) {
 		"Content-Type: text/plain\r\n"
 		"\r\n" + large_data;
 
-	bool data_validity = true;
-	decodeChunkedBody(buffer, data_validity);
+	client_state.data_validity = true;
+	decodeChunkedBody(client_state);
 
-	EXPECT_EQ(buffer, expected);
-	EXPECT_TRUE(data_validity);
+	EXPECT_EQ(client_state.clean_buffer, expected);
+	EXPECT_TRUE(client_state.data_validity);
 }
 
-// Test 9: Large chunk size in hex
-TEST(DecodeChunkedBodyTest, DecodeLargeHexChunkSize) {
-	std::string buffer =
-		"POST / HTTP/1.1\r\n"
-		"Content-Type: application/json\r\n"
-		"\r\n"
-		"F\r\n{\"test\":\"data\"}\r\n"
-		"B\r\n, \"more\":1}\r\n"
-		"0\r\n\r\n";
+// // Test 9: Large chunk size in hex
+// TEST(DecodeChunkedBodyTest, DecodeLargeHexChunkSize) {
+// 	ClientRequestState client_state;
 
-	std::string expected =
-		"POST / HTTP/1.1\r\n"
-		"Content-Type: application/json\r\n"
-		"\r\n"
-		"{\"test\":\"data\"}, \"more\":1}";
+// 	client_state.buffer =
+// 		"POST / HTTP/1.1\r\n"
+// 		"Content-Type: application/json\r\n"
+// 		"\r\n"
+// 		"F\r\n{\"test\":\"data\"}\r\n"
+// 		"B\r\n, \"more\":1}\r\n"
+// 		"0\r\n\r\n";
 
-	bool data_validity = true;
-	decodeChunkedBody(buffer, data_validity);
+// 	std::string expected =
+// 		"POST / HTTP/1.1\r\n"
+// 		"Content-Type: application/json\r\n"
+// 		"\r\n"
+// 		"{\"test\":\"data\"}, \"more\":1}";
 
-	EXPECT_EQ(buffer, expected);
-	EXPECT_TRUE(data_validity);
-}
+// 	client_state.data_validity = true;
+// 	decodeChunkedBody(client_state);
+
+// 	EXPECT_EQ(client_state.clean_buffer, expected);
+// 	EXPECT_TRUE(client_state.data_validity);
+// }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #define MAX_BODY_SIZE 10000000
@@ -359,7 +377,7 @@ TEST(RequestCompleteTest, ReturnTrueIgnoreFakeContentLengthInBody) {
 
 	EXPECT_TRUE(requestComplete(client_state));    // Request complete
 	EXPECT_TRUE(client_state.data_validity);       // Still valid request
-	EXPECT_EQ(client_state.request_size, client_state.buffer.find("\r\n\r\n") + 4 + 5);
+	EXPECT_EQ(client_state.request_size, client_state.clean_buffer.find("\r\n\r\n") + 4 + 5);
 	// request_size points just past the real body
 }
 
