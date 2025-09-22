@@ -16,7 +16,13 @@ enable_testing()
 file(GLOB TEST_SOURCES test/unit/*.cpp)
 foreach(test_file ${TEST_SOURCES})
 	get_filename_component(test_name ${test_file} NAME_WE)
-	add_executable(${test_name} ${test_file} src/server/HelperFunctions.cpp)
+	add_executable(${test_name} ${test_file}
+	src/server/HelperFunctions.cpp
+	src/config/Config.cpp
+	src/config/ConfigValidator.cpp
+	src/config/ConfigExtractor.cpp
+	src/server/Server.cpp
+	)
 
 	# Add include directories for each test
 	target_include_directories(${test_name} PRIVATE
