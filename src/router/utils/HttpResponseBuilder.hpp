@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <string>
+#include <string> // for std::string
 #include "../HttpConstants.hpp"
 
 // Forward declarations

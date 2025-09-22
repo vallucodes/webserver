@@ -4,10 +4,10 @@
  */
 
 #include "FileUtils.hpp"
-#include <fstream>
-#include <stdexcept>
-#include <filesystem>
-#include <algorithm>
+#include <fstream> // for std::ifstream, std::ios
+#include <stdexcept> // for std::runtime_error
+#include <filesystem> // for std::filesystem::path, std::filesystem::path::extension
+#include <algorithm> // for std::transform
 
 namespace router {
 namespace utils {

@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include <string>
-#include <functional>
+#include <string> // for std::string
+#include <functional> // for std::function
 #include "../request/Request.hpp"
 #include "../response/Response.hpp"
 #include "../server/Server.hpp"

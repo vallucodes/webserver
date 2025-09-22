@@ -4,7 +4,7 @@
  */
 
 #include "StringUtils.hpp"
-#include <algorithm>
+#include <algorithm> // for std::remove_if, std::find_if
 
 namespace router {
 namespace utils {

@@ -13,14 +13,14 @@
 
 using namespace http;
 
-#include <fstream>
-#include <sstream>
-#include <filesystem>
-#include <cctype>
-#include <unistd.h>
-#include <sys/wait.h>
-#include <cstring>
-#include <cstdlib>
+#include <fstream> // for std::ifstream, std::ofstream
+#include <sstream> // for std::istringstream
+#include <filesystem> // for std::filesystem::directory_iterator, std::filesystem::path, std::filesystem::exists, std::filesystem::is_directory, std::filesystem::is_regular_file, std::filesystem::create_directories, std::filesystem::remove, std::filesystem::file_size, std::filesystem::last_write_time
+#include <cctype> // for std::tolower, std::isspace
+#include <unistd.h> // for pipe, fork, dup2, close, write, read, chdir, execve, STDIN_FILENO, STDOUT_FILENO
+#include <sys/wait.h> // for waitpid, WIFEXITED, WEXITSTATUS
+#include <ctime> // for strftime
+#include <cstdlib> // for std::stoul
 
 /** Get MIME content type from file extension */
 std::string getContentType(const std::string& filename) {

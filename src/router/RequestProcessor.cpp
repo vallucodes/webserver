@@ -6,8 +6,8 @@
 #include "RequestProcessor.hpp"
 #include "utils/HttpResponseBuilder.hpp"
 #include "handlers/Handlers.hpp"
-#include <iostream>
-#include <algorithm>
+#include <iostream> // for std::cout, std::endl
+#include <algorithm> // for std::find
 
 /** Default constructor */
 RequestProcessor::RequestProcessor() {

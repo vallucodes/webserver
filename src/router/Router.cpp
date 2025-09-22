@@ -8,7 +8,7 @@
 #include "utils/HttpResponseBuilder.hpp"
 #include "HttpConstants.hpp"
 #include "handlers/Handlers.hpp"
-#include <algorithm>
+#include <algorithm> // for std::find
 
 
 /** Default constructor */

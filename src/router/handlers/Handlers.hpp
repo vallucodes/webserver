@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <string>
+#include <string> // for std::string
 
 #include "../../request/Request.hpp"
 #include "../../response/Response.hpp"

@@ -7,7 +7,7 @@
 #include "../HttpConstants.hpp"
 #include "../../response/Response.hpp"
 #include "FileUtils.hpp"
-#include <iostream>
+#include <iostream> // for std::cout, std::endl
 
 namespace router {
 namespace utils {

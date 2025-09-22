@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include <string>
-#include <vector>
+#include <string> // for std::string
+#include <vector> // for std::vector
 
 /**
  * @namespace http
