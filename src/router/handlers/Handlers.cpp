@@ -22,39 +22,6 @@ using namespace http;
 #include <ctime> // for strftime
 #include <cstdlib> // for std::stoul
 
-/** Get MIME content type from file extension */
-std::string getContentType(const std::string& filename) {
-    size_t dotPos = filename.find_last_of('.');
-    if (dotPos != std::string::npos) {
-        std::string ext = filename.substr(dotPos + 1);
-
-        // Convert to lowercase for case-insensitive comparison
-        for (char& c : ext) {
-            c = std::tolower(c);
-        }
-
-        // Use switch-like behavior with computed hash
-        switch (ext.length()) {
-            case 3:
-                if (ext == "css") return "text/css";
-                if (ext == "png") return "image/png";
-                if (ext == "jpg") return "image/jpeg";
-                if (ext == "gif") return "image/gif";
-                if (ext == "htm") return "text/html";
-                if (ext == "txt") return "text/plain";
-                break;
-            case 4:
-                if (ext == "html") return "text/html";
-                if (ext == "jpeg") return "image/jpeg";
-                if (ext == "json") return "application/json";
-                break;
-            case 2:
-                if (ext == "js") return "application/javascript";
-                break;
-        }
-    }
-    return "text/plain";
-}
 
 // Helper functions for response formatting
 
@@ -199,7 +166,7 @@ bool handleDirectoryRequest(const std::string& dirPath, const std::string& reque
 
     if (std::filesystem::exists(indexPath) && std::filesystem::is_regular_file(indexPath)) {
       std::string fileContent = router::utils::FileUtils::readFileToString(indexPath);
-      std::string contentType = getContentType(indexPath);
+      std::string contentType = router::utils::FileUtils::getContentType(indexPath);
       router::utils::HttpResponseBuilder::setSuccessResponse(res, fileContent, contentType);
       return true;
     }
@@ -208,7 +175,7 @@ bool handleDirectoryRequest(const std::string& dirPath, const std::string& reque
     std::string globalIndexPath = page::WWW + "/" + location->index;
     if (std::filesystem::exists(globalIndexPath) && std::filesystem::is_regular_file(globalIndexPath)) {
       std::string fileContent = router::utils::FileUtils::readFileToString(globalIndexPath);
-      std::string contentType = getContentType(globalIndexPath);
+      std::string contentType = router::utils::FileUtils::getContentType(globalIndexPath);
       router::utils::HttpResponseBuilder::setSuccessResponse(res, fileContent, contentType);
       return true;
     }
@@ -219,7 +186,7 @@ bool handleDirectoryRequest(const std::string& dirPath, const std::string& reque
     std::string defaultPath = dirPath + "/" + defaultFile;
     if (std::filesystem::exists(defaultPath) && std::filesystem::is_regular_file(defaultPath)) {
       std::string fileContent = router::utils::FileUtils::readFileToString(defaultPath);
-      std::string contentType = getContentType(defaultPath);
+      std::string contentType = router::utils::FileUtils::getContentType(defaultPath);
       router::utils::HttpResponseBuilder::setSuccessResponse(res, fileContent, contentType);
       return true;
     }
@@ -255,7 +222,7 @@ std::string determineFilePath(const std::string& requestPath) {
 bool serveStaticFile(const std::string& filePath, Response& res) {
   try {
     std::string fileContent = router::utils::FileUtils::readFileToString(filePath);
-    std::string contentType = getContentType(filePath);
+    std::string contentType = router::utils::FileUtils::getContentType(filePath);
     router::utils::HttpResponseBuilder::setSuccessResponse(res, fileContent, contentType);
     return true;
   } catch (const std::exception&) {
@@ -824,7 +791,7 @@ void cgi(const Request& req, Response& res, const Location* location) {
         if (!isCgiScriptWithLocation(filePath, location)) {
             // Not a CGI script, handle as regular file
             std::string fileContent = router::utils::FileUtils::readFileToString(filePath);
-            std::string contentType = getContentType(filePath);
+            std::string contentType = router::utils::FileUtils::getContentType(filePath);
             router::utils::HttpResponseBuilder::setSuccessResponse(res, fileContent, contentType);
             return;
         }
