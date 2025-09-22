@@ -1,8 +1,6 @@
 #include <gtest/gtest.h>
 #include "../src/server/HelperFunctions.hpp"
-#include "../src/server/Cluster.hpp"  // adjust path if needed
-
-#define MAX_BODY_SIZE 10000000
+#include "../src/server/Cluster.hpp"
 
 // Test 1: Simple chunked body decoding
 TEST(DecodeChunkedBodyTest, DecodeSimpleChunkedBody) {

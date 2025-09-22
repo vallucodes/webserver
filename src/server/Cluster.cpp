@@ -13,18 +13,18 @@ void	Cluster::config(const std::string& config_file) {
 	config.validate(config_file);
 	_configs = config.parse(config_file);
 	// printAllConfigs(_configs);
-	if (_configs.size() == 0)
-		throw std::runtime_error("Error: config file doesnt have any server"); // maybe this will be caught already in parsing
 	groupConfigs();
 	// printAllConfigGroups(_listener_groups);
 
-	_max_clients = 100;
+	_max_clients = 100; // TODO use getMaxClients()
 
 	// ASK ILIA to del this shit
 	_router.setupRouter();
 }
 
 void	Cluster::groupConfigs() {
+	if (_configs.size() == 0)
+		throw std::runtime_error("Error: config file doesnt have any server");
 	for (auto& config : _configs) {
 		if (_listener_groups.empty()) {
 			createGroup(config);
@@ -39,6 +39,7 @@ void	Cluster::groupConfigs() {
 			int	port_group = group.default_config->getPort();
 
 			if (IP_group == IP_conf && port_group == port_conf) {
+				checkNameRepitition(group.configs, config);
 				group.configs.push_back(config);
 				added = true;
 			}
