@@ -235,14 +235,14 @@ bool handleDirectoryRequest(const std::string& dirPath, const std::string& reque
  * @param location Location configuration
  * @return File path to serve
  */
-std::string determineFilePath(const std::string& requestPath, const Location* location) {
+std::string determineFilePath(const std::string& requestPath) {
   if (requestPath == "/" || requestPath == "/index.html") {
     return page::INDEX_HTML;
   }
 
-  if (location) {
-    return page::WWW + requestPath;
-  }
+//   if (location) {
+//     return page::WWW + requestPath;
+//   }
 
   return page::WWW + requestPath;
 }
@@ -280,7 +280,7 @@ void get(const Request& req, Response& res, const Location* location) {
     }
 
     std::string requestPath = std::string(filePathView);
-    std::string filePath = determineFilePath(requestPath, location);
+    std::string filePath = determineFilePath(requestPath);
 
     // Handle directory requests
     if (std::filesystem::is_directory(filePath)) {
