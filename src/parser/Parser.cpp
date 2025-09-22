@@ -129,36 +129,36 @@ bool isChunked(Request& req){
     return findChunk;
 }
 
-std::string decodeChunkedBody(std::string body){
-    std::string result;
-    size_t pos = 0;
+// std::string decodeChunkedBody(std::string body){
+//     std::string result;
+//     size_t pos = 0;
 
-    while (pos < body.size()) {
-        size_t lineEnd = body.find("\r\n", pos);
-        if (lineEnd == std::string::npos) break;
+//     while (pos < body.size()) {
+//         size_t lineEnd = body.find("\r\n", pos);
+//         if (lineEnd == std::string::npos) break;
 
-        std::string sizeLine = body.substr(pos, lineEnd - pos);
-        size_t chunkSize = 0;
-        std::istringstream(sizeLine) >> std::hex >> chunkSize;
-        pos = lineEnd + 2;
+//         std::string sizeLine = body.substr(pos, lineEnd - pos);
+//         size_t chunkSize = 0;
+//         std::istringstream(sizeLine) >> std::hex >> chunkSize;
+//         pos = lineEnd + 2;
 
-        if (chunkSize == 0) break;
+//         if (chunkSize == 0) break;
 
-        if (pos + chunkSize > body.size()) break;
+//         if (pos + chunkSize > body.size()) break;
 
-        result.append(body.substr(pos, chunkSize));
-        pos += chunkSize + 2;
-    }
+//         result.append(body.substr(pos, chunkSize));
+//         pos += chunkSize + 2;
+//     }
 
-    return result;
-}
+//     return result;
+// }
 
 Request Parser::parseRequest(const std::string& httpString) {
     Request req;
     std::string_view sv(httpString);
 
-    // std::cout << "\noriginal string is:" << httpString << std::endl;
-    // std::cout << "end of string" <<  std::endl;
+    std::cout << "\noriginal string is:" << httpString << std::endl;
+    std::cout << "end of string" <<  std::endl;
 
     //Parse request line
     size_t pos = sv.find("\r\n");
@@ -202,8 +202,8 @@ Request Parser::parseRequest(const std::string& httpString) {
         size_t contentLength = std::stoul(contentValues.front());
         req.setBody(std::string(body.substr(0, contentLength)));
     }
-    else if (isChunked(req))
-        req.setBody(decodeChunkedBody(std::string(body)));
+    // else if (isChunked(req))
+    //     req.setBody(decodeChunkedBody(std::string(body)));
     else
         req.setBody("");
 
