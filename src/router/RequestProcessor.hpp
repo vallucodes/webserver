@@ -47,8 +47,4 @@ class RequestProcessor {
     /** Generate error response */
     void generateErrorResponse(Response& res, int status,
                               const std::string& message = "") const;
-
-    /** Log request processing for debugging */
-    void logRequestProcessing(const Request& req, const std::string& stage,
-                             const std::string& details = "") const;
 };

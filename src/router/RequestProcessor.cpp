@@ -35,35 +35,27 @@ void RequestProcessor::processRequest(const Server& server, const Request& req,
     std::string method(method_view);
     std::string path(path_view);
 
-    logRequestProcessing(req, "start", "Method: " + method + ", Path: " + path);
-
     // Validate and normalize the path
     if (!validatePath(path)) {
-        logRequestProcessing(req, "validation_failed", "Invalid path: " + path);
         router::utils::ErrorResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400);
         return;
     }
 
     normalizePath(path);
-    logRequestProcessing(req, "normalized", "Normalized path: " + path);
 
     // Execute handler if available
     if (handler) {
         if (executeHandlerSafely(handler, server, req, res, path, location)) {
-            logRequestProcessing(req, "handler_executed", "Handler executed successfully");
             return;
         }
     }
 
     // Fallback: try to serve as static file
-    logRequestProcessing(req, "fallback", "Trying static file fallback");
     if (tryServeAsStaticFile(req, res, method)) {
-        logRequestProcessing(req, "static_file_served", "Static file served successfully");
         return;
     }
 
     // All attempts failed - return 404
-    logRequestProcessing(req, "not_found", "No handler or static file found");
     router::utils::ErrorResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404);
 }
 
@@ -144,11 +136,9 @@ bool RequestProcessor::executeHandlerSafely(const Handler* handler, const Server
         (*handler)(req, res, location);
         return true;
     } catch (const std::exception& e) {
-        logRequestProcessing(req, "handler_error", std::string("Exception: ") + e.what());
         router::utils::ErrorResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
         return false;
     } catch (...) {
-        logRequestProcessing(req, "handler_error", "Unknown exception occurred");
         router::utils::ErrorResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
         return false;
     }
@@ -211,16 +201,4 @@ void RequestProcessor::generateErrorResponse(Response& res, int status,
 
     res.setHeaders(http::CONTENT_LENGTH, std::to_string(errorBody.length()));
     res.setBody(errorBody);
-}
-
-/**
- * @brief Log request processing
- */
-void RequestProcessor::logRequestProcessing(const Request& req, const std::string& stage,
-                                           const std::string& details) const {
-    // std::cout << "[RequestProcessor] " << stage; // commented for debug
-    if (!details.empty()) {
-        std::cout << ": " << details;
-    }
-    // std::cout << " (Path: " << req.getPath() << ")" << std::endl; // commented for debug
 }
