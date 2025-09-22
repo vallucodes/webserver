@@ -234,10 +234,10 @@ void get(const Request& req, Response& res, const Location* location) {
 
             // Check if it's a directory first
             if (std::filesystem::is_directory(dirPath)) {
-                std::cout << "DEBUG: Directory found: " << dirPath << ", autoindex: " << location->autoindex << ", index: " << location->index << std::endl;
+                // std::cout << "DEBUG: Directory found: " << dirPath << ", autoindex: " << location->autoindex << ", index: " << location->index << std::endl;
                 // If location has autoindex enabled, generate directory listing
                 if (location->autoindex) {
-                    std::cout << "DEBUG: Generating autoindex for " << requestPath << std::endl;
+                    // std::cout << "DEBUG: Generating autoindex for " << requestPath << std::endl;
                     std::string dirListing = generateDirectoryListing(dirPath, requestPath);
                     router::utils::ErrorResponseBuilder::setSuccessResponse(res, dirListing, http::CONTENT_TYPE_HTML);
                     return;

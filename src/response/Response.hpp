@@ -47,13 +47,6 @@ class Response: public AMessage {
     void print() const;
 
   private:
-    /**
-     * @brief HTTP status line storage
-     */
     std::string _status;
-
-    /**
-     * @brief HTTP headers storage
-     */
     std::map<std::string, std::string> _headers;
 };

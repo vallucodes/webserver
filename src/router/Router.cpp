@@ -21,27 +21,7 @@ Router::Router() {}
  */
 Router::~Router() {}
 
-/**
- * @brief List all registered routes (debug function)
- */
-void Router::listRoutes() const {
-
-    std::cout << "=== Available routes: ===" << std::endl;
-    for (const auto& server_pair : _routes) {
-        const std::string& server_name = server_pair.first;
-        std::cout << "Server: " << server_name << std::endl;
-
-        for (const auto& path_pair : server_pair.second) {
-            const std::string& path = path_pair.first;
-            std::cout << "  " << path << " -> ";
-            for (const auto& method_pair : path_pair.second) {
-                std::cout << method_pair.first << " ";
-            }
-            std::cout << std::endl;
-        }
-    }
-    std::cout << "=========================\n" << std::endl;
-}
+// ========================= ROUTER SETUP =========================
 
 /**
  * @brief Initialize router with server configurations
@@ -115,6 +95,8 @@ void Router::setupRouter(const std::vector<Server>& configs) {
     listRoutes();
 }
 
+// ========================= ROUTES REGISTRATION =========================
+
 /**
  * @brief Register a new route
  * @param server_name Server name
@@ -125,6 +107,8 @@ void Router::setupRouter(const std::vector<Server>& configs) {
 void Router::addRoute(std::string_view server_name, std::string_view method, std::string_view path, Handler handler) {
     _routes[std::string(server_name)][std::string(path)][std::string(method)] = std::move(handler);
 }
+
+// ========================= REQUEST HANDLING =========================
 
 /**
  * @brief Find handler for server/method/path
@@ -268,6 +252,28 @@ void Router::handleRequest(const Server& server, const Request& req, Response& r
     _requestProcessor.processRequest(server, req, handler, res, location);
 }
 
+// ========================= HELPERS =========================
 
+/**
+ * @brief List all registered routes (debug function)
+ */
+void Router::listRoutes() const {
+
+    std::cout << "=== Available routes: ===" << std::endl;
+    for (const auto& server_pair : _routes) {
+        const std::string& server_name = server_pair.first;
+        std::cout << "Server: " << server_name << std::endl;
+
+        for (const auto& path_pair : server_pair.second) {
+            const std::string& path = path_pair.first;
+            std::cout << "  " << path << " -> ";
+            for (const auto& method_pair : path_pair.second) {
+                std::cout << method_pair.first << " ";
+            }
+            std::cout << std::endl;
+        }
+    }
+    std::cout << "=========================\n" << std::endl;
+}
 
 
