@@ -110,6 +110,7 @@ bool	decodeChunkedBody(ClientRequestState& client_state) {
 			size_t trailersEnd = body.find("\r\n\r\n", pos);
 			if (trailersEnd == std::string::npos) {
 				client_state.data_validity = false;
+				endReq = false;
 				break;
 			}
 			pos = trailersEnd + 4;
@@ -119,11 +120,11 @@ bool	decodeChunkedBody(ClientRequestState& client_state) {
 		}
 
 		pos = lineEnd + 2;
-		// if (pos + chunkSize + 2 > body.size()) {
-		// 	std::cout << "ASAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n";
-        //     //data_validity = false;
-        //     break;
-        // }
+		if (pos + chunkSize + 2 > body.size()) {
+			client_state.data_validity = false;
+			endReq = false;
+			break;
+		}
 
 		result.append(body.substr(pos, chunkSize));
 		pos += chunkSize + 2;
