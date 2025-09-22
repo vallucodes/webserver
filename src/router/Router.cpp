@@ -11,22 +11,15 @@
 #include <algorithm>
 
 
-/**
- * @brief Default constructor
- */
+/** Default constructor */
 Router::Router() {}
 
-/**
- * @brief Destructor
- */
+/** Destructor */
 Router::~Router() {}
 
 // ========================= ROUTER SETUP =========================
 
-/**
- * @brief Initialize router with server configurations
- * @param configs Vector of Server configuration objects
- */
+/** Initialize router with server configurations */
 void Router::setupRouter(const std::vector<Server>& configs) {
     // Clear existing routes to start fresh
     _routes.clear();
@@ -97,26 +90,14 @@ void Router::setupRouter(const std::vector<Server>& configs) {
 
 // ========================= ROUTES REGISTRATION =========================
 
-/**
- * @brief Register a new route
- * @param server_name Server name
- * @param method HTTP method
- * @param path URL path pattern
- * @param handler Handler function
- */
+/** Register a new route */
 void Router::addRoute(std::string_view server_name, std::string_view method, std::string_view path, Handler handler) {
     _routes[std::string(server_name)][std::string(path)][std::string(method)] = std::move(handler);
 }
 
 // ========================= REQUEST HANDLING =========================
 
-/**
- * @brief Find handler for server/method/path
- * @param server_name Server name
- * @param method HTTP method
- * @param path URL path
- * @return Handler function or nullptr
- */
+/** Find handler for server/method/path */
 const Router::Handler* Router::findHandler(const std::string& server_name, const std::string& method, const std::string& path) const {
     // Step 1: Find the server in our routing table
     auto server_it = _routes.find(server_name);
@@ -179,12 +160,7 @@ const Router::Handler* Router::findHandler(const std::string& server_name, const
 }
 
 
-/**
- * @brief Find matching location configuration
- * @param server Server configuration
- * @param path URL path
- * @return Location or nullptr
- */
+/** Find matching location configuration */
 const Location* Router::findLocation(const Server& server, const std::string& path) const {
     const auto& locations = server.getLocations();
     const Location* best_match = nullptr;
@@ -228,16 +204,10 @@ const Location* Router::findLocation(const Server& server, const std::string& pa
  */
 // Now using HttpResponseBuilder::setErrorResponse instead
 
-/**
- * @brief Process HTTP request and route to handler
- * @param server Server configuration
- * @param req HTTP request
- * @param res Response object
- */
+/** Process HTTP request and route to handler */
 void Router::handleRequest(const Server& server, const Request& req, Response& res) const {
     // Check if parser found errors
     if (req.getError()) {
-        // Parser already set the status
         router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400);
         return;
     }
@@ -260,9 +230,7 @@ void Router::handleRequest(const Server& server, const Request& req, Response& r
 
 // ========================= HELPERS =========================
 
-/**
- * @brief List all registered routes (debug function)
- */
+/** List all registered routes (debug function) */
 void Router::listRoutes() const {
 
     std::cout << "=== Available routes: ===" << std::endl;

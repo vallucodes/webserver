@@ -9,23 +9,17 @@
 #include <iostream>
 #include <algorithm>
 
-/**
- * @brief Default constructor
- */
+/** Default constructor */
 RequestProcessor::RequestProcessor() {
     // Constructor can be used for initialization if needed
 }
 
-/**
- * @brief Destructor
- */
+/** Destructor */
 RequestProcessor::~RequestProcessor() {
     // Destructor can be used for cleanup if needed
 }
 
-/**
- * @brief Process HTTP request
- */
+/** Process HTTP request */
 void RequestProcessor::processRequest(const Request& req, const Handler* handler,
                                         Response& res, const Location* location) const {
     // Extract and validate request components
@@ -61,9 +55,7 @@ void RequestProcessor::processRequest(const Request& req, const Handler* handler
     router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404);
 }
 
-/**
- * @brief Validate request path
- */
+/** Validate request path */
 /*
 bool RequestProcessor::validatePath(const std::string& path) const {
     // Check for null bytes (security issue)
@@ -91,9 +83,7 @@ bool RequestProcessor::validatePath(const std::string& path) const {
 }
 */
 
-/**
- * @brief Normalize request path
- */
+/** Normalize request path */
 /*
 void RequestProcessor::normalizePath(std::string& path) const {
     // Remove query parameters
@@ -126,9 +116,7 @@ void RequestProcessor::normalizePath(std::string& path) const {
     }
 }
 */
-/**
- * @brief Execute handler
- */
+/** Execute handler */
 bool RequestProcessor::executeHandler(const Handler* handler,
                                            const Request& req, Response& res,
                                            const Location* location) const {
@@ -148,9 +136,7 @@ bool RequestProcessor::executeHandler(const Handler* handler,
     }
 }
 
-/**
- * @brief Serve static file
- */
+/** Serve static file */
 bool RequestProcessor::tryServeAsStaticFile(const Request& req, Response& res,
                                            const std::string& method) const {
     // Only handle GET requests for static files
@@ -168,9 +154,7 @@ bool RequestProcessor::tryServeAsStaticFile(const Request& req, Response& res,
     }
 }
 
-/**
- * @brief Generate error response
- */
+/** Generate error response */
 void RequestProcessor::generateErrorResponse(Response& res, int status,
                                             const std::string& message) const {
     // Set appropriate status based on error code

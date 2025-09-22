@@ -28,7 +28,6 @@ class RequestProcessor {
     void processRequest(const Request& req, const Handler* handler,
                         Response& res, const Location* location) const;
 
-
     /** Validate request path for security issues */
     // bool validatePath(const std::string& path) const;
 

@@ -22,28 +22,16 @@ class Response: public AMessage {
     /** Get message type identifier */
     virtual std::string getMessageType() const override;
 
-    /**
-     * @brief Get HTTP status line
-     * @return Status line string
-     */
+    /** Get HTTP status line */
     std::string_view getStatus() const;
 
-    /**
-     * @brief Set HTTP status line
-     * @param status Status line string
-     */
+    /** Set HTTP status line */
     void setStatus(const std::string& status);
 
-    /**
-     * @brief Set HTTP header
-     * @param key Header name
-     * @param value Header value
-     */
+    /** Set HTTP header */
     virtual void setHeaders(const std::string& key, const std::string& value) override;
 
-    /**
-     * @brief Print response to console
-     */
+    /** Print response to console for debugging */
     void print() const;
 
   private:

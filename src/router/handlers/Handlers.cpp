@@ -22,11 +22,7 @@ using namespace http;
 #include <cstring>
 #include <cstdlib>
 
-/**
- * @brief Get MIME content type from file extension
- * @param filename Filename to analyze
- * @return MIME type string
- */
+/** Get MIME content type from file extension */
 std::string getContentType(const std::string& filename) {
     size_t dotPos = filename.find_last_of('.');
     if (dotPos != std::string::npos) {
@@ -62,12 +58,7 @@ std::string getContentType(const std::string& filename) {
 
 // Helper functions for response formatting
 
-/**
- * @brief Set common HTTP headers
- * @param res Response object
- * @param contentType MIME type
- * @param contentLength Body size in bytes
- */
+/** Set common HTTP headers */
 void setCommonHeaders(Response& res, const std::string& contentType, size_t contentLength) {
     res.setHeaders(http::CONTENT_TYPE, contentType);
     res.setHeaders(http::CONTENT_LENGTH, std::to_string(contentLength));
@@ -80,21 +71,12 @@ void setCommonHeaders(Response& res, const std::string& contentType, size_t cont
 // Helper function to replace all occurrences of a placeholder in HTML template
 // Now using StringUtils::replacePlaceholder instead
 
-/**
- * @brief Create simple success message
- * @param filename Processed filename
- * @param action Action performed (uploaded/deleted)
- * @return Simple success message
- */
+/** Create simple success message */
 std::string createSuccessMessage(const std::string& filename, const std::string& action) {
     return "File '" + filename + "' " + action + " successfully!";
 }
 
-/**
- * @brief Create simple error message
- * @param errorMessage Error message
- * @return Simple error message
- */
+/** Create simple error message */
 std::string createErrorMessage(const std::string& errorMessage) {
     return "Error: " + errorMessage;
 }
@@ -105,12 +87,7 @@ std::string createErrorMessage(const std::string& errorMessage) {
 // Helper function to replace all occurrences of a substring
 // Now using StringUtils::replaceAll instead
 
-/**
- * @brief Generate HTML directory listing
- * @param dirPath Directory path
- * @param requestPath Request path
- * @return HTML directory listing
- */
+/** Generate HTML directory listing */
 std::string generateDirectoryListing(const std::string& dirPath, const std::string& requestPath) {
     // Load template file
     std::string templatePath = page::WWW + "/autoindex_template.html";
@@ -198,115 +175,141 @@ std::string generateDirectoryListing(const std::string& dirPath, const std::stri
 }
 
 /**
+ * @brief Handle directory requests with autoindex or index files
+ * @param dirPath Directory path
+ * @param requestPath Request path
+ * @param location Location configuration
+ * @param res Response object
+ * @return true if handled successfully
+ */
+bool handleDirectoryRequest(const std::string& dirPath, const std::string& requestPath,
+                           const Location* location, Response& res) {
+  // Try autoindex first if enabled
+  if (location && location->autoindex) {
+    std::string dirListing = generateDirectoryListing(dirPath, requestPath);
+    router::utils::HttpResponseBuilder::setSuccessResponse(res, dirListing, http::CONTENT_TYPE_HTML);
+    return true;
+  }
+
+  // Try location-specific index file
+  if (location && !location->index.empty()) {
+    std::string indexPath = dirPath;
+    if (!indexPath.ends_with('/')) indexPath += '/';
+    indexPath += location->index;
+
+    if (std::filesystem::exists(indexPath) && std::filesystem::is_regular_file(indexPath)) {
+      std::string fileContent = router::utils::FileUtils::readFileToString(indexPath);
+      std::string contentType = getContentType(indexPath);
+      router::utils::HttpResponseBuilder::setSuccessResponse(res, fileContent, contentType);
+      return true;
+    }
+
+    // Try global index file
+    std::string globalIndexPath = page::WWW + "/" + location->index;
+    if (std::filesystem::exists(globalIndexPath) && std::filesystem::is_regular_file(globalIndexPath)) {
+      std::string fileContent = router::utils::FileUtils::readFileToString(globalIndexPath);
+      std::string contentType = getContentType(globalIndexPath);
+      router::utils::HttpResponseBuilder::setSuccessResponse(res, fileContent, contentType);
+      return true;
+    }
+  }
+
+  // Try default index files
+  std::vector<std::string> defaultFiles = {"index.html", "default.html"};
+  for (const auto& defaultFile : defaultFiles) {
+    std::string defaultPath = dirPath + "/" + defaultFile;
+    if (std::filesystem::exists(defaultPath) && std::filesystem::is_regular_file(defaultPath)) {
+      std::string fileContent = router::utils::FileUtils::readFileToString(defaultPath);
+      std::string contentType = getContentType(defaultPath);
+      router::utils::HttpResponseBuilder::setSuccessResponse(res, fileContent, contentType);
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
+ * @brief Determine the file path to serve based on request and location
+ * @param requestPath Request path
+ * @param location Location configuration
+ * @return File path to serve
+ */
+std::string determineFilePath(const std::string& requestPath, const Location* location) {
+  if (requestPath == "/" || requestPath == "/index.html") {
+    return page::INDEX_HTML;
+  }
+
+  if (location) {
+    return page::WWW + requestPath;
+  }
+
+  return page::WWW + requestPath;
+}
+
+/**
+ * @brief Serve a static file
+ * @param filePath Path to the file to serve
+ * @param res Response object
+ * @return true if served successfully
+ */
+bool serveStaticFile(const std::string& filePath, Response& res) {
+  try {
+    std::string fileContent = router::utils::FileUtils::readFileToString(filePath);
+    std::string contentType = getContentType(filePath);
+    router::utils::HttpResponseBuilder::setSuccessResponse(res, fileContent, contentType);
+    return true;
+  } catch (const std::exception&) {
+    return false;
+  }
+}
+
+/**
  * @brief Handle GET requests for static files
  * @param req HTTP request
  * @param res Response object
  * @param location Location configuration
  */
 void get(const Request& req, Response& res, const Location* location) {
-    try {
-        // Extract and validate file path
-        std::string_view filePathView = req.getPath();
-        if (filePathView.empty()) {
-            router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404);
-            return;
-        }
-
-        std::string requestPath = std::string(filePathView);
-        std::string filePath;
-
-        // If we have location configuration, use it
-        if (location != nullptr) {
-            std::string dirPath = page::WWW + requestPath;
-
-            // Check if it's a directory first
-            if (std::filesystem::is_directory(dirPath)) {
-                // If location has autoindex enabled, generate directory listing
-                if (location->autoindex) {
-                    // std::cout << "DEBUG: Generating autoindex for " << requestPath << std::endl;
-                    std::string dirListing = generateDirectoryListing(dirPath, requestPath);
-                    router::utils::HttpResponseBuilder::setSuccessResponse(res, dirListing, http::CONTENT_TYPE_HTML);
-                    return;
-                }
-
-                // If autoindex is disabled, try to serve index files
-                if (!location->index.empty()) {
-                    // For location-specific index, check in the location directory first
-                    std::string indexPath = dirPath;
-                    if (!indexPath.ends_with('/')) indexPath += '/';
-                    indexPath += location->index;
-
-                    // If location-specific index exists, use it
-                    if (std::filesystem::exists(indexPath) && std::filesystem::is_regular_file(indexPath)) {
-                        std::string fileContent = router::utils::FileUtils::readFileToString(indexPath);
-                        std::string contentType = getContentType(indexPath);
-                        router::utils::HttpResponseBuilder::setSuccessResponse(res, fileContent, contentType);
-                        return;
-                    }
-
-                    // Otherwise, use the global index file (only for non-autoindex locations)
-                    std::string globalIndexPath = page::WWW + "/" + location->index;
-                    if (std::filesystem::exists(globalIndexPath) && std::filesystem::is_regular_file(globalIndexPath)) {
-                        std::string fileContent = router::utils::FileUtils::readFileToString(globalIndexPath);
-                        std::string contentType = getContentType(globalIndexPath);
-                        router::utils::HttpResponseBuilder::setSuccessResponse(res, fileContent, contentType);
-                        return;
-                    }
-                }
-            }
-        }
-
-        // Default behavior: serve static files
-        if (requestPath == "/" || requestPath == "/index.html") {
-            filePath = page::INDEX_HTML;
-        } else {
-            filePath = page::WWW + requestPath;
-        }
-
-        // Check if the path is a directory and try to serve default files
-        if (std::filesystem::is_directory(filePath)) {
-            // List of default files to check in order of preference
-            std::vector<std::string> defaultFiles = {
-                "index.html", "default.html"
-            };
-
-            for (const auto& defaultFile : defaultFiles) {
-                std::string defaultPath = filePath + "/" + defaultFile;
-                if (std::filesystem::exists(defaultPath) && std::filesystem::is_regular_file(defaultPath)) {
-                    filePath = defaultPath;
-                    break;
-                }
-            }
-
-            // If no default file was found and autoindex is not enabled, return 404
-            if (std::filesystem::is_directory(filePath)) {
-                router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404);
-                return;
-            }
-        }
-
-        // Attempt to read the requested file
-        std::string fileContent = router::utils::FileUtils::readFileToString(filePath);
-
-        // Determine content type and send success response
-        std::string contentType = getContentType(filePath);
-        router::utils::HttpResponseBuilder::setSuccessResponse(res, fileContent, contentType);
-
-    } catch (const std::runtime_error& e) {
-        // File not found or read error
-        router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404);
-    } catch (const std::exception& e) {
-        // Unexpected error
-        router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
+  try {
+    // Extract and validate file path
+    std::string_view filePathView = req.getPath();
+    if (filePathView.empty()) {
+      router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404);
+      return;
     }
+
+    std::string requestPath = std::string(filePathView);
+    std::string filePath = determineFilePath(requestPath, location);
+
+    // Handle directory requests
+    if (std::filesystem::is_directory(filePath)) {
+      if (handleDirectoryRequest(filePath, requestPath, location, res)) {
+        return;
+      }
+      // No index file found and autoindex disabled
+      router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404);
+      return;
+    }
+
+    // Serve static file
+    if (serveStaticFile(filePath, res)) {
+      return;
+    }
+
+    // File not found
+    router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404);
+
+  } catch (const std::runtime_error&) {
+    router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404);
+  } catch (const std::exception&) {
+    router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
+  }
 }
 
-/**
- * @brief Handle POST requests for file uploads
- * @param req HTTP request with multipart data
- * @param res Response object
- * @param location Location configuration
- */
+// ***************** POST HANDLER ***************** //
+
+/** Handle POST requests for file uploads */
 void post(const Request& req, Response& res, const Location* location) {
     try {
         // Validate location configuration
@@ -416,12 +419,7 @@ void post(const Request& req, Response& res, const Location* location) {
     }
 }
 
-/**
- * @brief Handle DELETE requests for file removal
- * @param req HTTP request with file path
- * @param res Response object
- * @param location Location configuration
- */
+/** Handle DELETE requests for file removal */
 void del(const Request& req, Response& res, const Location* location) {
     try {
         // Validate location configuration
@@ -476,12 +474,7 @@ void del(const Request& req, Response& res, const Location* location) {
 // Check if file extension indicates CGI script
 // Old isCgiScript function removed - now using isCgiScriptWithLocation instead
 
-/**
- * @brief Check if file is CGI script
- * @param filename Filename to check
- * @param location Location configuration
- * @return true if CGI script
- */
+/** Check if file is CGI script */
 bool isCgiScriptWithLocation(const std::string& filename, const Location* location) {
     if (!location || location->cgi_ext.empty()) {
         return false;
@@ -513,13 +506,7 @@ bool isCgiScriptWithLocation(const std::string& filename, const Location* locati
     return false;
 }
 
-/**
- * @brief Set up CGI environment variables
- * @param req HTTP request
- * @param scriptPath CGI script path
- * @param scriptName Script name
- * @return Environment variables vector
- */
+/** Set up CGI environment variables */
 std::vector<std::string> setupCgiEnvironment(const Request& req, const std::string& scriptPath, const std::string& scriptName) {
     std::vector<std::string> env;
 
@@ -570,13 +557,7 @@ std::vector<std::string> setupCgiEnvironment(const Request& req, const std::stri
     return env;
 }
 
-/**
- * @brief Execute CGI script and capture output
- * @param scriptPath CGI script path
- * @param env Environment variables
- * @param input Input data
- * @return CGI output or empty string on error
- */
+/** Execute CGI script and capture output */
 std::string executeCgiScript(const std::string& scriptPath, const std::vector<std::string>& env, const std::string& input) {
     std::cout << "CGI: executeCgiScript called for: " << scriptPath << std::endl;
     int pipe_in[2];  // For sending input to CGI
@@ -724,12 +705,7 @@ std::string executeCgiScript(const std::string& scriptPath, const std::vector<st
     }
 }
 
-/**
- * @brief Handle CGI requests for executable scripts
- * @param req HTTP request
- * @param res Response object
- * @param location Location configuration
- */
+/** Handle CGI requests for executable scripts */
 void cgi(const Request& req, Response& res, const Location* location) {
     try {
         // Validate location configuration
@@ -867,12 +843,7 @@ void cgi(const Request& req, Response& res, const Location* location) {
     }
 }
 
-/**
- * @brief Handle HTTP redirection requests
- * @param req HTTP request
- * @param res Response object
- * @param location Location configuration
- */
+/** Handle HTTP redirection requests */
 void redirect(const Request& req, Response& res, const Location* location) {
     try {
         // Validate location configuration

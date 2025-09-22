@@ -5,54 +5,35 @@
 
 #include "Response.hpp"
 
-/**
- * @brief Default constructor
- */
+/** Default constructor */
 Response::Response() {
   _status = "";
 }
 
-/**
- * @brief Destructor
- */
+/** Destructor */
 Response::~Response() {}
 
-/**
- * @brief Get message type identifier
- * @return String "Response"
- */
+/** Get message type identifier */
 std::string Response::getMessageType() const {
     return "Response";
 }
 
-/**
- * @brief Set HTTP status line
- * @param status Status line string
- */
+/** Set HTTP status line */
 void Response::setStatus(const std::string& status) {
   _status = status;
 }
 
-/**
- * @brief Get HTTP status line
- * @return Status line string
- */
+/** Get HTTP status line */
 std::string_view Response::getStatus() const {
   return _status;
 }
 
-/**
- * @brief Set HTTP header
- * @param key Header name
- * @param value Header value
- */
+/** Set HTTP header */
 void Response::setHeaders(const std::string& key, const std::string& value) {
     _headers[key] = value;
 }
 
-/**
- * @brief Print response to console for debugging
- */
+/** Print response to console for debugging */
 void Response::print() const {
     std::cout << "[DEBUG]:=== HTTP Response ===\n";
     std::cout << "Status: " << _status << "\n";

@@ -14,42 +14,20 @@
 
 /** Core HTTP Request Handler Functions */
 
-// Now using router::utils::FileUtils::readFileToString instead
-
 /** Handle GET requests for static files and pages */
 void get(const Request& req, Response& res, const Location* location = nullptr);
 
 /** Handle POST requests for file uploads */
 void post(const Request& req, Response& res, const Location* location = nullptr);
 
-/**
- * @brief Handle DELETE requests for file removal
- * @param req HTTP request with file path
- * @param res Response object
- * @param location Location configuration
- */
+/** Handle DELETE requests for file removal */
 void del(const Request& req, Response& res, const Location* location = nullptr);
 
-/**
- * @brief Handle CGI requests for executable scripts
- * @param req HTTP request
- * @param res Response object
- * @param location Location configuration
- */
+/** Handle CGI requests for executable scripts */
 void cgi(const Request& req, Response& res, const Location* location = nullptr);
 
-/**
- * @brief Handle HTTP redirection requests
- * @param req HTTP request
- * @param res Response object
- * @param location Location configuration
- */
+/** Handle HTTP redirection requests */
 void redirect(const Request& req, Response& res, const Location* location = nullptr);
 
-/**
- * @brief Check if file is CGI script
- * @param filename Filename to check
- * @param location Location configuration
- * @return true if CGI script
- */
+/** Check if file is CGI script */
 bool isCgiScriptWithLocation(const std::string& filename, const Location* location);
