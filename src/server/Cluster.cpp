@@ -161,7 +161,7 @@ void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 		Server conf = findRelevantConfig(_fds[i].fd, client_state.clean_buffer);
 		// printServerConfig(conf); // this is simulating what will be sent to parser later
 		Parser parse;
-		Request req = parse.parseRequest(client_state.request);
+		Request req = parse.parseRequest(client_state.request, client_state.kick_me);
 		Response res;
 		// Handle the request using the router
 		_router.handleRequest(req, res); // correct
@@ -175,7 +175,7 @@ void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 			client_state.receive_start = {};
 		else
 		{
-			std::cout << "clock started\n";
+			// std::cout << "clock started\n";
 			client_state.receive_start = std::chrono::high_resolution_clock::now();
 		}
 
@@ -213,6 +213,9 @@ void	Cluster::sendPendingData(size_t& i) {
 		}
 		else if (sent < 0)
 			dropClient(i, CLIENT_SEND_ERROR);
+		if (client_state.kick_me) {
+			dropClient(i, CLIENT_CLOSE_CONNECTION);
+		}
 	}
 }
 

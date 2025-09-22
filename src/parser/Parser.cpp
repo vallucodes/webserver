@@ -85,18 +85,31 @@ bool isBadHeader(Request& req) {
         "expect",
         "user-agent",
         "referer",
+        "origin",
         "if-modified-since",
         "if-unmodified-since",
-        "retry-after",
-        "location",
-        "server",
         "last-modified",
         "etag",
-        "content-location"
+        "if-match",
+        "if-none-match",
+        "if-range",
+        "content-location",
+        "content-encoding",
+        "content-location",
     };
-    for (const auto& [key, values] : req.getAllHeaders()) {
+
+    const auto& headers = req.getAllHeaders();
+
+    // Check if host is there, cause host is mandatory
+    auto hostIt = headers.find("host");
+    if (hostIt == headers.end() || hostIt->second.empty()) {
+        return true;
+    }
+
+    // Check for duplicate unique headers
+    for (const auto& [key, values] : headers) {
         if (uniqueHeaders.count(key) && values.size() > 1) {
-            return true;
+            return true; 
         }
     }
     return false;
@@ -153,7 +166,22 @@ bool isChunked(Request& req){
 //     return result;
 // }
 
-Request Parser::parseRequest(const std::string& httpString) {
+void findKeepAlive(const std::vector<std::string>& headers, bool& kick_me) {
+    if (headers.empty()) {
+        kick_me = false;
+        return;
+    }
+    const std::string& value = headers.front();
+    if (value == "keep-alive")
+        kick_me = false;
+    else if (value == "close")
+        kick_me = true;
+    else
+        std::cout << "Error: Unreachable: findKeepAlive()\n";
+}
+
+
+Request Parser::parseRequest(const std::string& httpString, bool& kick_me) {
     Request req;
     std::string_view sv(httpString);
 
@@ -190,11 +218,11 @@ Request Parser::parseRequest(const std::string& httpString) {
         req.setStatus("400 Bad Request");
         return req;
     };
+    findKeepAlive(req.getHeaders("connection"), kick_me);
     req.setError(isBadMethod(req));
     if (req.getError()) {
         return req;
     };
-
     //parse body
     std::string_view body = sv.substr(posEndHeader + 4);
     auto contentValues = req.getHeaders("content-length");

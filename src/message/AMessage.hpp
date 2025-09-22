@@ -38,6 +38,3 @@ class AMessage {
     std::string _httpVersion; //http version (HTTP/1.1 or HTTP/1.0)
     std::unordered_map<std::string, std::vector<std::string>> _headers; //content of Headers
 };
-
-
-
