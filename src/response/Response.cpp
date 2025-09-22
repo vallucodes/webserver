@@ -35,17 +35,16 @@ void Response::setHeaders(const std::string& key, const std::string& value) {
 
 /** Print response to console for debugging */
 void Response::print() const {
-    std::cout << "[DEBUG]:=== HTTP Response ===\n";
-    std::cout << "Status: " << _status << "\n";
+    std::cout << "=== HTTP Response ===\n";
+    std::cout << "Status     : " << _status << "\n";
 
-    std::cout << "Headers:\n";
+    std::cout << "Headers    :\n";
     for (const auto& pair : _headers) {
         std::cout << pair.first << ": " << pair.second << "\n";
     }
 
-    // Body output is commented out to prevent large content from cluttering console
     // Uncomment the following line when debugging specific response body content
     std::cout << "Body: Uncommented for debugging in Response.cpp" << std::endl;
     // std::cout << "Body: " << getBody() << std::endl; // getBody() inherited from AMessage
-    std::cout << "[DEBUG]: ===  End of HTTP Response ===\n" << std::endl;
+    std::cout << "===  End of HTTP Response ===\n" << std::endl;
 }

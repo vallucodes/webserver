@@ -166,6 +166,8 @@ void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 
 
 		// Handle the request using the router
+		req.print(); //DEBUG PRINT
+
 		_router.handleRequest(conf, req, res); // Pass server config for server-specific routing
 
 		res.print(); //DEBUG PRINT

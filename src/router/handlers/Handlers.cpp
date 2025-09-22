@@ -23,7 +23,8 @@ using namespace http;
 #include <cstdlib> // for std::stoul
 
 
-// Helper functions for response formatting
+// ***************** HELPERS ***************** //
+
 
 /** Set common HTTP headers */
 void setCommonHeaders(Response& res, const std::string& contentType, size_t contentLength) {
@@ -31,12 +32,6 @@ void setCommonHeaders(Response& res, const std::string& contentType, size_t cont
     res.setHeaders(http::CONTENT_LENGTH, std::to_string(contentLength));
     res.setHeaders(http::CONNECTION, http::CONNECTION_CLOSE);
 }
-
-// Configure a complete successful HTTP response with status, headers, and body
-// Now using HttpResponseBuilder::setSuccessResponse instead
-
-// Helper function to replace all occurrences of a placeholder in HTML template
-// Now using StringUtils::replacePlaceholder instead
 
 /** Create simple success message */
 std::string createSuccessMessage(const std::string& filename, const std::string& action) {
@@ -47,12 +42,6 @@ std::string createSuccessMessage(const std::string& filename, const std::string&
 std::string createErrorMessage(const std::string& errorMessage) {
     return "Error: " + errorMessage;
 }
-
-// Sanitize filename by removing path separators and other dangerous characters
-// Now using StringUtils::sanitizeFilename instead
-
-// Helper function to replace all occurrences of a substring
-// Now using StringUtils::replaceAll instead
 
 /** Generate HTML directory listing */
 std::string generateDirectoryListing(const std::string& dirPath, const std::string& requestPath) {
@@ -263,6 +252,8 @@ bool serveStaticFile(const std::string& filePath, Response& res) {
     return false;
   }
 }
+
+// ***************** GET HANDLER ***************** //
 
 /**
  * @brief Handle GET requests for static files
@@ -854,12 +845,12 @@ void cgi(const Request& req, Response& res, const Location* location) {
         }
 
         // Execute CGI script
-        std::cout << "CGI: Executing script: " << filePath << std::endl;
+        // std::cout << "CGI: Executing script: " << filePath << std::endl;
         std::string cgiOutput = executeCgiScript(filePath, env, body);
 
-        std::cout << "CGI: Script output length: " << cgiOutput.length() << std::endl;
+        // std::cout << "CGI: Script output length: " << cgiOutput.length() << std::endl;
         if (cgiOutput.empty()) {
-            std::cout << "CGI: Script execution failed - returning 500 error" << std::endl;
+            // std::cout << "CGI: Script execution failed - returning 500 error" << std::endl;
             router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
             return;
         }
