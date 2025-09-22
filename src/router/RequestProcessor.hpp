@@ -37,14 +37,14 @@ class RequestProcessor {
   private:
     /** Execute handler with error handling */
     bool executeHandler(const Handler* handler,
-                             const Request& req, Response& res,
-                             const std::string& path, const Location* location) const;
+                          const Request& req, Response& res,
+                          const Location* location) const;
 
     /** Try to serve request as static file */
     bool tryServeAsStaticFile(const Request& req, Response& res,
-                             const std::string& method) const;
+                               const std::string& method) const;
 
     /** Generate error response */
     void generateErrorResponse(Response& res, int status,
-                              const std::string& message = "") const;
+                                 const std::string& message = "") const;
 };

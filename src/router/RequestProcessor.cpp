@@ -45,7 +45,7 @@ void RequestProcessor::processRequest(const Request& req, const Handler* handler
 
     // Execute handler if available
     if (handler) {
-        if (executeHandler(handler, req, res, path, location)) {
+        if (executeHandler(handler, req, res, location)) {
             return;
         }
     }
@@ -126,11 +126,10 @@ void RequestProcessor::normalizePath(std::string& path) const {
  */
 bool RequestProcessor::executeHandler(const Handler* handler,
                                            const Request& req, Response& res,
-                                           const std::string& path __attribute__((unused)), const Location* location) const {
+                                           const Location* location) const {
     if (!handler) {
         return false;
     }
-
     try {
         // Execute the handler with the passed location
         (*handler)(req, res, location);
