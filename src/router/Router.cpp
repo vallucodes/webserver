@@ -235,6 +235,12 @@ const Location* Router::findLocation(const Server& server, const std::string& pa
  * @param res Response object
  */
 void Router::handleRequest(const Server& server, const Request& req, Response& res) const {
+    // Check if parser found errors
+    if (req.getError()) {
+        // Parser already set the status
+        router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400);
+        return;
+    }
     // Extract method and path from the request
     std::string_view method_view = req.getMethod();
     std::string_view path_view = req.getPath();
