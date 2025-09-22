@@ -400,17 +400,16 @@ void post(const Request& req, Response& res, const Location* location) {
         outFile.close();
 
         // Success response - redirect to upload page
-        res.setStatus(http::STATUS_OK_200);
         res.setHeaders("Location", "/upload.html");
-        res.setBody(createSuccessMessage(filename, "uploaded"));
-        res.setHeaders("Content-Type", http::CONTENT_TYPE_TEXT);
+        router::utils::HttpResponseBuilder::setSuccessResponse(res, createSuccessMessage(filename, "uploaded"), http::CONTENT_TYPE_TEXT);
 
     } catch (const std::exception&) {
         router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
     }
 }
 
-/** Handle DELETE requests for file removal */
+// ***************** DELETE HANDLER ***************** //
+
 void del(const Request& req, Response& res, const Location* location) {
     try {
         // Validate location configuration
@@ -462,8 +461,7 @@ void del(const Request& req, Response& res, const Location* location) {
     }
 }
 
-// Check if file extension indicates CGI script
-// Old isCgiScript function removed - now using isCgiScriptWithLocation instead
+// ***************** CGI HANDLER ***************** //
 
 /** Check if file is CGI script */
 bool isCgiScriptWithLocation(const std::string& filename, const Location* location) {
@@ -624,25 +622,25 @@ std::vector<std::string> setupCgiEnvironment(const Request& req, const std::stri
 
 /** Execute CGI script and capture output */
 std::string executeCgiScript(const std::string& scriptPath, const std::vector<std::string>& env, const std::string& input) {
-    std::cout << "CGI: executeCgiScript called for: " << scriptPath << std::endl;
+    // std::cout << "CGI: executeCgiScript called for: " << scriptPath << std::endl;
     int pipe_in[2];  // For sending input to CGI
     int pipe_out[2]; // For receiving output from CGI
 
     if (pipe(pipe_in) == -1 || pipe(pipe_out) == -1) {
-        std::cout << "CGI: Failed to create pipes" << std::endl;
+        // std::cout << "CGI: Failed to create pipes" << std::endl;
         return "";
     }
 
     pid_t pid = fork();
     if (pid == -1) {
-        std::cout << "CGI: Fork failed" << std::endl;
+        // std::cout << "CGI: Fork failed" << std::endl;
         close(pipe_in[0]);
         close(pipe_in[1]);
         close(pipe_out[0]);
         close(pipe_out[1]);
         return "";
     }
-    std::cout << "CGI: Fork successful, child PID: " << pid << std::endl;
+    // std::cout << "CGI: Fork successful, child PID: " << pid << std::endl;
 
     if (pid == 0) { // Child process
         // Close unused pipe ends
@@ -925,6 +923,8 @@ void cgi(const Request& req, Response& res, const Location* location) {
         router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
     }
 }
+
+// ***************** REDIRECT HANDLER ***************** //
 
 /** Handle HTTP redirection requests */
 void redirect(const Request& req, Response& res, const Location* location) {
