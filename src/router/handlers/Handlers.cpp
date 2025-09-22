@@ -217,17 +217,6 @@ void get(const Request& req, Response& res, const Location* location) {
         std::string requestPath = std::string(filePathView);
         std::string filePath;
 
-        // TEMPORARY: Force autoindex for /imgs path for debugging
-        if (requestPath == "/imgs" || requestPath == "/imgs/") {
-            std::string dirPath = page::WWW + "/imgs";
-            std::cout << "DEBUG: Forced autoindex for /imgs path, requestPath: " << requestPath << std::endl;
-            if (std::filesystem::is_directory(dirPath)) {
-                std::string dirListing = generateDirectoryListing(dirPath, "/imgs");
-                router::utils::HttpResponseBuilder::setSuccessResponse(res, dirListing, http::CONTENT_TYPE_HTML);
-                return;
-            }
-        }
-
         // If we have location configuration, use it
         if (location != nullptr) {
             std::string dirPath = page::WWW + requestPath;
