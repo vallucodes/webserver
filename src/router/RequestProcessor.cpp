@@ -35,6 +35,7 @@ void RequestProcessor::processRequest(const Request& req, const Handler* handler
     std::string method(method_view);
     std::string path(path_view);
 
+    /*
     // Validate and normalize the path
     if (!validatePath(path)) {
         router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400);
@@ -42,6 +43,7 @@ void RequestProcessor::processRequest(const Request& req, const Handler* handler
     }
 
     normalizePath(path);
+    */
 
     // Execute handler if available
     if (handler) {
@@ -62,6 +64,7 @@ void RequestProcessor::processRequest(const Request& req, const Handler* handler
 /**
  * @brief Validate request path
  */
+/*
 bool RequestProcessor::validatePath(const std::string& path) const {
     // Check for null bytes (security issue)
     if (path.find('\0') != std::string::npos) {
@@ -86,10 +89,12 @@ bool RequestProcessor::validatePath(const std::string& path) const {
 
     return true;
 }
+*/
 
 /**
  * @brief Normalize request path
  */
+/*
 void RequestProcessor::normalizePath(std::string& path) const {
     // Remove query parameters
     size_t query_pos = path.find('?');
@@ -120,7 +125,7 @@ void RequestProcessor::normalizePath(std::string& path) const {
         path.pop_back();
     }
 }
-
+*/
 /**
  * @brief Execute handler
  */

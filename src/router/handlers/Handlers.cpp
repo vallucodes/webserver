@@ -299,7 +299,6 @@ void get(const Request& req, Response& res, const Location* location) {
         // Unexpected error
         router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
     }
-    std::cout << "=== GET HANDLER END ===" << std::endl;
 }
 
 /**
