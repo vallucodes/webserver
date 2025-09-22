@@ -506,6 +506,53 @@ bool isCgiScriptWithLocation(const std::string& filename, const Location* locati
     return false;
 }
 
+/** Parse chunked request body */
+std::string parseChunkedBody(const std::string& body) {
+    std::string result;
+    size_t pos = 0;
+
+    while (pos < body.length()) {
+        // Find the end of the chunk size line
+        size_t lineEnd = body.find("\r\n", pos);
+        if (lineEnd == std::string::npos) {
+            lineEnd = body.find("\n", pos);
+            if (lineEnd == std::string::npos) break;
+        }
+
+        // Extract chunk size
+        std::string chunkSizeStr = body.substr(pos, lineEnd - pos);
+        size_t chunkSize = 0;
+        try {
+            chunkSize = std::stoul(chunkSizeStr, nullptr, 16);
+        } catch (...) {
+            break; // Invalid chunk size
+        }
+
+        // If chunk size is 0, we're done
+        if (chunkSize == 0) break;
+
+        // Move past the chunk size line
+        pos = lineEnd + (body[lineEnd] == '\r' ? 2 : 1);
+
+        // Extract chunk data
+        if (pos + chunkSize <= body.length()) {
+            result += body.substr(pos, chunkSize);
+            pos += chunkSize;
+
+            // Skip the trailing CRLF
+            if (pos + 2 <= body.length() && body.substr(pos, 2) == "\r\n") {
+                pos += 2;
+            } else if (pos + 1 <= body.length() && body[pos] == '\n') {
+                pos += 1;
+            }
+        } else {
+            break; // Invalid chunk
+        }
+    }
+
+    return result;
+}
+
 /** Set up CGI environment variables */
 std::vector<std::string> setupCgiEnvironment(const Request& req, const std::string& scriptPath, const std::string& scriptName) {
     std::vector<std::string> env;
@@ -516,19 +563,46 @@ std::vector<std::string> setupCgiEnvironment(const Request& req, const std::stri
     env.push_back("REQUEST_METHOD=" + std::string(req.getMethod()));
     env.push_back("SCRIPT_NAME=" + scriptName);
     env.push_back("SCRIPT_FILENAME=" + scriptPath);
-    env.push_back("PATH_INFO=" + scriptPath); // Full path as requested
-    env.push_back("PATH_TRANSLATED=" + scriptPath);
 
-    // Query string handling
+    // Fix PATH_INFO - should be the path portion after the script name
     std::string pathStr(req.getPath());
     size_t queryPos = pathStr.find('?');
+    std::string pathWithoutQuery = (queryPos != std::string::npos) ? pathStr.substr(0, queryPos) : pathStr;
+
+    // Extract PATH_INFO (path after script name)
+    std::string pathInfo = "";
+    if (pathWithoutQuery.length() > scriptName.length()) {
+        pathInfo = pathWithoutQuery.substr(scriptName.length());
+    }
+    env.push_back("PATH_INFO=" + pathInfo);
+    env.push_back("PATH_TRANSLATED=" + scriptPath + pathInfo);
+
+    // Query string handling
     if (queryPos != std::string::npos) {
         env.push_back("QUERY_STRING=" + pathStr.substr(queryPos + 1));
     } else {
         env.push_back("QUERY_STRING=");
     }
 
-    // Content handling
+    // Content handling - handle chunked requests
+    std::string body = std::string(req.getBody());
+    auto transferEncoding = req.getHeaders("transfer-encoding");
+    bool isChunked = false;
+
+    if (!transferEncoding.empty()) {
+        for (const auto& encoding : transferEncoding) {
+            if (encoding.find("chunked") != std::string::npos) {
+                isChunked = true;
+                break;
+            }
+        }
+    }
+
+    // Unchunk the body if it's chunked
+    if (isChunked) {
+        body = parseChunkedBody(body);
+    }
+
     auto contentType = req.getHeaders("content-type");
     if (!contentType.empty()) {
         env.push_back("CONTENT_TYPE=" + contentType[0]);
@@ -538,8 +612,8 @@ std::vector<std::string> setupCgiEnvironment(const Request& req, const std::stri
     if (!contentLength.empty()) {
         env.push_back("CONTENT_LENGTH=" + contentLength[0]);
     } else {
-        // If no Content-Length, use body size
-        env.push_back("CONTENT_LENGTH=" + std::to_string(std::string(req.getBody()).length()));
+        // Use the actual body size (after unchunking if needed)
+        env.push_back("CONTENT_LENGTH=" + std::to_string(body.length()));
     }
 
     // Server information
@@ -588,14 +662,14 @@ std::string executeCgiScript(const std::string& scriptPath, const std::vector<st
         if (dup2(pipe_in[0], STDIN_FILENO) == -1) {
             close(pipe_in[0]);
             close(pipe_out[1]);
-            exit(1);
+            return "";
         }
 
         // Redirect stdout to write to pipe_out
         if (dup2(pipe_out[1], STDOUT_FILENO) == -1) {
             close(pipe_in[0]);
             close(pipe_out[1]);
-            exit(1);
+            return "";
         }
 
         // Close original pipe descriptors
@@ -603,9 +677,10 @@ std::string executeCgiScript(const std::string& scriptPath, const std::vector<st
         close(pipe_out[1]);
 
         // Set up environment variables
+        std::vector<std::string> envStrings(env.begin(), env.end());
         std::vector<char*> envp;
-        for (const auto& var : env) {
-            envp.push_back(strdup(var.c_str()));
+        for (auto& var : envStrings) {
+            envp.push_back(const_cast<char*>(var.c_str()));
         }
         envp.push_back(nullptr);
 
@@ -665,20 +740,21 @@ std::string executeCgiScript(const std::string& scriptPath, const std::vector<st
         std::cout << "CGI Child: execve failed" << std::endl;
 
         // Clean up environment variables on failure
-        for (auto& ptr : envp) {
-            if (ptr) free(ptr);
-        }
+        // No manual cleanup needed - RAII handles std::string and std::vector
 
-        // If execl fails, exit
-        exit(1);
+        // If execve fails, return error
+        return "";
     } else { // Parent process
         // Close unused pipe ends
         close(pipe_in[0]);
         close(pipe_out[1]);
 
-        // Send input to CGI
+        // Send input to CGI (already processed for chunked requests)
         if (!input.empty()) {
-            write(pipe_in[1], input.c_str(), input.length());
+            ssize_t bytesWritten = write(pipe_in[1], input.c_str(), input.length());
+            if (bytesWritten == -1) {
+                std::cout << "CGI: Failed to write input to CGI" << std::endl;
+            }
         }
         close(pipe_in[1]); // Send EOF
 
@@ -758,12 +834,28 @@ void cgi(const Request& req, Response& res, const Location* location) {
         std::string scriptName = std::filesystem::path(filePath).filename().string();
         auto env = setupCgiEnvironment(req, filePath, scriptName);
 
-        // Get request body for CGI input
-        std::string input(req.getBody());
+        // Get and process request body for CGI input
+        std::string body = std::string(req.getBody());
+        auto transferEncoding = req.getHeaders("transfer-encoding");
+        bool isChunked = false;
+
+        if (!transferEncoding.empty()) {
+            for (const auto& encoding : transferEncoding) {
+                if (encoding.find("chunked") != std::string::npos) {
+                    isChunked = true;
+                    break;
+                }
+            }
+        }
+
+        // Unchunk the body if it's chunked
+        if (isChunked) {
+            body = parseChunkedBody(body);
+        }
 
         // Execute CGI script
         std::cout << "CGI: Executing script: " << filePath << std::endl;
-        std::string cgiOutput = executeCgiScript(filePath, env, input);
+        std::string cgiOutput = executeCgiScript(filePath, env, body);
 
         std::cout << "CGI: Script output length: " << cgiOutput.length() << std::endl;
         if (cgiOutput.empty()) {
