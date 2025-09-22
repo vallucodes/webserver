@@ -215,8 +215,7 @@ bool handleDirectoryRequest(const std::string& dirPath, const std::string& reque
   }
 
   // Try default index files
-  std::vector<std::string> defaultFiles = {"index.html", "default.html"};
-  for (const auto& defaultFile : defaultFiles) {
+  for (const auto& defaultFile : page::DEFAULT_INDEX_FILES) {
     std::string defaultPath = dirPath + "/" + defaultFile;
     if (std::filesystem::exists(defaultPath) && std::filesystem::is_regular_file(defaultPath)) {
       std::string fileContent = router::utils::FileUtils::readFileToString(defaultPath);

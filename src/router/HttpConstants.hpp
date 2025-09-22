@@ -101,9 +101,6 @@ namespace page {
 
     // Default Files
     const std::vector<std::string> DEFAULT_INDEX_FILES = {
-        "index.html",
-        "index.htm",
-        "default.html",
-        "default.htm"
+        "index.html"
     };
 }
