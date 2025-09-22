@@ -193,14 +193,13 @@ void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 void	Cluster::sendPendingData(size_t& i) {
 	// --- Send minimal HTTP response ---
 	ClientRequestState& client_state = _client_buffers[_fds[i].fd];
-	std::cout << "in sendPendingData(). Response: \n" << client_state.response << std::endl;
+	// std::cout << "in sendPendingData(). Response: \n" << client_state.response << std::endl;
 	if (!client_state.response.size())
 		return ;
 
 	if (client_state.waiting_response == true) {
 		std::string response = popResponseChunk(client_state);
-		// std::cout << "Sending data to: " << _fds[i].fd << std::endl;
-		// TODO multiple responses must be separated
+		std::cout << RED << "Sending response to: " << _fds[i].fd << RESET << std::endl;
 		ssize_t sent = send(_fds[i].fd, response.c_str(), response.size(), 0);
 		if (sent >= 0 && client_state.response.empty()) {
 			// std::cout << "Response fully sent" << std::endl;
@@ -235,7 +234,7 @@ void	Cluster::checkForTimeouts() {
 			auto elapsed = now - _client_buffers[_fds[i].fd].receive_start;
 			auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count();
 			// std::cout << "Timeout checker request:" << elapsed_ms << std::endl;
-			if (elapsed_ms > TIME_OUT_REQUEST && _client_buffers[_fds[i].fd].clean_buffer.size() > 0)
+			if (elapsed_ms > TIME_OUT_REQUEST && _client_buffers[_fds[i].fd].buffer.size() > 0)
 				dropClient(i, CLIENT_TIMEOUT);
 		}
 

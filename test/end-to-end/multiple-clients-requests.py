@@ -2,7 +2,7 @@ import socket
 import threading
 
 SERVER_HOST = '127.0.0.1'	# Change to your server IP
-SERVER_PORT = 1703			# Change to your server port
+SERVER_PORT = 8080			# Change to your server port
 NUM_CLIENTS = 10			# Number of clients to create
 
 def client_task(id):
@@ -25,11 +25,11 @@ def client_task(id):
 		# Receive response
 		sock.settimeout(10)
 		try:
-		while True:
-			data = sock.recv(1024)
-			if not data:
-				break  # server closed connection
-			print(f"Client {id} received: {data.decode()}")
+			while True:
+				data = sock.recv(1024)
+				if not data:
+					break  # server closed connection
+				print(f"Client {id} received: {data.decode()}")
 		except socket.timeout:
 			print(f"Client {id} timed out waiting for response")
 

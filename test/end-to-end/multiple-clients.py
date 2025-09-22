@@ -2,8 +2,8 @@ import socket
 import threading
 
 SERVER_HOST = '127.0.0.1'	# Change to your server IP
-SERVER_PORT = 1135			# Change to your server port
-NUM_CLIENTS = 300			# Number of clients to create
+SERVER_PORT = 8081			# Change to your server port
+NUM_CLIENTS = 10			# Number of clients to create
 
 def client_task(id):
 	try:
@@ -12,13 +12,13 @@ def client_task(id):
 		print(f"Client {id} attempted to connect")
 
 		# Example: send a message
-		# request = f"Hello from client {id}"
-		# sock.sendall(request.encode())
+		request = f"Hello from client {id}"
+		sock.sendall(request.encode())
 
 		# Receive response
 		sock.settimeout(10)  # wait max 5 seconds
 		try:
-			response = sock.recv(1024)
+			response = sock.recv(8000)
 			print(f"Client {id} received: {response.decode()}")
 		except socket.timeout:
 			print(f"Client {id} timed out waiting for response")

@@ -20,17 +20,17 @@ void	setSocketToNonBlockingMode(int sock) {
 	}
 }
 
-bool	findHostInHeader(const std::string& buffer, size_t header_end) {
-	std::regex	re("Host:\\s+\\S+");
-	std::smatch	match;
-	std::string header = buffer.substr(0, header_end);
-	if (std::regex_search(header, match, re))
-	{
-		// std::cout << "Host found in header" << match[0] << std::endl;
-		return true;
-	}
-	return false;
-}
+// bool	findHostInHeader(const std::string& buffer, size_t header_end) {
+// 	std::regex	re("Host:\\s+\\S+");
+// 	std::smatch	match;
+// 	std::string header = buffer.substr(0, header_end);
+// 	if (std::regex_search(header, match, re))
+// 	{
+// 		// std::cout << "Host found in header" << match[0] << std::endl;
+// 		return true;
+// 	}
+// 	return false;
+// }
 
 size_t	findHeader(const std::string& buffer) {
 	size_t pos = buffer.find("\r\n\r\n");
@@ -48,12 +48,11 @@ uint64_t	getMaxClients() {
 
 	// Reserve some FDs for standard I/O, listening socket, etc.
 	uint64_t reserved_fds = 10;
-	uint64_t max_clients = rl.rlim_cur - reserved_fds;
+	int max_clients = rl.rlim_cur - reserved_fds;
 	if (max_clients < 1)
-		max_clients = 1;
+		throw std::runtime_error("Error: Not enough fd's available to create a server");
 	return max_clients;
 }
-
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
