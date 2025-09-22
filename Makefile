@@ -20,7 +20,7 @@ HEADERS		= inc/webserv.hpp \
 				src/router/handlers/Handlers.hpp \
 				src/router/utils/StringUtils.hpp \
 				src/router/utils/FileUtils.hpp \
-				src/router/utils/ErrorResponseBuilder.hpp \
+				src/router/utils/HttpResponseBuilder.hpp \
 				src/request/Request.hpp \
 				src/response/Response.hpp \
 				src/message/AMessage.hpp \
@@ -39,7 +39,7 @@ SRCS		= src/main.cpp \
 				src/router/handlers/Handlers.cpp \
 				src/router/utils/StringUtils.cpp \
 				src/router/utils/FileUtils.cpp \
-				src/router/utils/ErrorResponseBuilder.cpp \
+				src/router/utils/HttpResponseBuilder.cpp \
 				src/request/Request.cpp \
 				src/response/Response.cpp \
 				src/message/AMessage.cpp \

@@ -36,7 +36,7 @@ class RequestProcessor {
 
   private:
     /** Execute handler with error handling */
-    bool executeHandlerSafely(const Handler* handler, const Server& server,
+    bool executeHandler(const Handler* handler, const Server& server,
                              const Request& req, Response& res,
                              const std::string& path, const Location* location) const;
 

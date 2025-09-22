@@ -1,9 +1,9 @@
 /**
- * @file ErrorResponseBuilder.cpp
+ * @file HttpResponseBuilder.cpp
  * @brief Error response building utilities implementation
  */
 
-#include "ErrorResponseBuilder.hpp"
+#include "HttpResponseBuilder.hpp"
 #include "../HttpConstants.hpp"
 #include "../../response/Response.hpp"
 #include "FileUtils.hpp"
@@ -12,7 +12,7 @@
 namespace router {
 namespace utils {
 
-void ErrorResponseBuilder::setErrorResponse(Response& res, int status) {
+void HttpResponseBuilder::setErrorResponse(Response& res, int status) {
     // Set the HTTP status line based on the error code
     if (status == http::NOT_FOUND_404) {
         res.setStatus(http::STATUS_NOT_FOUND_404);
@@ -39,7 +39,7 @@ void ErrorResponseBuilder::setErrorResponse(Response& res, int status) {
     res.setBody(getErrorPageHtml(status));
 }
 
-void ErrorResponseBuilder::setSuccessResponse(Response& res, const std::string& content, const std::string& contentType) {
+void HttpResponseBuilder::setSuccessResponse(Response& res, const std::string& content, const std::string& contentType) {
     res.setStatus(http::STATUS_OK_200);
     res.setHeaders("Content-Type", contentType);
     res.setHeaders("Content-Length", std::to_string(content.length()));
@@ -47,7 +47,7 @@ void ErrorResponseBuilder::setSuccessResponse(Response& res, const std::string& 
     res.setBody(content);
 }
 
-std::string ErrorResponseBuilder::getErrorPageHtml(int status) {
+std::string HttpResponseBuilder::getErrorPageHtml(int status) {
     switch (status) {
         case http::NOT_FOUND_404:
             return FileUtils::readFileToString(error_page::ERROR_PAGE_NOT_FOUND_404);

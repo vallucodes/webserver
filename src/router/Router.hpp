@@ -40,7 +40,7 @@ class Router {
     /** Process HTTP request and route to handler */
     void handleRequest(const Server& server, const Request& req, Response& res) const;
 
-    // Now using router::utils::ErrorResponseBuilder::getErrorPageHtml instead
+    // Now using router::utils::HttpResponseBuilder::getErrorPageHtml instead
 
   private:
     /** Find handler for server/method/path */
@@ -56,4 +56,4 @@ class Router {
     RequestProcessor _requestProcessor;
 };
 
-// Now using router::utils::ErrorResponseBuilder::setErrorResponse instead
+// Now using router::utils::HttpResponseBuilder::setErrorResponse instead

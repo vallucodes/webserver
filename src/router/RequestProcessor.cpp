@@ -4,7 +4,7 @@
  */
 
 #include "RequestProcessor.hpp"
-#include "utils/ErrorResponseBuilder.hpp"
+#include "utils/HttpResponseBuilder.hpp"
 #include "handlers/Handlers.hpp"
 #include <iostream>
 #include <algorithm>
@@ -37,7 +37,7 @@ void RequestProcessor::processRequest(const Server& server, const Request& req,
 
     // Validate and normalize the path
     if (!validatePath(path)) {
-        router::utils::ErrorResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400);
+        router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400);
         return;
     }
 
@@ -45,7 +45,7 @@ void RequestProcessor::processRequest(const Server& server, const Request& req,
 
     // Execute handler if available
     if (handler) {
-        if (executeHandlerSafely(handler, server, req, res, path, location)) {
+        if (executeHandler(handler, server, req, res, path, location)) {
             return;
         }
     }
@@ -56,7 +56,7 @@ void RequestProcessor::processRequest(const Server& server, const Request& req,
     }
 
     // All attempts failed - return 404
-    router::utils::ErrorResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404);
+    router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404);
 }
 
 /**
@@ -124,7 +124,7 @@ void RequestProcessor::normalizePath(std::string& path) const {
 /**
  * @brief Execute handler
  */
-bool RequestProcessor::executeHandlerSafely(const Handler* handler, const Server& server __attribute__((unused)),
+bool RequestProcessor::executeHandler(const Handler* handler, const Server& server __attribute__((unused)),
                                            const Request& req, Response& res,
                                            const std::string& path __attribute__((unused)), const Location* location) const {
     if (!handler) {
@@ -136,10 +136,10 @@ bool RequestProcessor::executeHandlerSafely(const Handler* handler, const Server
         (*handler)(req, res, location);
         return true;
     } catch (const std::exception& e) {
-        router::utils::ErrorResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
+        router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
         return false;
     } catch (...) {
-        router::utils::ErrorResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
+        router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
         return false;
     }
 }

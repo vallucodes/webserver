@@ -5,7 +5,7 @@
 
 #include "../../inc/webserv.hpp"
 #include "Router.hpp"
-#include "utils/ErrorResponseBuilder.hpp"
+#include "utils/HttpResponseBuilder.hpp"
 #include "HttpConstants.hpp"
 #include "handlers/Handlers.hpp"
 #include <algorithm>
@@ -219,14 +219,14 @@ const Location* Router::findLocation(const Server& server, const std::string& pa
  * @param status HTTP status code
  * @return HTML content string
  */
-// Now using ErrorResponseBuilder::getErrorPageHtml instead
+// Now using HttpResponseBuilder::getErrorPageHtml instead
 
 /**
  * @brief Set up error response
  * @param res Response object
  * @param status HTTP status code
  */
-// Now using ErrorResponseBuilder::setErrorResponse instead
+// Now using HttpResponseBuilder::setErrorResponse instead
 
 /**
  * @brief Process HTTP request and route to handler
