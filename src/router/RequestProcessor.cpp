@@ -26,8 +26,8 @@ RequestProcessor::~RequestProcessor() {
 /**
  * @brief Process HTTP request
  */
-void RequestProcessor::processRequest(const Server& server, const Request& req,
-                                     const Handler* handler, Response& res, const Location* location) const {
+void RequestProcessor::processRequest(const Request& req, const Handler* handler,
+                                        Response& res, const Location* location) const {
     // Extract and validate request components
     std::string_view method_view = req.getMethod();
     std::string_view path_view = req.getPath();
@@ -45,7 +45,7 @@ void RequestProcessor::processRequest(const Server& server, const Request& req,
 
     // Execute handler if available
     if (handler) {
-        if (executeHandler(handler, server, req, res, path, location)) {
+        if (executeHandler(handler, req, res, path, location)) {
             return;
         }
     }
@@ -124,7 +124,7 @@ void RequestProcessor::normalizePath(std::string& path) const {
 /**
  * @brief Execute handler
  */
-bool RequestProcessor::executeHandler(const Handler* handler, const Server& server __attribute__((unused)),
+bool RequestProcessor::executeHandler(const Handler* handler,
                                            const Request& req, Response& res,
                                            const std::string& path __attribute__((unused)), const Location* location) const {
     if (!handler) {

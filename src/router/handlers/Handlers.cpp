@@ -204,8 +204,6 @@ std::string generateDirectoryListing(const std::string& dirPath, const std::stri
  * @param location Location configuration
  */
 void get(const Request& req, Response& res, const Location* location) {
-    // std::cout << "=== GET HANDLER START ===" << std::endl;
-    // std::cout << "GET HANDLER CALLED: path=" << req.getPath() << ", location=" << (location ? location->location : "nullptr") << std::endl;
     try {
         // Extract and validate file path
         std::string_view filePathView = req.getPath();
@@ -223,7 +221,6 @@ void get(const Request& req, Response& res, const Location* location) {
 
             // Check if it's a directory first
             if (std::filesystem::is_directory(dirPath)) {
-                // std::cout << "DEBUG: Directory found: " << dirPath << ", autoindex: " << location->autoindex << ", index: " << location->index << std::endl;
                 // If location has autoindex enabled, generate directory listing
                 if (location->autoindex) {
                     // std::cout << "DEBUG: Generating autoindex for " << requestPath << std::endl;

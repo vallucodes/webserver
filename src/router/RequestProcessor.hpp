@@ -25,8 +25,8 @@ class RequestProcessor {
     ~RequestProcessor();
 
     /** Process HTTP request with routing information */
-    void processRequest(const Server& server, const Request& req,
-                       const Handler* handler, Response& res, const Location* location) const;
+    void processRequest(const Request& req, const Handler* handler,
+                        Response& res, const Location* location) const;
 
     /** Validate request path for security issues */
     bool validatePath(const std::string& path) const;
@@ -36,7 +36,7 @@ class RequestProcessor {
 
   private:
     /** Execute handler with error handling */
-    bool executeHandler(const Handler* handler, const Server& server,
+    bool executeHandler(const Handler* handler,
                              const Request& req, Response& res,
                              const std::string& path, const Location* location) const;
 

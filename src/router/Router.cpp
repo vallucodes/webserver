@@ -249,7 +249,7 @@ void Router::handleRequest(const Server& server, const Request& req, Response& r
     const Location* location = findLocation(server, path);
 
     // Delegate to RequestProcessor for execution and fallback handling
-    _requestProcessor.processRequest(server, req, handler, res, location);
+    _requestProcessor.processRequest(req, handler, res, location);
 }
 
 // ========================= HELPERS =========================
