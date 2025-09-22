@@ -149,50 +149,84 @@ std::string generateDirectoryListing(const std::string& dirPath, const std::stri
  * @param res Response object
  * @return true if handled successfully
  */
+// bool handleDirectoryRequest(const std::string& dirPath, const std::string& requestPath,
+//                            const Location* location, Response& res) {
+//   // Try autoindex first if enabled
+//   if (location && location->autoindex) {
+//     std::string dirListing = generateDirectoryListing(dirPath, requestPath);
+//     router::utils::HttpResponseBuilder::setSuccessResponse(res, dirListing, http::CONTENT_TYPE_HTML);
+//     return true;
+//   }
+
+//   // Try location-specific index file
+//   if (location && !location->index.empty()) {
+//     std::string indexPath = dirPath;
+//     if (!indexPath.ends_with('/')) indexPath += '/';
+//     indexPath += location->index;
+
+//     if (std::filesystem::exists(indexPath) && std::filesystem::is_regular_file(indexPath)) {
+//       std::string fileContent = router::utils::FileUtils::readFileToString(indexPath);
+//       std::string contentType = router::utils::FileUtils::getContentType(indexPath);
+//       router::utils::HttpResponseBuilder::setSuccessResponse(res, fileContent, contentType);
+//       return true;
+//     }
+
+//     // Try global index file
+//     std::string globalIndexPath = page::WWW + "/" + location->index;
+//     if (std::filesystem::exists(globalIndexPath) && std::filesystem::is_regular_file(globalIndexPath)) {
+//       std::string fileContent = router::utils::FileUtils::readFileToString(globalIndexPath);
+//       std::string contentType = router::utils::FileUtils::getContentType(globalIndexPath);
+//       router::utils::HttpResponseBuilder::setSuccessResponse(res, fileContent, contentType);
+//       return true;
+//     }
+//   }
+
+//   // Try default index files
+//   for (const auto& defaultFile : page::DEFAULT_INDEX_FILES) {
+//     std::string defaultPath = dirPath + "/" + defaultFile;
+//     if (std::filesystem::exists(defaultPath) && std::filesystem::is_regular_file(defaultPath)) {
+//       std::string fileContent = router::utils::FileUtils::readFileToString(defaultPath);
+//       std::string contentType = router::utils::FileUtils::getContentType(defaultPath);
+//       router::utils::HttpResponseBuilder::setSuccessResponse(res, fileContent, contentType);
+//       return true;
+//     }
+//   }
+
+//   return false;
+// }
+
 bool handleDirectoryRequest(const std::string& dirPath, const std::string& requestPath,
                            const Location* location, Response& res) {
-  // Try autoindex first if enabled
-  if (location && location->autoindex) {
-    std::string dirListing = generateDirectoryListing(dirPath, requestPath);
-    router::utils::HttpResponseBuilder::setSuccessResponse(res, dirListing, http::CONTENT_TYPE_HTML);
-    return true;
-  }
-
-  // Try location-specific index file
-  if (location && !location->index.empty()) {
-    std::string indexPath = dirPath;
-    if (!indexPath.ends_with('/')) indexPath += '/';
-    indexPath += location->index;
-
-    if (std::filesystem::exists(indexPath) && std::filesystem::is_regular_file(indexPath)) {
-      std::string fileContent = router::utils::FileUtils::readFileToString(indexPath);
-      std::string contentType = router::utils::FileUtils::getContentType(indexPath);
-      router::utils::HttpResponseBuilder::setSuccessResponse(res, fileContent, contentType);
-      return true;
+    // Try autoindex first if enabled
+    if (location && location->autoindex) {
+        std::string dirListing = generateDirectoryListing(dirPath, requestPath);
+        router::utils::HttpResponseBuilder::setSuccessResponse(res, dirListing, http::CONTENT_TYPE_HTML);
+        return true;
     }
 
-    // Try global index file
-    std::string globalIndexPath = page::WWW + "/" + location->index;
-    if (std::filesystem::exists(globalIndexPath) && std::filesystem::is_regular_file(globalIndexPath)) {
-      std::string fileContent = router::utils::FileUtils::readFileToString(globalIndexPath);
-      std::string contentType = router::utils::FileUtils::getContentType(globalIndexPath);
-      router::utils::HttpResponseBuilder::setSuccessResponse(res, fileContent, contentType);
-      return true;
+    // Combine location-specific, global, and default index files
+    std::vector<std::string> indexPaths;
+    if (location && !location->index.empty()) {
+        std::string indexPath = dirPath;
+        if (!indexPath.ends_with('/')) indexPath += '/';
+        indexPaths.push_back(indexPath + location->index); // Location-specific index
+        indexPaths.push_back(page::WWW + "/" + location->index); // Global index
     }
-  }
-
-  // Try default index files
-  for (const auto& defaultFile : page::DEFAULT_INDEX_FILES) {
-    std::string defaultPath = dirPath + "/" + defaultFile;
-    if (std::filesystem::exists(defaultPath) && std::filesystem::is_regular_file(defaultPath)) {
-      std::string fileContent = router::utils::FileUtils::readFileToString(defaultPath);
-      std::string contentType = router::utils::FileUtils::getContentType(defaultPath);
-      router::utils::HttpResponseBuilder::setSuccessResponse(res, fileContent, contentType);
-      return true;
+    for (const auto& defaultFile : page::DEFAULT_INDEX_FILES) {
+        indexPaths.push_back(dirPath + "/" + defaultFile); // Default index files
     }
-  }
 
-  return false;
+    // Try each index file in order
+    for (const auto& path : indexPaths) {
+        if (std::filesystem::exists(path) && std::filesystem::is_regular_file(path)) {
+            std::string fileContent = router::utils::FileUtils::readFileToString(path);
+            std::string contentType = router::utils::FileUtils::getContentType(path);
+            router::utils::HttpResponseBuilder::setSuccessResponse(res, fileContent, contentType);
+            return true;
+        }
+    }
+
+    return false;
 }
 
 /**
