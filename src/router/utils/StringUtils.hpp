@@ -17,7 +17,7 @@ public:
     static std::string replaceAll(std::string str, const std::string& from, const std::string& to);
 
     /** Sanitize filename by removing dangerous characters */
-    static std::string sanitizeFilename(std::string filename);
+    // static std::string sanitizeFilename(std::string filename);
 
     /** Replace a placeholder in HTML template */
     static std::string replacePlaceholder(std::string html, const std::string& placeholder, const std::string& replacement);

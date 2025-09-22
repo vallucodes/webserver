@@ -18,14 +18,14 @@ std::string StringUtils::replaceAll(std::string str, const std::string& from, co
     return str;
 }
 
-std::string StringUtils::sanitizeFilename(std::string filename) {
-    const std::string forbiddenChars = "/\\:*?\"<>|";
-    filename.erase(std::remove_if(filename.begin(), filename.end(),
-        [&forbiddenChars](char c) {
-            return forbiddenChars.find(c) != std::string::npos;
-        }), filename.end());
-    return filename;
-}
+// std::string StringUtils::sanitizeFilename(std::string filename) {
+//     const std::string forbiddenChars = "/\\:*?\"<>|";
+//     filename.erase(std::remove_if(filename.begin(), filename.end(),
+//         [&forbiddenChars](char c) {
+//             return forbiddenChars.find(c) != std::string::npos;
+//         }), filename.end());
+//     return filename;
+// }
 
 std::string StringUtils::replacePlaceholder(std::string html, const std::string& placeholder, const std::string& replacement) {
     size_t pos = 0;

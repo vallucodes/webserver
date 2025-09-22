@@ -358,7 +358,7 @@ void post(const Request& req, Response& res, const Location* location) {
             return;
         }
 
-        std::string filename = router::utils::StringUtils::sanitizeFilename(filePart.substr(filenamePos + 10, filenameEnd - filenamePos - 10));
+        std::string filename = filePart.substr(filenamePos + 10, filenameEnd - filenamePos - 10);
         if (filename.empty()) {
             router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400);
             return;
@@ -428,7 +428,7 @@ void del(const Request& req, Response& res, const Location* location) {
             return;
         }
 
-        std::string filename = router::utils::StringUtils::sanitizeFilename(std::string(filePathView.substr(uploadPrefix.length() + 1)));
+        std::string filename = std::string(filePathView.substr(uploadPrefix.length() + 1));
         if (filename.empty()) {
             router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400);
             return;
