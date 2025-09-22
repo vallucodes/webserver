@@ -15,10 +15,7 @@
 namespace http {
     // HTTP Status Messages (Complete Status Lines)
     const std::string STATUS_OK_200 = "200 OK";
-    const std::string STATUS_CREATED_201 = "201 Created";
-    const std::string STATUS_MOVED_PERMANENTLY_301 = "301 Moved Permanently";
     const std::string STATUS_FOUND_302 = "302 Found";
-    const std::string STATUS_SEE_OTHER_303 = "303 See Other";
     const std::string STATUS_NOT_FOUND_404 = "404 Not Found";
     const std::string STATUS_FORBIDDEN_403 = "403 Forbidden";
     const std::string STATUS_METHOD_NOT_ALLOWED_405 = "405 Method Not Allowed";
@@ -28,10 +25,7 @@ namespace http {
 
     // HTTP Status Codes (Numeric Values)
     const int OK_200 = 200;
-    const int CREATED_201 = 201;
-    const int MOVED_PERMANENTLY_301 = 301;
     const int FOUND_302 = 302;
-    const int SEE_OTHER_303 = 303;
     const int NOT_FOUND_404 = 404;
     const int FORBIDDEN_403 = 403;
     const int METHOD_NOT_ALLOWED_405 = 405;
@@ -44,8 +38,6 @@ namespace http {
     const std::string POST = "POST";
     const std::string DELETE = "DELETE";
     const std::string HEAD = "HEAD";
-    const std::string PUT = "PUT";
-    const std::string PATCH = "PATCH";
 
     // Common HTTP Headers
     const std::string CONTENT_TYPE = "Content-Type";
@@ -58,15 +50,10 @@ namespace http {
 
     // Connection Values
     const std::string CONNECTION_CLOSE = "close";
-    const std::string CONNECTION_KEEP_ALIVE = "keep-alive";
 
     // Content Types
     const std::string CONTENT_TYPE_HTML = "text/html";
-    const std::string CONTENT_TYPE_JSON = "application/json";
     const std::string CONTENT_TYPE_TEXT = "text/plain";
-    const std::string CONTENT_TYPE_XML = "application/xml";
-    const std::string CONTENT_TYPE_CSS = "text/css";
-    const std::string CONTENT_TYPE_JAVASCRIPT = "application/javascript";
 }
 
 /**

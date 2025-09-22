@@ -31,9 +31,9 @@ void HttpResponseBuilder::setErrorResponse(Response& res, int status) {
     }
 
     // Set standard headers for HTML error responses
-    res.setHeaders("Content-Type", "text/html");
-    res.setHeaders("Content-Length", std::to_string(getErrorPageHtml(status).length()));
-    res.setHeaders("Connection", "close");
+    res.setHeaders(http::CONTENT_TYPE, http::CONTENT_TYPE_HTML);
+    res.setHeaders(http::CONTENT_LENGTH, std::to_string(getErrorPageHtml(status).length()));
+    res.setHeaders(http::CONNECTION, http::CONNECTION_CLOSE);
 
     // Set the response body with the error page HTML
     res.setBody(getErrorPageHtml(status));
@@ -41,9 +41,9 @@ void HttpResponseBuilder::setErrorResponse(Response& res, int status) {
 
 void HttpResponseBuilder::setSuccessResponse(Response& res, const std::string& content, const std::string& contentType) {
     res.setStatus(http::STATUS_OK_200);
-    res.setHeaders("Content-Type", contentType);
-    res.setHeaders("Content-Length", std::to_string(content.length()));
-    res.setHeaders("Connection", "close");
+    res.setHeaders(http::CONTENT_TYPE, contentType);
+    res.setHeaders(http::CONTENT_LENGTH, std::to_string(content.length()));
+    res.setHeaders(http::CONNECTION, http::CONNECTION_CLOSE);
     res.setBody(content);
 }
 

@@ -54,10 +54,10 @@ void Router::setupRouter(const std::vector<Server>& configs) {
                     // CGI location: Both CGI path and extension are configured
                     // Use CGI handler for script execution (supports any HTTP method)
                     handler = cgi;
-                } else if (method == "POST" && !location.upload_path.empty()) {
+                } else if (method == http::POST && !location.upload_path.empty()) {
                     // POST request to upload location: Handle file uploads
                     handler = post;
-                } else if (method == "DELETE" && !location.upload_path.empty()) {
+                } else if (method == http::DELETE && !location.upload_path.empty()) {
                     // DELETE request from upload location: Handle file deletions
                     handler = del;
                 // if HEAD method needed

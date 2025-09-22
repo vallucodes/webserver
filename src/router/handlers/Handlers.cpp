@@ -400,7 +400,7 @@ void post(const Request& req, Response& res, const Location* location) {
         outFile.close();
 
         // Success response - redirect to upload page
-        res.setHeaders("Location", "/upload.html");
+        res.setHeaders(http::LOCATION, "/upload.html");
         router::utils::HttpResponseBuilder::setSuccessResponse(res, createSuccessMessage(filename, "uploaded"), http::CONTENT_TYPE_TEXT);
 
     } catch (const std::exception&) {
@@ -447,7 +447,7 @@ void del(const Request& req, Response& res, const Location* location) {
         if (std::filesystem::remove(filePath)) {
             // Success response - redirect to upload page
             res.setStatus(http::STATUS_OK_200);
-            res.setHeaders("Location", "/upload.html");
+            res.setHeaders(http::LOCATION, "/upload.html");
             res.setBody(createSuccessMessage(filename, "deleted"));
             res.setHeaders("Content-Type", http::CONTENT_TYPE_TEXT);
         } else {
@@ -909,7 +909,7 @@ void cgi(const Request& req, Response& res, const Location* location) {
         // Set default content type if not specified
         auto contentType = res.getHeaders("Content-Type");
         if (contentType.empty()) {
-            res.setHeaders("Content-Type", "text/html");
+            res.setHeaders(http::CONTENT_TYPE, http::CONTENT_TYPE_HTML);
         }
 
         // Set response body
@@ -947,7 +947,7 @@ void redirect(const Request& req, Response& res, const Location* location) {
         res.setStatus(http::STATUS_FOUND_302);
 
         // Set Location header for redirection
-        res.setHeaders("Location", redirectUrl);
+        res.setHeaders(http::LOCATION, redirectUrl);
 
         // Set connection header
         res.setHeaders(http::CONNECTION, http::CONNECTION_CLOSE);
