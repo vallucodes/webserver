@@ -30,7 +30,7 @@ std::string_view Response::getStatus() const {
 
 /** Set HTTP header */
 void Response::setHeaders(const std::string& key, const std::string& value) {
-    _headers[key] = value;
+    AMessage::setHeaders(key, value);
 }
 
 /** Print response to console for debugging */
@@ -39,8 +39,13 @@ void Response::print() const {
     std::cout << "Status     : " << _status << "\n";
 
     std::cout << "Headers    :\n";
-    for (const auto& pair : _headers) {
-        std::cout << pair.first << ": " << pair.second << "\n";
+    const auto& headers = getAllHeaders();
+    for (const auto& pair : headers) {
+        const std::string& key = pair.first;
+        const std::vector<std::string>& values = pair.second;
+        for (const auto& value : values) {
+            std::cout << key << ": " << value << "\n";
+        }
     }
 
     std::cout << "Body: Uncommented for debugging in Response.cpp\n" << std::endl;

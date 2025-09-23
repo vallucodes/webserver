@@ -36,5 +36,4 @@ class Response: public AMessage {
 
   private:
     std::string _status;
-    std::map<std::string, std::string> _headers;
 };
