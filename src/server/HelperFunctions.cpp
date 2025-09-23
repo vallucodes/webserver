@@ -61,7 +61,14 @@ uint64_t	getMaxClients() {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool	requestComplete(ClientRequestState& client_state) {
+void	setMaxBodySize(ClientRequestState& client_state, Cluster* cluster) {
+
+	&cluster.
+
+	client_state.max_body_size =
+}
+
+bool	requestComplete(ClientRequestState& client_state, int fd, Cluster* cluster) {
 	// std::cout << "Buffer to be parsed currently: " << std::endl;
 	// std::cout << buffer << std::endl;
 	// buffer = client_state.buffer;
@@ -79,6 +86,7 @@ bool	requestComplete(ClientRequestState& client_state) {
 		return false;
 	}
 
+	setMaxBodySize(client_state, cluster);
 	// at this point non cleaned buffer has full header
 
 	// std::cout << "header end detected: " << pos2 << std::endl;

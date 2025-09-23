@@ -35,7 +35,7 @@ struct ClientRequestState {
 	Server*		config;
 	bool		data_validity = 1;
 	bool		waiting_response = 0;
-
+	size_t		max_body_size = 0;
 };
 
 class Cluster {
@@ -69,5 +69,6 @@ class Cluster {
 		void	create();
 		void	run();
 
-		const std::set<int>&	getServerFds() const;
+		const std::set<int>&					getServerFds() const;
+		const std::map<int, ListenerGroup*>&	getClients() const;
 };

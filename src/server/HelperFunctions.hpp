@@ -16,7 +16,8 @@ void		checkNameRepitition(const std::vector<Server> configs, const Server config
 uint64_t	getMaxClients();
 size_t		findHeader(const std::string& buffer);
 
-bool	requestComplete(ClientRequestState& client_state);
+bool	requestComplete(ClientRequestState& client_state, int fd, Cluster* cluster);
+void	setMaxBodySize(ClientRequestState& client_state);
 bool	decodeChunkedBody(ClientRequestState& client_state);
 int		isChunkedBodyComplete(ClientRequestState& client_state, size_t header_end);
 bool	isRequestBodyComplete(ClientRequestState& client_state, size_t header_end);
