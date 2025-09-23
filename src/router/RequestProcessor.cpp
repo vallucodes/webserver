@@ -176,7 +176,8 @@ void RequestProcessor::generateErrorResponse(Response& res, int status,
 
     // Set common headers
     res.setHeaders(http::CONTENT_TYPE, http::CONTENT_TYPE_HTML);
-    res.setHeaders(http::CONNECTION, http::CONNECTION_CLOSE);
+    // Default to keep-alive for HTTP/1.1 compatibility
+    res.setHeaders(http::CONNECTION, http::CONNECTION_KEEP_ALIVE);
 
     // For now, set a simple error message
     // In a real implementation, this would load custom error pages

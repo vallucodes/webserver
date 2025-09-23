@@ -22,13 +22,13 @@ class HttpResponseBuilder {
         static void setErrorResponse(Response& res, int status);
 
         /** Set a complete error response with appropriate status, headers, and body (with keep-alive support) */
-        // static void setErrorResponse(Response& res, int status, const class Request& req);
+        static void setErrorResponse(Response& res, int status, const class Request& req);
 
         /** Set a success response with content and content type */
         static void setSuccessResponse(Response& res, const std::string& content, const std::string& contentType);
 
         /** Set a success response with content and content type (with keep-alive support) */
-        // static void setSuccessResponse(Response& res, const std::string& content, const std::string& contentType, const class Request& req);
+        static void setSuccessResponse(Response& res, const std::string& content, const std::string& contentType, const class Request& req);
 
         /** Get HTML content for default error pages */
         static std::string getErrorPageHtml(int status);

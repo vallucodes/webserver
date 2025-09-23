@@ -7,6 +7,8 @@
 #include "../HttpConstants.hpp"
 #include "../../response/Response.hpp"
 #include "../../request/Request.hpp"
+#include "../../router/handlers/Handlers.hpp"
+
 #include "FileUtils.hpp"
 #include <iostream> // for std::cout, std::endl
 #include <algorithm> // for std::transform
@@ -14,32 +16,6 @@
 namespace router {
 namespace utils {
 
-/** Determine if connection should be kept alive based on HTTP version and request headers */
-static bool shouldKeepAlive(const Request& req) {
-    // Check if client explicitly requests connection close
-    auto connectionHeaders = req.getHeaders("connection");
-    if (!connectionHeaders.empty()) {
-        std::string connectionValue = connectionHeaders[0];
-        // Convert to lowercase for case-insensitive comparison
-        std::transform(connectionValue.begin(), connectionValue.end(), connectionValue.begin(),
-                      [](unsigned char c){ return std::tolower(c); });
-
-        if (connectionValue == "close") {
-            return false;
-        }
-        if (connectionValue == "keep-alive") {
-            return true;
-        }
-    }
-
-    // HTTP/1.1 defaults to keep-alive, HTTP/1.0 defaults to close
-    std::string httpVersion = std::string(req.getHttpVersion());
-    if (httpVersion == "HTTP/1.1") {
-        return true;
-    }
-
-    return false;
-}
 
 void HttpResponseBuilder::setErrorResponse(Response& res, int status) {
     // Set the HTTP status line based on the error code
@@ -62,7 +38,8 @@ void HttpResponseBuilder::setErrorResponse(Response& res, int status) {
     // Set standard headers for HTML error responses
     res.setHeaders(http::CONTENT_TYPE, http::CONTENT_TYPE_HTML);
     res.setHeaders(http::CONTENT_LENGTH, std::to_string(getErrorPageHtml(status).length()));
-    res.setHeaders(http::CONNECTION, http::CONNECTION_CLOSE);
+    // Default to keep-alive for HTTP/1.1 compatibility
+    res.setHeaders(http::CONNECTION, http::CONNECTION_KEEP_ALIVE);
 
     // Set the response body with the error page HTML
     res.setBody(getErrorPageHtml(status));
@@ -72,10 +49,11 @@ void HttpResponseBuilder::setSuccessResponse(Response& res, const std::string& c
     res.setStatus(http::STATUS_OK_200);
     res.setHeaders(http::CONTENT_TYPE, contentType);
     res.setHeaders(http::CONTENT_LENGTH, std::to_string(content.length()));
-    res.setHeaders(http::CONNECTION, http::CONNECTION_CLOSE);
+    // Default to keep-alive for HTTP/1.1 compatibility
+    res.setHeaders(http::CONNECTION, http::CONNECTION_KEEP_ALIVE);
     res.setBody(content);
 }
-/*
+
 void HttpResponseBuilder::setErrorResponse(Response& res, int status, const Request& req) {
     // Set the HTTP status line based on the error code
     if (status == http::NOT_FOUND_404) {
@@ -123,7 +101,7 @@ void HttpResponseBuilder::setSuccessResponse(Response& res, const std::string& c
 
     res.setBody(content);
 }
-*/
+
 std::string HttpResponseBuilder::getErrorPageHtml(int status) {
     switch (status) {
         case http::NOT_FOUND_404:
