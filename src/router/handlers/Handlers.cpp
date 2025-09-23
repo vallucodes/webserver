@@ -25,6 +25,31 @@ using namespace http;
 
 // ***************** HELPERS ***************** //
 
+/**
+ * @brief Resolve path relative to server root (nginx-style)
+ * @param path Path from configuration (can be relative or absolute)
+ * @param server_root Server root directory
+ * @return Resolved absolute path
+ */
+std::string resolvePath(const std::string& path, const std::string& server_root) {
+    if (path.empty()) {
+        return server_root;
+    }
+
+    // If path starts with '/', it's absolute - use as-is
+    if (path[0] == '/') {
+        return path;
+    }
+
+    // Relative path - resolve against server root
+    std::string resolved = server_root;
+    if (!resolved.empty() && resolved.back() != '/') {
+        resolved += '/';
+    }
+    resolved += path;
+
+    return resolved;
+}
 
 /** Determine if connection should be kept alive based on HTTP version and request headers */
 bool shouldKeepAlive(const Request& req) {
@@ -335,7 +360,7 @@ void get(const Request& req, Response& res, const Location* location) {
 // ***************** POST HANDLER ***************** //
 
 /** Handle POST requests for file uploads */
-void post(const Request& req, Response& res, const Location* location) {
+void post(const Request& req, Response& res, const Location* location, const std::string& server_root) {
     try {
         // Validate location configuration
         if (!location || location->upload_path.empty()) {
@@ -418,11 +443,14 @@ void post(const Request& req, Response& res, const Location* location) {
             return;
         }
 
-        // Use location-configured upload path
-        const std::string filePath = location->upload_path + "/" + filename;
+        // Resolve upload path (nginx-style)
+        std::string uploadPath = resolvePath(location->upload_path, server_root);
+
+        // Use resolved path
+        const std::string filePath = uploadPath + "/" + filename;
 
         // Ensure upload directory exists
-        std::filesystem::create_directories(location->upload_path);
+        std::filesystem::create_directories(uploadPath);
 
         std::ofstream outFile(filePath, std::ios::binary);
         if (!outFile) {
@@ -444,7 +472,7 @@ void post(const Request& req, Response& res, const Location* location) {
 
 // ***************** DELETE HANDLER ***************** //
 
-void del(const Request& req, Response& res, const Location* location) {
+void del(const Request& req, Response& res, const Location* location, const std::string& server_root) {
     try {
         // Validate location configuration
         if (!location || location->upload_path.empty()) {
@@ -468,8 +496,11 @@ void del(const Request& req, Response& res, const Location* location) {
             return;
         }
 
-        // Use location-configured upload path
-        const std::string filePath = location->upload_path + "/" + filename;
+        // Resolve upload path (nginx-style)
+        std::string uploadPath = resolvePath(location->upload_path, server_root);
+
+        // Use resolved path
+        const std::string filePath = uploadPath + "/" + filename;
 
         // Check if file exists
         if (!std::filesystem::exists(filePath)) {
@@ -803,7 +834,7 @@ std::string executeCgiScript(const std::string& scriptPath, const std::vector<st
 }
 
 /** Handle CGI requests for executable scripts */
-void cgi(const Request& req, Response& res, const Location* location) {
+void cgi(const Request& req, Response& res, const Location* location, const std::string& server_root) {
     try {
         // Validate location configuration
         if (!location || location->cgi_path.empty() || location->cgi_ext.empty()) {
@@ -833,7 +864,9 @@ void cgi(const Request& req, Response& res, const Location* location) {
                 requestPath = requestPath.substr(locationPrefix.length());
             }
 
-            filePath = location->cgi_path + requestPath;
+            // Resolve CGI path (nginx-style)
+            std::string cgiPath = resolvePath(location->cgi_path, server_root);
+            filePath = cgiPath + requestPath;
         }
 
         // Check if file exists and is executable

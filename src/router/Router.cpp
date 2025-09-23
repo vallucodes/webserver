@@ -27,7 +27,7 @@ void Router::setupRouter(const std::vector<Server>& configs) {
     // Iterate through each server configuration
     for (const auto& server : configs) {
         // Get server root directory for resolving relative paths
-        // std::string server_root = server.getRoot(); // maybe needed in the future
+        std::string server_root = server.getRoot();
 
         // Process each location block in the server configuration
         for (const auto& location : server.getLocations()) {
@@ -53,13 +53,19 @@ void Router::setupRouter(const std::vector<Server>& configs) {
                 } else if (!location.cgi_path.empty() && !location.cgi_ext.empty()) {
                     // CGI location: Both CGI path and extension are configured
                     // Use CGI handler for script execution (supports any HTTP method)
-                    handler = cgi;
+                    handler = [server_root](const Request& req, Response& res, const Location* loc) {
+                        cgi(req, res, loc, server_root);
+                    };
                 } else if (method == http::POST && !location.upload_path.empty()) {
                     // POST request to upload location: Handle file uploads
-                    handler = post;
+                    handler = [server_root](const Request& req, Response& res, const Location* loc) {
+                        post(req, res, loc, server_root);
+                    };
                 } else if (method == http::DELETE && !location.upload_path.empty()) {
                     // DELETE request from upload location: Handle file deletions
-                    handler = del;
+                    handler = [server_root](const Request& req, Response& res, const Location* loc) {
+                        del(req, res, loc, server_root);
+                    };
                 // if HEAD method needed
                 // } else if (method == "GET" || method == "HEAD") {
                 //     // GET/HEAD requests: Handle static file serving
