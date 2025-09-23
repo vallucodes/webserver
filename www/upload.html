@@ -78,38 +78,21 @@
       btn.disabled = true; btn.textContent = 'Uploading...';
       try {
         const fd = new FormData(); fd.append('file', f);
-
-        // See original (possibly redirecting) response without auto-follow
         const res = await fetch('/uploads', { method: 'POST', body: fd, redirect: 'manual' });
 
-        // Only read body when possible (not for opaqueredirect)
-        let text = '';
-        if (res.type !== 'opaqueredirect') {
-          text = await Promise.race([
-            res.text().catch(() => ''),
-            new Promise(resolve => setTimeout(() => resolve(''), 700))
-          ]);
-        }
-
-        console.log('Status:', res.status, 'redirected:', res.redirected, 'type:', res.type);
-
-        // Success if 2xx OR original response is a redirect (common after successful upload)
+        // Success if 2xx OR original response is a redirect
         if (res.ok || res.type === 'opaqueredirect' || (res.status >= 300 && res.status < 400)) {
-          show(text && text.trim() ? text : 'Upload successful.', false);
-          // reset input so user can choose another file; keep button active
+          show('Upload successful.', false);
           document.getElementById('form').reset();
           nameBox.style.display = 'none';
           btn.textContent = 'Upload new file';
           btn.disabled = false;
         } else {
-          // Try to surface a helpful server message
-          const htmlMsg = (text.match(/<div class="msg">\s*(.*?)\s*<\/div>/) || [])[1];
-          const message = htmlMsg || (text && text.trim()) || `Upload failed (HTTP ${res.status}).`;
-          show(message, true);
+          show('Upload failed.', true);
           btn.disabled = false; btn.textContent = 'Upload';
         }
       } catch {
-        show('Network error. Try again.', true);
+        show('Upload failed.', true);
         btn.disabled = false; btn.textContent = 'Upload';
       }
     });

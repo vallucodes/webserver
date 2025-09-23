@@ -129,18 +129,19 @@ ConfigValidator::ConfigValidator() {
 std::vector<std::string> ConfigValidator:: _methods = {
 	"GET",
 	"POST",
-	"DELETE",
-	"HEAD",
-	"PUT",
-	"PATCH",
-	"OPTIONS",
-	"CONNECT",
-	"TRACE"
+	"DELETE"
+	// "HEAD"
+	// "PUT",
+	// "PATCH",
+	// "OPTIONS",
+	// "CONNECT",
+	// "TRACE"
 };
 
 std::vector<std::string> ConfigValidator::_cgi_extensions = {
 	".py",
-	".php"
+	".php",
+	".js"
 };
 
 bool	ConfigValidator::validatePort(const std::string& line) {

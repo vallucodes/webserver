@@ -1,104 +1,55 @@
+/**
+ * @file Router.hpp
+ * @brief HTTP Router for route mappings
+ */
+
 #pragma once
 
-#include <map>
-#include <string>
-#include <string_view>
-#include <functional>
+#include <map> // for std::map
+#include <string> // for std::string
+#include <string_view> // for std::string_view
+#include <functional> // for std::function
 
 #include "../request/Request.hpp"
 #include "../response/Response.hpp"
+#include "../server/Server.hpp"
+#include "HttpConstants.hpp"
+#include "RequestProcessor.hpp"
 
-// HTTP constants namespace
-namespace http {
-
-    // HTTP Status Messages
-    const std::string STATUS_OK_200 = "200 OK";
-    const std::string STATUS_MOVED_PERMANENTLY_301 = "301 Moved Permanently";
-    const std::string STATUS_FOUND_302 = "302 Found";
-    const std::string STATUS_NOT_FOUND_404 = "404 Not Found";
-    const std::string STATUS_METHOD_NOT_ALLOWED_405 = "405 Method Not Allowed";
-    const std::string STATUS_BAD_REQUEST_400 = "400 Bad Request";
-    const std::string STATUS_PAYLOAD_TOO_LARGE_413 = "413 Payload Too Large";
-    const std::string STATUS_INTERNAL_SERVER_ERROR_500 = "500 Internal Server Error";
-
-    // HTTP Status Codes
-    const int OK_200 = 200;
-    const int MOVED_PERMANENTLY_301 = 301;
-    const int FOUND_302 = 302;
-    const int NOT_FOUND_404 = 404;
-    const int METHOD_NOT_ALLOWED_405 = 405;
-    const int BAD_REQUEST_400 = 400;
-    const int PAYLOAD_TOO_LARGE_413 = 413;
-    const int INTERNAL_SERVER_ERROR_500 = 500;
-
-}
-
-// Error page file paths namespace
-namespace error_page {
-  const std::string ERROR_PAGE_NOT_FOUND_404 = "www/errors/not_found_404.html";
-  const std::string ERROR_PAGE_METHOD_NOT_ALLOWED_405 = "www/errors/method_not_allowed_405.html";
-  const std::string ERROR_PAGE_BAD_REQUEST_400 = "www/errors/internal_server_error_500.html"; // Using generic error page
-  const std::string ERROR_PAGE_PAYLOAD_TOO_LARGE_413 = "www/errors/internal_server_error_500.html"; // Using generic error page
-  const std::string ERROR_PAGE_INTERNAL_SERVER_ERROR_500 = "www/errors/internal_server_error_500.html";
-
-}
-// Default file paths namespace
-namespace page {
-
-  const std::string WWW = "www";
-  const std::string ROOT_HTML = "/";
-  const std::string INDEX_HTML_PATH = "/index.html";
-  const std::string INDEX_HTML = "www/index.html";
-  const std::string UPLOAD_HTML = "www/upload.html";
-  const std::string UPLOAD_ERROR_HTML = "www/upload_error.html";
-  const std::string UPLOAD_SUCCESS_HTML = "www/upload_success.html";
-}
-// Router class - Manages HTTP route mappings and request handling (global, no namespace)
+/**
+ * @class Router
+ * @brief Manages HTTP route mappings
+ */
 class Router {
   public:
     Router();
     ~Router();
 
-    // Type alias for route handler functions
-    using Handler = std::function<void(const Request&, Response&)>;
+    /** Handler function type: (Request, Response, Location*) -> void */
+    using Handler = std::function<void(const Request&, Response&, const Location*)>;
 
-    // void setupRouter(someConfigData& data);
-    // Initialize the router with default routes for static files and upload endpoints
-    void setupRouter();
+    /** Initialize router with server configurations */
+    void setupRouter(const std::vector<Server>& configs);
 
-    // Debug method to list all routes
+    /** Debug: list all registered routes */
     void listRoutes() const;
 
-    // Register a new route with specific HTTP method and path
-    // @param method HTTP method (GET, POST, etc.)
-    // @param path URL path to match
-    // @param handler Function to handle requests for this route
-    void addRoute(std::string_view method, std::string_view path, Handler handler);
+    /** Register a new route */
+    void addRoute(std::string_view server_name, std::string_view method, std::string_view path, Handler handler);
 
-    // Process an incoming HTTP request and route it to appropriate handler
-    // @param req The incoming HTTP request
-    // @param res The response object to populate
-    void handleRequest(const Request& req, Response& res) const;
-
-    // Default error page generator
-    // @param status HTTP status code
-    // @return HTML content for the error page
-    static std::string getDefaultErrorPage(int status);
+    /** Process HTTP request and route to handler */
+    void handleRequest(const Server& server, const Request& req, Response& res) const;
 
   private:
-    // Find the handler function for a given method and path
-    // @param method HTTP method to match
-    // @param path URL path to match
-    // @return Pointer to handler function or nullptr if not found
-    const Handler* findHandler(const std::string& method, const std::string& path) const;
+    /** Find handler for server/method/path */
+    const Handler* findHandler(const std::string& server_name, const std::string& method, const std::string& path) const;
 
-    // Internal storage for route mappings
-    std::map<std::string, std::map<std::string, Handler>> _routes;
+    /** Find matching location configuration */
+    const Location* findLocation(const Server& server, const std::string& path) const;
+
+    /** Route storage: server name → path → HTTP method → Handler */
+    std::map<std::string, std::map<std::string, std::map<std::string, Handler>>> _routes;
+
+    /** Request processor for complex request logic */
+    RequestProcessor _requestProcessor;
 };
-
-// Utility functions for error handling
-
-// Set up a complete error response with appropriate status, headers, and body
-// @param res Response object to configure
-// @param status HTTP status code for the error
-void setErrorResponse(Response& res, int status);

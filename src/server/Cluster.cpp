@@ -19,7 +19,7 @@ void	Cluster::config(const std::string& config_file) {
 	_max_clients = 100; // TODO use getMaxClients()
 
 	// ASK ILIA to del this shit
-	_router.setupRouter();
+	_router.setupRouter(_configs);
 }
 
 void	Cluster::groupConfigs() {
@@ -111,6 +111,7 @@ void	Cluster::handleNewClient(size_t i) {
 			<< ". Assigned socket: "
 			<< client_fd << "\n"
 			<< RESET;
+
 	_fds.push_back({client_fd, POLLIN, 0});
 	_clients[client_fd] = _servers[_fds[i].fd];
 }
@@ -166,8 +167,12 @@ void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 		Parser parse;
 		Request req = parse.parseRequest(client_state.request);
 		Response res;
+
+
 		// Handle the request using the router
-		_router.handleRequest(req, res); // correct
+		req.print(); //DEBUG PRINT
+
+		_router.handleRequest(conf, req, res); // Pass server config for server-specific routing
 
 		res.print(); //DEBUG PRINT
 
@@ -267,6 +272,16 @@ const Server&	Cluster::findRelevantConfig(int client_fd, const std::string& buff
 			return conf;
 	}
 	return *conf->default_config;
+
+	// Ilia added this for testing purposes:
+	// NEW PORT-BASED SERVER SELECTION:
+	// For port-based server differentiation, just return the default server
+	// since the client is already associated with the correct server group
+	// based on which port they connected to
+	/*
+	ListenerGroup*	conf = _clients[client_fd];
+	return *conf->default_config;
+	*/
 }
 
 const	std::set<int>& Cluster::getServerFds() const {

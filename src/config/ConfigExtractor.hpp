@@ -28,6 +28,9 @@ class ConfigExtractor {
 		static void	extractCgiExt(Location& loc, const std::string& line);
 		static void	extractUploadPath(Location& loc, const std::string& line);
 
+		// Ilia added for redirect
+		static void	extractReturn(Location& loc, const std::string& line);
+
 	public:
 
 		void		extractFields(std::vector<Server>& servs, std::ifstream& cfg);

@@ -13,6 +13,7 @@ struct Location
 	std::string					cgi_path;
 	std::vector<std::string>	cgi_ext;
 	std::string					upload_path;
+	std::string					return_url;
 };
 
 class Server {

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" href="/favicon.ico" type="image/x-icon">
+  <title>API Landing Page</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: system-ui, sans-serif;
+      background: #f8f9fa;
+      color: #212529;
+      text-align: center;
+    }
+    h1 { margin: 0 0 20px; font-size: 28px; color: #495057; }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .api-list {
+      text-align: left;
+      margin: 30px 0;
+    }
+    .api-list h2 { margin-top: 0; color: #495057; }
+    .api-list ul { padding-left: 20px; }
+    .api-list li { margin: 10px 0; }
+    .api-list code {
+      background: #f1f3f4;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+    }
+    a.btn {
+      display: inline-block;
+      margin: 20px 10px;
+      padding: 12px 24px;
+      border-radius: 6px;
+      background: #007bff;
+      color: white;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    a.btn:hover { background: #0056b3; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>API Server Landing Page</h1>
+    <p>Welcome to the API server. This server handles REST API endpoints, file uploads, and administrative functions.</p>
+
+    <div class="api-list">
+      <h2>Available Endpoints</h2>
+      <ul>
+        <li><strong>GET /api</strong> - API response endpoint (<code>api_response.html</code>)</li>
+        <li><strong>GET/POST /uploads</strong> - File upload and management</li>
+        <li><strong>GET/POST /admin</strong> - Administrative functions (<code>admin_dashboard.html</code>)</li>
+        <li><strong>GET /errors</strong> - Error pages directory</li>
+        <li><strong>GET /api/v1</strong> - Redirects to /api</li>
+      </ul>
+
+      <h2>File Operations</h2>
+      <ul>
+        <li><strong>POST /uploads</strong> - Upload files (max 1MB)</li>
+        <li><strong>DELETE /uploads/filename</strong> - Delete uploaded files</li>
+      </ul>
+    </div>
+
+    <a href="/api" class="btn">View API Response</a>
+    <a href="/admin" class="btn">Admin Dashboard</a>
+    <a href="/" class="btn">Back to Main</a>
+  </div>
+</body>
+</html>
