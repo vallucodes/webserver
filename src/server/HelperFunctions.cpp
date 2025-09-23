@@ -37,6 +37,13 @@ size_t	findHeader(const std::string& buffer) {
 	return pos + 4;
 }
 
+void	checkNameRepitition(const std::vector<Server> configs, const Server config) {
+	for (auto& conf : configs) {
+		if (conf.getName() == config.getName())
+			throw std::runtime_error("Error: Config: Ambiguous server name");
+	}
+}
+
 // after parsing config, should be checked that max amount of clients there should be less than max.
 // Or handled somehow, this is just temp fix. Its finding systems max fds and using that - 10.
 uint64_t	getMaxClients() {
@@ -129,9 +136,9 @@ bool	decodeChunkedBody(ClientRequestState& client_state) {
 	}
 
 	client_state.clean_buffer = headers + result;
+	size_t body_size = client_state.clean_buffer.substr(header_end).size();
+	// if (body_size > client_state._max_body_size) // TODO this must be somehow figured out to enforce max body size
 	client_state.request_size = client_state.clean_buffer.size();
-	// if (endReq ==  false && data_validity == true)
-	// 	std::cout << buffer << std::endl;
 	return (endReq);
 }
 

@@ -332,3 +332,7 @@ void	ConfigValidator::verifyMandatoryDirectives(const std::string& blocktype, Lo
 	else
 		throw std::runtime_error("Unreachable: verifyMandatoryDirectives()");
 }
+
+// Overlapping locations
+// Example: /api and /api/v1 defined — depending on rules, could be allowed or flagged.
+// Might want a test for duplicate prefixes.
