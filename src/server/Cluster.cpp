@@ -60,7 +60,7 @@ void	Cluster::createGroup(const Server& conf) {
 }
 
 void	Cluster::create() {
-	std::cout << "Initializing servers...\n";
+	std::cout << CYAN << time_now() << "	Initializing servers...\n" << RESET;
 	for (auto& group : _listener_groups)
 	{
 		Server serv = *group.default_config;
@@ -105,10 +105,13 @@ void	Cluster::handleNewClient(size_t i) {
 
 	setSocketToNonBlockingMode(client_fd);
 
-	std::cout << "New client connected: "
-			<< inet_ntoa(client_addr.sin_addr) << ":"
-			<< ntohs(client_addr.sin_port) << ". Assigned fd: "
-			<< client_fd << "\n\n";
+	std::cout << CYAN
+			<< time_now()
+			<< "	New client connected"
+			<< ". Assigned socket: "
+			<< client_fd << "\n"
+			<< RESET;
+
 	_fds.push_back({client_fd, POLLIN, 0});
 	_clients[client_fd] = _servers[_fds[i].fd];
 }
@@ -204,7 +207,7 @@ void	Cluster::sendPendingData(size_t& i) {
 
 	if (client_state.waiting_response == true) {
 		std::string response = popResponseChunk(client_state);
-		std::cout << RED << "Sending response to: " << _fds[i].fd << RESET << std::endl;
+		std::cout << RED << time_now() << "	Sending response to client " << _fds[i].fd << RESET << std::endl;
 		ssize_t sent = send(_fds[i].fd, response.c_str(), response.size(), 0);
 		if (sent >= 0 && client_state.response.empty()) {
 			// std::cout << "Response fully sent" << std::endl;
@@ -222,7 +225,7 @@ void	Cluster::sendPendingData(size_t& i) {
 }
 
 void	Cluster::dropClient(size_t& i, const std::string& msg) {
-	std::cout << CYAN << "Client " << _fds[i].fd << msg << RESET;
+	std::cout << CYAN << time_now() << "	Client " << _fds[i].fd << msg << RESET;
 	close (_fds[i].fd);
 	_client_buffers.erase(_fds[i].fd);
 	_fds.erase(_fds.begin() + i);

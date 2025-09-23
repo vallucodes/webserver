@@ -43,8 +43,7 @@ void Response::print() const {
         std::cout << pair.first << ": " << pair.second << "\n";
     }
 
-    // Uncomment the following line when debugging specific response body content
-    std::cout << "Body: Uncommented for debugging in Response.cpp" << std::endl;
-    // std::cout << "Body: " << getBody() << std::endl; // getBody() inherited from AMessage
-    std::cout << "===  End of HTTP Response ===\n" << std::endl;
+    // std::cout << "Body: Uncommented for debugging in Response.cpp\n" << std::endl;
+    std::cout << "Body:" << _body << std::endl;
+    std::cout << "===================\n" << std::endl;
 }

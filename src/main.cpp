@@ -5,7 +5,7 @@
 void	handle_sigint(int sig) {
 	(void)sig;
 	// close(server.server_fd); // maybe handle later
-	printf("\nServer closed\n");
+	std::cout << RED << "\n" << time_now() << "	Server closed\n" << RESET;
 	exit(0);
 }
 
