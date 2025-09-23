@@ -104,11 +104,11 @@ void setCommonHeaders(Response& res, const std::string& contentType, size_t cont
     res.setHeaders(http::CONTENT_LENGTH, std::to_string(contentLength));
 
     // Set connection header based on keep-alive logic
-    if (shouldKeepAlive(req)) {
-        res.setHeaders(http::CONNECTION, http::CONNECTION_KEEP_ALIVE);
-    } else {
+    // if (shouldKeepAlive(req)) {
+    //     res.setHeaders(http::CONNECTION, http::CONNECTION_KEEP_ALIVE);
+    // } else {
         res.setHeaders(http::CONNECTION, http::CONNECTION_CLOSE);
-    }
+    // }
 }
 
 /** Generate HTML directory listing */
@@ -257,7 +257,8 @@ bool handleDirectoryRequest(const std::string& dirPath, const std::string& reque
     // Try autoindex first if enabled
     if (location && location->autoindex) {
         std::string dirListing = generateDirectoryListing(dirPath, requestPath);
-        router::utils::HttpResponseBuilder::setSuccessResponse(res, dirListing, http::CONTENT_TYPE_HTML, req);
+        // router::utils::HttpResponseBuilder::setSuccessResponse(res, dirListing, http::CONTENT_TYPE_HTML, req);
+        router::utils::HttpResponseBuilder::setSuccessResponse(res, dirListing, http::CONTENT_TYPE_HTML);
         return true;
     }
 
@@ -278,7 +279,8 @@ bool handleDirectoryRequest(const std::string& dirPath, const std::string& reque
         if (std::filesystem::exists(path) && std::filesystem::is_regular_file(path)) {
             std::string fileContent = router::utils::FileUtils::readFileToString(path);
             std::string contentType = router::utils::FileUtils::getContentType(path);
-            router::utils::HttpResponseBuilder::setSuccessResponse(res, fileContent, contentType, req);
+            router::utils::HttpResponseBuilder::setSuccessResponse(res, fileContent, contentType);
+            // router::utils::HttpResponseBuilder::setSuccessResponse(res, fileContent, contentType, req);
             return true;
         }
     }
@@ -315,7 +317,8 @@ bool serveStaticFile(const std::string& filePath, Response& res, const Request& 
   try {
     std::string fileContent = router::utils::FileUtils::readFileToString(filePath);
     std::string contentType = router::utils::FileUtils::getContentType(filePath);
-    router::utils::HttpResponseBuilder::setSuccessResponse(res, fileContent, contentType, req);
+    // router::utils::HttpResponseBuilder::setSuccessResponse(res, fileContent, contentType, req);
+    router::utils::HttpResponseBuilder::setSuccessResponse(res, fileContent, contentType);
     return true;
   } catch (const std::exception&) {
     return false;
@@ -335,7 +338,8 @@ void get(const Request& req, Response& res, const Location* location) {
     // Extract and validate file path
     std::string_view filePathView = req.getPath();
     if (filePathView.empty()) {
-      router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404, req);
+      router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404);
+    //   router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404, req);
       return;
     }
 
@@ -348,7 +352,8 @@ void get(const Request& req, Response& res, const Location* location) {
         return;
       }
       // No index file found and autoindex disabled
-      router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404, req);
+      router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404);
+    //   router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404, req);
       return;
     }
 
@@ -358,12 +363,15 @@ void get(const Request& req, Response& res, const Location* location) {
     }
 
     // File not found
-    router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404, req);
+    router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404);
+    // router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404, req);
 
   } catch (const std::runtime_error&) {
-    router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404, req);
+    router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404);
+    // router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404, req);
   } catch (const std::exception&) {
-    router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req);
+    router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
+    // router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req);
   }
 }
 
@@ -374,7 +382,8 @@ void post(const Request& req, Response& res, const Location* location, const std
     try {
         // Validate location configuration
         if (!location || location->upload_path.empty()) {
-            router::utils::HttpResponseBuilder::setErrorResponse(res, http::FORBIDDEN_403, req);
+            // router::utils::HttpResponseBuilder::setErrorResponse(res, http::FORBIDDEN_403, req);
+            router::utils::HttpResponseBuilder::setErrorResponse(res, http::FORBIDDEN_403);
             return;
         }
 
@@ -382,7 +391,8 @@ void post(const Request& req, Response& res, const Location* location, const std
         const auto& contentTypeKey = req.getHeaders("content-type");
 
         if (contentTypeKey.empty()) {
-            router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400, req);
+            router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400);
+            // router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400, req);
             return;
         }
 
@@ -390,14 +400,16 @@ void post(const Request& req, Response& res, const Location* location, const std
 
         // Validate content type
         if (contentType.find("multipart/form-data") == std::string::npos) {
-            router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400, req);
+            router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400);
+            // router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400, req);
             return;
         }
 
         // Extract boundary
         const size_t boundaryPos = contentType.find("boundary=");
         if (boundaryPos == std::string::npos) {
-            router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400, req);
+            // router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400, req);
+            router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400);
             return;
         }
 
@@ -407,7 +419,8 @@ void post(const Request& req, Response& res, const Location* location, const std
         // Find file boundaries
         const size_t fileStart = bodyStr.find(boundary);
         if (fileStart == std::string::npos) {
-            router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400, req);
+            router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400);
+            // router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400, req);
             return;
         }
 
@@ -417,26 +430,30 @@ void post(const Request& req, Response& res, const Location* location, const std
         // Extract filename
         const size_t filenamePos = filePart.find("filename=\"");
         if (filenamePos == std::string::npos) {
-            router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400, req);
+            // router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400, req);
+            router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400);
             return;
         }
 
         const size_t filenameEnd = filePart.find("\"", filenamePos + 10);
         if (filenameEnd == std::string::npos) {
-            router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400, req);
+            router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400);
+            // router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400, req);
             return;
         }
 
         std::string filename = filePart.substr(filenamePos + 10, filenameEnd - filenamePos - 10);
         if (filename.empty()) {
-            router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400, req);
+            router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400);
+            // router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400, req);
             return;
         }
 
         // Extract file content
         const size_t contentStart = filePart.find("\r\n\r\n");
         if (contentStart == std::string::npos) {
-            router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400, req);
+            router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400);
+            // router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400, req);
             return;
         }
 
@@ -449,7 +466,8 @@ void post(const Request& req, Response& res, const Location* location, const std
 
         // Validate file size
         if (fileContent.length() > 1024 * 1024) {
-            router::utils::HttpResponseBuilder::setErrorResponse(res, http::PAYLOAD_TOO_LARGE_413, req);
+            // router::utils::HttpResponseBuilder::setErrorResponse(res, http::PAYLOAD_TOO_LARGE_413, req);
+            router::utils::HttpResponseBuilder::setErrorResponse(res, http::PAYLOAD_TOO_LARGE_413);
             return;
         }
 
@@ -464,7 +482,8 @@ void post(const Request& req, Response& res, const Location* location, const std
 
         std::ofstream outFile(filePath, std::ios::binary);
         if (!outFile) {
-            router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req);
+            router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
+            // router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req);
             return;
         }
 
@@ -473,10 +492,12 @@ void post(const Request& req, Response& res, const Location* location, const std
 
         // Success response - redirect to upload page
         res.setHeaders(http::LOCATION, "/upload.html");
-        router::utils::HttpResponseBuilder::setSuccessResponse(res, createSuccessMessage(filename, "uploaded"), http::CONTENT_TYPE_TEXT, req);
+        router::utils::HttpResponseBuilder::setSuccessResponse(res, createSuccessMessage(filename, "uploaded"), http::CONTENT_TYPE_TEXT);
+        // router::utils::HttpResponseBuilder::setSuccessResponse(res, createSuccessMessage(filename, "uploaded"), http::CONTENT_TYPE_TEXT, req);
 
     } catch (const std::exception&) {
-        router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req);
+        // router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req);
+        router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
     }
 }
 
@@ -486,7 +507,8 @@ void del(const Request& req, Response& res, const Location* location, const std:
     try {
         // Validate location configuration
         if (!location || location->upload_path.empty()) {
-            router::utils::HttpResponseBuilder::setErrorResponse(res, http::FORBIDDEN_403, req);
+            // router::utils::HttpResponseBuilder::setErrorResponse(res, http::FORBIDDEN_403, req);
+            router::utils::HttpResponseBuilder::setErrorResponse(res, http::FORBIDDEN_403);
             return;
         }
 
@@ -496,13 +518,15 @@ void del(const Request& req, Response& res, const Location* location, const std:
         std::string uploadPrefix = "/uploads";
         if (filePathView.length() < uploadPrefix.length() + 1 ||
             filePathView.substr(0, uploadPrefix.length() + 1) != uploadPrefix + "/") {
-            router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400, req);
+            // router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400, req);
+            router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400);
             return;
         }
 
         std::string filename = std::string(filePathView.substr(uploadPrefix.length() + 1));
         if (filename.empty()) {
-            router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400, req);
+            // router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400, req);
+            router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400);
             return;
         }
 
@@ -514,7 +538,8 @@ void del(const Request& req, Response& res, const Location* location, const std:
 
         // Check if file exists
         if (!std::filesystem::exists(filePath)) {
-            router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404, req);
+            router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404);
+            // router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404, req);
             return;
         }
 
@@ -522,15 +547,19 @@ void del(const Request& req, Response& res, const Location* location, const std:
         if (std::filesystem::remove(filePath)) {
             // Success response - redirect to upload page
             res.setHeaders(http::LOCATION, "/upload.html");
-            router::utils::HttpResponseBuilder::setSuccessResponse(res, createSuccessMessage(filename, "deleted"), http::CONTENT_TYPE_TEXT, req);
+            // router::utils::HttpResponseBuilder::setSuccessResponse(res, createSuccessMessage(filename, "deleted"), http::CONTENT_TYPE_TEXT, req);
+            router::utils::HttpResponseBuilder::setSuccessResponse(res, createSuccessMessage(filename, "deleted"), http::CONTENT_TYPE_TEXT);
         } else {
-            router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req);
+            // router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req);
+            router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
         }
 
     } catch (const std::filesystem::filesystem_error&) {
-        router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req);
+        router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
+        // router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req);
     } catch (const std::exception&) {
-        router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req);
+        router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
+        // router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req);
     }
 }
 
@@ -848,14 +877,16 @@ void cgi(const Request& req, Response& res, const Location* location, const std:
     try {
         // Validate location configuration
         if (!location || location->cgi_path.empty() || location->cgi_ext.empty()) {
-            router::utils::HttpResponseBuilder::setErrorResponse(res, http::FORBIDDEN_403, req);
+            router::utils::HttpResponseBuilder::setErrorResponse(res, http::FORBIDDEN_403);
+            // router::utils::HttpResponseBuilder::setErrorResponse(res, http::FORBIDDEN_403, req);
             return;
         }
 
         // Extract and validate file path
         std::string_view filePathView = req.getPath();
         if (filePathView.empty()) {
-            router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404, req);
+            router::utils::HttpResponseBuilder::setErrorResponse(res, http::FORBIDDEN_403);
+            // router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404, req);
             return;
         }
 
@@ -881,7 +912,8 @@ void cgi(const Request& req, Response& res, const Location* location, const std:
 
         // Check if file exists and is executable
         if (!std::filesystem::exists(filePath)) {
-            router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404, req);
+            router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404);
+            // router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404, req);
             return;
         }
 
@@ -890,7 +922,8 @@ void cgi(const Request& req, Response& res, const Location* location, const std:
             // Not a CGI script, handle as regular file
             std::string fileContent = router::utils::FileUtils::readFileToString(filePath);
             std::string contentType = router::utils::FileUtils::getContentType(filePath);
-            router::utils::HttpResponseBuilder::setSuccessResponse(res, fileContent, contentType, req);
+            // router::utils::HttpResponseBuilder::setSuccessResponse(res, fileContent, contentType, req);
+            router::utils::HttpResponseBuilder::setSuccessResponse(res, fileContent, contentType);
             return;
         }
 
@@ -924,7 +957,8 @@ void cgi(const Request& req, Response& res, const Location* location, const std:
         // std::cout << "CGI: Script output length: " << cgiOutput.length() << std::endl;
         if (cgiOutput.empty()) {
             // std::cout << "CGI: Script execution failed - returning 500 error" << std::endl;
-            router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req);
+            // router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req);
+            router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
             return;
         }
         // std::cout << "CGI: Script executed successfully" << std::endl;
@@ -988,21 +1022,23 @@ void cgi(const Request& req, Response& res, const Location* location, const std:
         }
 
         // Set connection header based on keep-alive logic
-        if (shouldKeepAlive(req)) {
-            res.setHeaders(http::CONNECTION, http::CONNECTION_KEEP_ALIVE);
-        } else {
+        // if (shouldKeepAlive(req)) {
+        //     res.setHeaders(http::CONNECTION, http::CONNECTION_KEEP_ALIVE);
+        // } else {
             res.setHeaders(http::CONNECTION, http::CONNECTION_CLOSE);
-        }
+        // }
 
         // Set response body
         res.setBody(bodyPart);
 
     } catch (const std::runtime_error& e) {
         // File not found or read error
-        router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404, req);
+        router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404);
+        // router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404, req);
     } catch (const std::exception& e) {
         // Unexpected error
-        router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req);
+        router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
+        // router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req);
     }
 }
 
@@ -1013,7 +1049,8 @@ void redirect(const Request& req, Response& res, const Location* location) {
     try {
         // Validate location configuration
         if (!location || location->return_url.empty()) {
-            router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404, req);
+            router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404);
+            // router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404, req);
             return;
         }
 
@@ -1032,11 +1069,11 @@ void redirect(const Request& req, Response& res, const Location* location) {
         res.setHeaders(http::LOCATION, redirectUrl);
 
         // Set connection header based on keep-alive logic
-        if (shouldKeepAlive(req)) {
-            res.setHeaders(http::CONNECTION, http::CONNECTION_KEEP_ALIVE);
-        } else {
+        // if (shouldKeepAlive(req)) {
+        //     res.setHeaders(http::CONNECTION, http::CONNECTION_KEEP_ALIVE);
+        // } else {
             res.setHeaders(http::CONNECTION, http::CONNECTION_CLOSE);
-        }
+        // }
 
         // Optional: Add a simple HTML body for browsers that don't follow redirects automatically
         std::string body = "<!DOCTYPE html><html><head><title>Redirecting...</title></head><body>";
@@ -1050,7 +1087,8 @@ void redirect(const Request& req, Response& res, const Location* location) {
 
     } catch (const std::exception& e) {
         // Unexpected error
-        router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req);
+        // router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req);
+        router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
     }
 }
 

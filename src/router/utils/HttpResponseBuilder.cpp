@@ -75,7 +75,7 @@ void HttpResponseBuilder::setSuccessResponse(Response& res, const std::string& c
     res.setHeaders(http::CONNECTION, http::CONNECTION_CLOSE);
     res.setBody(content);
 }
-
+/*
 void HttpResponseBuilder::setErrorResponse(Response& res, int status, const Request& req) {
     // Set the HTTP status line based on the error code
     if (status == http::NOT_FOUND_404) {
@@ -123,7 +123,7 @@ void HttpResponseBuilder::setSuccessResponse(Response& res, const std::string& c
 
     res.setBody(content);
 }
-
+*/
 std::string HttpResponseBuilder::getErrorPageHtml(int status) {
     switch (status) {
         case http::NOT_FOUND_404:
