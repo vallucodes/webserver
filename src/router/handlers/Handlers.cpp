@@ -36,9 +36,19 @@ std::string resolvePath(const std::string& path, const std::string& server_root)
         return server_root;
     }
 
-    // If path starts with '/', it's absolute - use as-is
-    if (path[0] == '/') {
+    // If path starts with server_root, it's a full absolute path - use as-is
+    if (path.find(server_root) == 0) {
         return path;
+    }
+
+    // If path starts with '/', it's relative to server root - append to server root
+    if (path[0] == '/') {
+        std::string resolved = server_root;
+        if (!resolved.empty() && resolved.back() != '/') {
+            resolved += '/';
+        }
+        resolved += path.substr(1); // Remove leading '/'
+        return resolved;
     }
 
     // Relative path - resolve against server root

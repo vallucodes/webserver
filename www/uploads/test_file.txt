@@ -1,2 +1,0 @@
-This is a test file in the uploads directory.
-It should be accessible via /uploads/test_file.txt
