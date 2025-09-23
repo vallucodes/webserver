@@ -136,7 +136,7 @@ bool	decodeChunkedBody(ClientRequestState& client_state) {
 	}
 
 	client_state.clean_buffer = headers + result;
-	size_t body_size = client_state.clean_buffer.substr(header_end).size();
+	// size_t body_size = client_state.clean_buffer.substr(header_end).size();
 	// if (body_size > client_state._max_body_size) // TODO this must be somehow figured out to enforce max body size
 	client_state.request_size = client_state.clean_buffer.size();
 	return (endReq);

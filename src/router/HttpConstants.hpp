@@ -47,6 +47,7 @@ namespace http {
     const std::string USER_AGENT = "User-Agent";
     const std::string ACCEPT = "Accept";
     const std::string HOST = "Host";
+    const std::string ALLOW = "Allow";
 
     // Connection Values
     const std::string CONNECTION_CLOSE = "close";

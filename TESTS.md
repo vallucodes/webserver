@@ -12,7 +12,6 @@ curl -v http://127.0.0.1:8080/imgs/
 curl -v http://127.0.0.1:8080/cgi-bin/ #bug if http://127.0.0.1:8080//////cgi-bin/
 curl -v "http://127.0.0.1:8080/cgi-bin/hello.py"
 curl -v "http://127.0.0.1:8080/cgi-bin/hello.js"
-curl -v http://127.0.0.1:8080/old # the first
 curl -v -L http://127.0.0.1:8080/old # to see the second real request
 ```
 

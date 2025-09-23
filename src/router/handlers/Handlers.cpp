@@ -1022,6 +1022,9 @@ void cgi(const Request& req, Response& res, const Location* location, const std:
         // Set response body
         res.setBody(bodyPart);
 
+        // Set Content-Length header based on body size
+        res.setHeaders(http::CONTENT_LENGTH, std::to_string(bodyPart.length()));
+
     } catch (const std::runtime_error& e) {
         // File not found or read error
         router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404);

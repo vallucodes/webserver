@@ -22,6 +22,9 @@ public:
     /** Replace a placeholder in HTML template */
     static std::string replacePlaceholder(std::string html, const std::string& placeholder, const std::string& replacement);
 
+    /** Normalize path by collapsing multiple consecutive slashes */
+    static std::string normalizePath(std::string path);
+
 private:
     StringUtils() = delete; // Static class
 };

@@ -29,24 +29,25 @@ void RequestProcessor::processRequest(const Request& req, const Handler* handler
     std::string method(method_view);
     std::string path(path_view);
 
-    // Validate HTTP method - return 400 Bad Request for unsupported methods
+    // Validate HTTP method - return 405 Method Not Allowed for unsupported methods
     if (method != http::GET && method != http::POST && method != http::DELETE) {
-        router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400);
+        router::utils::HttpResponseBuilder::setErrorResponse(res, http::METHOD_NOT_ALLOWED_405);
         return;
     }
-    /*
-    // Validate and normalize the path
-    if (!validatePath(path)) {
-        router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400);
-        return;
-    }
-
-    normalizePath(path);
-    */
 
     // Execute handler if available
     if (handler) {
         if (executeHandler(handler, req, res, location)) {
+            return;
+        }
+    }
+
+    // Check if method is allowed for this location
+    if (location) {
+        const auto& allowedMethods = location->allowed_methods;
+        bool methodAllowed = std::find(allowedMethods.begin(), allowedMethods.end(), method) != allowedMethods.end();
+        if (!methodAllowed) {
+            router::utils::HttpResponseBuilder::setErrorResponse(res, http::METHOD_NOT_ALLOWED_405, req);
             return;
         }
     }
@@ -57,7 +58,7 @@ void RequestProcessor::processRequest(const Request& req, const Handler* handler
     }
 
     // All attempts failed - return 404
-    router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404);
+    router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404, req);
 }
 
 /** Validate request path */
