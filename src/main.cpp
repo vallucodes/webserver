@@ -31,7 +31,4 @@ int main(int ac, char **av)
 
 // connect to server: telnet 127.0.0.1 <port>
 
-// empty request is received from client and sent to parsing after successful chunked request
-// handle 2,5 requests
-// check chunked body size thing, is it handled correctly
-// if request is big, save to tmp file
+// check for fd leaks

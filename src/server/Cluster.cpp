@@ -18,7 +18,6 @@ void	Cluster::config(const std::string& config_file) {
 
 	_max_clients = 100; // TODO use getMaxClients()
 
-	// ASK ILIA to del this shit
 	_router.setupRouter(_configs);
 }
 
@@ -83,7 +82,7 @@ void	Cluster::run() {
 				if (isServerSocket(_fds[i].fd, getServerFds()))	// check if fd is server or client
 					handleNewClient(i);
 				else
-					handleClientInData(i); // if client sends data before getting response, drop him for malformed request
+					handleClientInData(i);
 			}
 			if (_fds[i].revents & POLLOUT)
 				sendPendingData(i);
@@ -99,7 +98,7 @@ void	Cluster::handleNewClient(size_t i) {
 	}
 	sockaddr_in client_addr{};
 	socklen_t addrlen = sizeof(client_addr);
-	int client_fd = accept(_fds[i].fd, (sockaddr*)&client_addr, &addrlen); // 2nd argument: collect clients IP and port. 3rd argument tells size of the buffer of second argument
+	int client_fd = accept(_fds[i].fd, (sockaddr*)&client_addr, &addrlen);
 	if (client_fd < 0)
 		throw std::runtime_error("Error: accept");
 
@@ -272,16 +271,6 @@ const Server&	Cluster::findRelevantConfig(int client_fd, const std::string& buff
 			return conf;
 	}
 	return *conf->default_config;
-
-	// Ilia added this for testing purposes:
-	// NEW PORT-BASED SERVER SELECTION:
-	// For port-based server differentiation, just return the default server
-	// since the client is already associated with the correct server group
-	// based on which port they connected to
-	/*
-	ListenerGroup*	conf = _clients[client_fd];
-	return *conf->default_config;
-	*/
 }
 
 const	std::set<int>& Cluster::getServerFds() const {
