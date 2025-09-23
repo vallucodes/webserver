@@ -20,17 +20,15 @@ void	setSocketToNonBlockingMode(int sock) {
 	}
 }
 
-// bool	findHostInHeader(const std::string& buffer, size_t header_end) {
-// 	std::regex	re("Host:\\s+\\S+");
-// 	std::smatch	match;
-// 	std::string header = buffer.substr(0, header_end);
-// 	if (std::regex_search(header, match, re))
-// 	{
-// 		// std::cout << "Host found in header" << match[0] << std::endl;
-// 		return true;
-// 	}
-// 	return false;
-// }
+std::string	time_now() {
+	auto now = std::chrono::system_clock::now();
+	std::time_t t = std::chrono::system_clock::to_time_t(now);
+	std::tm tm = *std::localtime(&t);
+
+	std::ostringstream oss;
+	oss << std::put_time(&tm, "[%Y-%m-%d %H:%M:%S]");
+	return oss.str();
+}
 
 size_t	findHeader(const std::string& buffer) {
 	size_t pos = buffer.find("\r\n\r\n");

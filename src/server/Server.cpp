@@ -23,7 +23,13 @@ int	Server::create() {
 	struct in_addr inaddr;
 	inaddr.s_addr = _address;
 
-	std::cout << "Server created: Host[" << inet_ntoa(inaddr) << "] Port:[" << _port << "]\n";
+	std::cout << RED
+				<< time_now()
+				<< "	Server created: Host["
+				<< inet_ntoa(inaddr)
+				<< "] Port:["
+				<< _port << "]\n"
+				<< RESET;
 	return fd;
 }
 
@@ -58,8 +64,6 @@ void	Server::setErrorPage(int error_index, const std::string& page) {
 void	Server::setLocation(Location loc) {
 	_locations.push_back(loc);
 }
-
-
 
 uint32_t	Server::getAddress() const {
 	return _address;
