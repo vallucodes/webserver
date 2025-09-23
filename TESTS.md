@@ -9,10 +9,11 @@ curl -v http://127.0.0.1:8080/delete.html
 curl -v http://127.0.0.1:8080/favicon.ico
 curl -v http://127.0.0.1:8080/uploads/
 curl -v http://127.0.0.1:8080/imgs/
-curl -v http://127.0.0.1:8080/cgi-bin/
+curl -v http://127.0.0.1:8080/cgi-bin/ #bug if http://127.0.0.1:8080//////cgi-bin/
 curl -v "http://127.0.0.1:8080/cgi-bin/hello.py"
 curl -v "http://127.0.0.1:8080/cgi-bin/hello.js"
-curl -v http://127.0.0.1:8080/old
+curl -v http://127.0.0.1:8080/old # the first
+curl -v -L http://127.0.0.1:8080/old # to see the second real request
 ```
 
 ## 2. POST Requests → Should Work
@@ -38,15 +39,13 @@ rm -f delete_test.txt
 curl -v -X PUT http://127.0.0.1:8080/
 curl -v -X PATCH http://127.0.0.1:8080/uploads/
 curl -v -X OPTIONS http://127.0.0.1:8080/
-curl -v -X CONNECT http://127.0.0.1:8080/
-curl -v -X TRACE http://127.0.0.1:8080/
 ```
 
 ## 5. Status Code Checks
 ```bash
-curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8080/
-curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8080/nonexistent.html
-curl -s -o /dev/null -w "%{http_code}" -X PUT http://127.0.0.1:8080/
+curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8080/ # 200
+curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8080/nonexistent.html #404
+curl -s -o /dev/null -w "%{http_code}" -X PUT http://127.0.0.1:8080/ #400
 ```
 
 ## 6. Upload File and Get It Back

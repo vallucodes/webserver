@@ -29,6 +29,11 @@ void RequestProcessor::processRequest(const Request& req, const Handler* handler
     std::string method(method_view);
     std::string path(path_view);
 
+    // Validate HTTP method - return 400 Bad Request for unsupported methods
+    if (method != http::GET && method != http::POST && method != http::DELETE) {
+        router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400);
+        return;
+    }
     /*
     // Validate and normalize the path
     if (!validatePath(path)) {

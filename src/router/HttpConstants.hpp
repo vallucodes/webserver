@@ -37,7 +37,7 @@ namespace http {
     const std::string GET = "GET";
     const std::string POST = "POST";
     const std::string DELETE = "DELETE";
-    const std::string HEAD = "HEAD";
+
 
     // Common HTTP Headers
     const std::string CONTENT_TYPE = "Content-Type";
@@ -64,7 +64,7 @@ namespace http {
 namespace error_page {
     const std::string ERROR_PAGE_NOT_FOUND_404 = "www/errors/not_found_404.html";
     const std::string ERROR_PAGE_METHOD_NOT_ALLOWED_405 = "www/errors/method_not_allowed_405.html";
-    const std::string ERROR_PAGE_BAD_REQUEST_400 = "www/errors/internal_server_error_500.html";
+    const std::string ERROR_PAGE_BAD_REQUEST_400 = "www/errors/bad_request_400.html";
     const std::string ERROR_PAGE_PAYLOAD_TOO_LARGE_413 = "www/errors/internal_server_error_500.html";
     const std::string ERROR_PAGE_INTERNAL_SERVER_ERROR_500 = "www/errors/internal_server_error_500.html";
 }
