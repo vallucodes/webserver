@@ -1,6 +1,6 @@
 #include "Request.hpp"
 
-Request::Request(void) : _isError(false) {}
+Request::Request(void) : AMessage(), _isError(false) {}
 
 Request::~Request(void) {}
 

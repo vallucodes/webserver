@@ -35,6 +35,7 @@ struct ClientRequestState {
 	Server*		config;
 	bool		data_validity = 1;
 	bool		waiting_response = 0;
+	bool		kick_me = 0;
 	size_t		max_body_size = 0;
 };
 
