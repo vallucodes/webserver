@@ -206,8 +206,4 @@ std::string	popResponseChunk(ClientRequestState& client_state) {
 
 void	buildRequest(ClientRequestState& client_state) {
 	client_state.request = client_state.clean_buffer.substr(0, client_state.request_size);
-	// std::cout << "request: \n" << client_state.request << std::endl;
-	// client_state.buffer = client_state.clean_buffer.substr(client_state.request_size); // this is unnescessary in chunked case because buffer has uncleaned leftovers
-	// buffer = client_state.buffer.substr(client_state.request_size);
-	// std::cout << "buffer empty?: \n" << client_state.buffer.empty() << std::endl;
 }
