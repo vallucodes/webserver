@@ -1,34 +1,45 @@
 #include "Parser.hpp"
 
-bool parseRequestLineFormat(Request& req, const std::string& firstLineStr){
-    std::istringstream lineStream(firstLineStr);
-    std::string method, path, version;
-    if (!(lineStream >> method >> path >> version))
-        return false;
-    req.setMethod(method);
-    req.setPath(path);
-    req.setHttpVersion(version);
-    return true;
-}
-
-
 bool isValidMethod(std::string_view method) {
     static const std::unordered_set<std::string_view> validMethods = {
-        "GET", "POST", "DELETE", "PUT", "HEAD", "OPTIONS", "PATCH"
+        "GET", "POST", "DELETE"
     };
     if (validMethods.find(method) == validMethods.end())
         return false;
     return true;
 }
 
-bool isValidRequestTarget(std::string_view path){
-    if (path.empty())
-        return false;
-    for (char c : path) {
-        if (c <= 0x1F || c == 0x7F || c == ' ') {
+
+bool isValidRequestTarget(std::string& path) {
+    if (path.empty()) return false;
+
+    // Control characters + unsafe ASCII
+    const std::string_view invalid = 
+        "\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0A\x0B\x0C\x0D\x0E\x0F"
+        "\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1A\x1B\x1C\x1D\x1E\x1F"
+        "\x7F \"<>\\^`{}|";
+
+    for (unsigned char c : path) {
+        if (c >= 128 || invalid.find(c) != std::string_view::npos) {
             return false;
         }
+         if (c == '%') {
+            //decode string
+        }
     }
+    return true;
+}
+
+bool parseRequestLineFormat(Request& req, const std::string& firstLineStr){
+    std::istringstream lineStream(firstLineStr);
+    std::string method, path, version;
+    if (!(lineStream >> method >> path >> version))
+        return false;
+    req.setMethod(method);
+    if (!isValidRequestTarget(path))
+        return false;
+    req.setPath(path);
+    req.setHttpVersion(version);
     return true;
 }
 
@@ -41,8 +52,8 @@ bool isValidProtocol(std::string_view protocol){
 bool isBadRequest(const Request& req){
     if ( !isValidMethod(req.getMethod()) )
         return true;
-    if ( !isValidRequestTarget(req.getPath()))
-        return true;
+    // if ( !isValidRequestTarget(req.getPath()))
+    //     return true;
     if ( !isValidProtocol(req.getHttpVersion()))
         return true;
     return false;
@@ -196,7 +207,7 @@ Request Parser::parseRequest(const std::string& httpString, bool& kick_me, bool 
     // std::cout << "end of string" <<  std::endl;
 
     //Parse request line
-    std::cout << "\n--------- incoming string ----------\n" << httpString << "\n---------- END ----------\n" << std::endl;
+    // std::cout << "\n--------- incoming string ----------\n" << httpString << "\n---------- END ----------\n" << std::endl;
     if (bad_request)
     {
         req.setError(true);
