@@ -16,7 +16,7 @@ chunks = [
 
 # Build the raw HTTP request headers
 request_headers = (
-	"POST /uploads HTTP/1.1\r\n"
+	"GET /uploads HTTP/1.1\r\n"
 	"Host: localhost\r\n"
 	"Transfer-Encoding: chunked\r\n"
 	"Content-Type: text/plain\r\n"

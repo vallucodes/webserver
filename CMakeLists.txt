@@ -18,20 +18,28 @@ file(GLOB SRC_PARSER   src/parser/*.cpp)
 file(GLOB SRC_REQUEST  src/request/*.cpp)
 file(GLOB SRC_MESSAGE  src/message/*.cpp)
 file(GLOB SRC_RESPONSE src/response/*.cpp)
+file(GLOB SRC_ROUTER
+	src/router/*.cpp
+	src/router/handlers/*.cpp
+	src/router/utils/*.cpp
+)
+
 
 foreach(test_file ${TEST_SOURCES})
 	get_filename_component(test_name ${test_file} NAME_WE)
-	add_executable({test_name}
-        ${test_file}
-        ${SRC_PARSER}
-        ${SRC_REQUEST}
-        ${SRC_MESSAGE}
-        ${SRC_RESPONSE}
+	add_executable(${test_name}
+		${test_file}
+		${SRC_PARSER}
+		${SRC_REQUEST}
+		${SRC_MESSAGE}
+		${SRC_RESPONSE}
+		${SRC_ROUTER}
 		src/server/HelperFunctions.cpp
 		src/config/Config.cpp
 		src/config/ConfigValidator.cpp
 		src/config/ConfigExtractor.cpp
 		src/server/Server.cpp
+		src/server/Cluster.cpp
 	)
 
 	# Add include directories for each test

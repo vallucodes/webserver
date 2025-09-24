@@ -9,14 +9,12 @@ void	Config::validate(const std::string& config) {
 }
 
 std::vector<Server>	Config::parse(const std::string& config) {
-	// Server serv;
-	std::vector<Server> servs;
 
-	// std::cout << config << std::endl;
 	std::ifstream cfg(config);
 	if (!cfg.is_open())
 		throw std::runtime_error("Error: could not open config file.");
 
+	std::vector<Server> servs;
 	parser.extractFields(servs, cfg);
 	return servs;
 }
