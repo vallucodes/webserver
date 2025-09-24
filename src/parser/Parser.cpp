@@ -157,8 +157,8 @@ Request Parser::parseRequest(const std::string& httpString) {
     Request req;
     std::string_view sv(httpString);
 
-    std::cout << "\noriginal string is:" << httpString << std::endl;
-    std::cout << "end of string" <<  std::endl;
+    // std::cout << "\noriginal string is:" << httpString << std::endl;
+    // std::cout << "end of string" <<  std::endl;
 
     //Parse request line
     size_t pos = sv.find("\r\n");

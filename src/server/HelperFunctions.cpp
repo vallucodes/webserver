@@ -61,11 +61,9 @@ uint64_t	getMaxClients() {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void	setMaxBodySize(ClientRequestState& client_state, Cluster* cluster) {
-
-	&cluster.
-
-	client_state.max_body_size =
+void	setMaxBodySize(ClientRequestState& client_state, Cluster* cluster, int fd) {
+	Server conf = cluster->Cluster::findRelevantConfig(fd, client_state.buffer);
+	client_state.max_body_size = conf.getMaxBodySize();
 }
 
 bool	requestComplete(ClientRequestState& client_state, int fd, Cluster* cluster) {
@@ -85,11 +83,12 @@ bool	requestComplete(ClientRequestState& client_state, int fd, Cluster* cluster)
 		client_state.data_validity = false;
 		return false;
 	}
-
-	setMaxBodySize(client_state, cluster);
 	// at this point non cleaned buffer has full header
 
 	// std::cout << "header end detected: " << pos2 << std::endl;
+
+	setMaxBodySize(client_state, cluster, fd);
+	std::cout << "max body size for the request: " << client_state.max_body_size << std::endl;
 
 	int status = -1;
 	status = isChunkedBodyComplete(client_state, header_end);

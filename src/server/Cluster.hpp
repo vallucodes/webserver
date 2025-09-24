@@ -54,7 +54,6 @@ class Cluster {
 
 		void			groupConfigs();
 		void			createGroup(const Server& conf);
-		const Server&	findRelevantConfig(int client_fd, const std::string& buffer);
 
 		void	handleNewClient(size_t i);
 		void	handleClientInData(size_t& i);
@@ -69,6 +68,7 @@ class Cluster {
 		void	create();
 		void	run();
 
+		const Server&	findRelevantConfig(int client_fd, const std::string& buffer);
 		const std::set<int>&					getServerFds() const;
 		const std::map<int, ListenerGroup*>&	getClients() const;
 };

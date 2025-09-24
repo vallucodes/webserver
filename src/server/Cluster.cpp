@@ -168,7 +168,7 @@ void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 		Response res;
 
 		// Handle the request using the router
-		req.print(); //DEBUG PRINT
+		// req.print(); //DEBUG PRINT
 
 		_router.handleRequest(conf, req, res); // Pass server config for server-specific routing
 
@@ -277,3 +277,7 @@ const std::set<int>&	Cluster::getServerFds() const {
 const std::map<int, ListenerGroup*>&	Cluster::getClients() const {
 	return _clients;
 }
+
+// const std::vector<pollfd>	Cluster::getFds() const {
+// 	return _fds;
+// }
