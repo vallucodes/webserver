@@ -196,6 +196,7 @@ Request Parser::parseRequest(const std::string& httpString, bool& kick_me, bool 
     // std::cout << "end of string" <<  std::endl;
 
     //Parse request line
+    std::cout << "\n--------- incoming string ----------\n" << httpString << "\n---------- END ----------\n" << std::endl;
     if (bad_request)
     {
         req.setError(true);
@@ -239,14 +240,18 @@ Request Parser::parseRequest(const std::string& httpString, bool& kick_me, bool 
     //parse body
     std::string_view body = sv.substr(posEndHeader + 4);
     auto contentValues = req.getHeaders("content-length");
-    if (!contentValues.empty()) {
-        size_t contentLength = std::stoul(contentValues.front());
-        req.setBody(std::string(body.substr(0, contentLength)));
-    }
+    req.setBody(std::string(body.substr(0)));
+
+    // if (!contentValues.empty()) {
+    //     size_t contentLength = std::stoul(contentValues.front());
+    //     req.setBody(std::string(body.substr(0, contentLength)));
+    // }
     // else if (isChunked(req))
     //     req.setBody(decodeChunkedBody(std::string(body)));
-    else
-        req.setBody("");
+
+    // ELSE IF content-type chunked parse the body
+    // else
+    //     req.setBody("");
 
     // req.print();
     return req;

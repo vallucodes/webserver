@@ -168,7 +168,7 @@ void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 		Response res;
 
 		// Handle the request using the router
-		// req.print(); //DEBUG PRINT
+		req.print(); //DEBUG PRINT
 
 		_router.handleRequest(conf, req, res); // Pass server config for server-specific routing
 
@@ -191,6 +191,7 @@ void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 		Server conf = findRelevantConfig(_fds[i].fd, client_state.clean_buffer); // thisc
 		Parser parse;
 		Request req = parse.parseRequest("400 Bad Request", client_state.kick_me, false);
+		req.print(); //DEBUG PRINT
 		Response res;
 		_router.handleRequest(conf, req, res);
 		client_state.response = responseToString(res);
