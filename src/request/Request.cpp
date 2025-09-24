@@ -1,6 +1,6 @@
 #include "Request.hpp"
 
-Request::Request(void) : _isError(false) {}
+Request::Request(void) : AMessage(), _isError(false) {}
 
 Request::~Request(void) {}
 
@@ -40,8 +40,13 @@ void Request::print() const {
         }
     }
 
-    // std::cout << "Body:\n" << _body << "\n";
-    std::cout << "Body: Uncommented for debugging in Request.cpp" << std::endl;
+    std::cout << "Body:\n" << _body << "\n";
+    // std::cout << "Body: Uncommented for debugging in Request.cpp" << std::endl;
     std::cout << "===  End of HTTP Request ===\n" << std::endl;
 
+    std::cout << "req.Status = " << getStatus() << std::endl;
+    if (getError())
+        std::cout << "req.Error = true" << std::endl;
+    else
+        std::cout << "req.Error = false" << std::endl;
 }

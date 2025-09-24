@@ -16,7 +16,7 @@ void	Cluster::config(const std::string& config_file) {
 	groupConfigs();
 	// printAllConfigGroups(_listener_groups);
 
-	_max_clients = 100; // TODO use getMaxClients()
+	_max_clients = getMaxClients();
 
 	_router.setupRouter(_configs);
 }
@@ -158,31 +158,27 @@ void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 	client_state.buffer.append(buffer, bytes);
 	client_state.receive_start = std::chrono::high_resolution_clock::now();
 
-	while (requestComplete(client_state)) {
+	while (requestComplete(client_state, _fds[i].fd, this)) {
 		buildRequest(client_state);
 		// call here the parser in future.
 		Server conf = findRelevantConfig(_fds[i].fd, client_state.clean_buffer);
 		// printServerConfig(conf); // this is simulating what will be sent to parser later
 		Parser parse;
-		Request req = parse.parseRequest(client_state.request);
+		Request req = parse.parseRequest(client_state.request, client_state.kick_me, false);
 		Response res;
-
 
 		// Handle the request using the router
 		req.print(); //DEBUG PRINT
 
 		_router.handleRequest(conf, req, res); // Pass server config for server-specific routing
 
-		res.print(); //DEBUG PRINT
-
 		// Convert response to HTTP string format
 		client_state.response = responseToString(res);
 
 		if (client_state.buffer.empty())
 			client_state.receive_start = {};
-		else
-		{
-			std::cout << "clock started\n";
+		else {
+			// std::cout << "clock started\n";
 			client_state.receive_start = std::chrono::high_resolution_clock::now();
 		}
 
@@ -192,8 +188,17 @@ void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 	}
 
 	if (client_state.data_validity == false) {
-		// send response that payload is too large, 413
-		dropClient(i, CLIENT_MALFORMED_REQUEST);
+		Server conf = findRelevantConfig(_fds[i].fd, client_state.clean_buffer); // thisc
+		Parser parse;
+		Request req = parse.parseRequest("400 Bad Request", client_state.kick_me, false);
+		req.print(); //DEBUG PRINT
+		Response res;
+		_router.handleRequest(conf, req, res);
+		client_state.response = responseToString(res);
+		client_state.kick_me = true;
+		_fds[i].events |= POLLOUT;			// start to listen if client is ready to receive response
+		client_state.send_start = std::chrono::high_resolution_clock::now(); //this should be moved to the response part of code
+		client_state.waiting_response = true;
 	}
 }
 
@@ -213,13 +218,12 @@ void	Cluster::sendPendingData(size_t& i) {
 			_fds[i].events &= ~POLLOUT;
 			client_state.send_start = std::chrono::high_resolution_clock::time_point{};
 			client_state.waiting_response = false;
-			// Ilia added this
-			// Close connection after sending response (HTTP/1.0 style)
-			// or infinity loop
-			// dropClient(i, " - Response sent, closing connection");
 		}
 		else if (sent < 0)
 			dropClient(i, CLIENT_SEND_ERROR);
+		if (client_state.kick_me) {
+			dropClient(i, CLIENT_CLOSE_CONNECTION);
+		}
 	}
 }
 
@@ -273,6 +277,10 @@ const Server&	Cluster::findRelevantConfig(int client_fd, const std::string& buff
 	return *conf->default_config;
 }
 
-const	std::set<int>& Cluster::getServerFds() const {
+const std::set<int>&	Cluster::getServerFds() const {
 	return _server_fds;
+}
+
+const std::map<int, ListenerGroup*>&	Cluster::getClients() const {
+	return _clients;
 }

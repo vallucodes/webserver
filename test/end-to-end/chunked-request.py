@@ -3,7 +3,7 @@ import time
 
 # Server configuration
 HOST = '127.0.0.1'
-PORT = 8080
+PORT = 8081
 
 # Define tricky chunks
 chunks = [
@@ -15,6 +15,7 @@ request_headers = (
 	"POST /uploads HTTP/1.1\r\n"
 	f"Host: {HOST}:{PORT}\r\n"
 	"Transfer-Encoding: chunked\r\n"
+	"Connection: keep-alive\r\n"
 	"Content-Type: text/plain\r\n"
 	"\r\n"
 )
@@ -42,3 +43,4 @@ with socket.create_connection((HOST, PORT)) as sock:
 	response = sock.recv(8192)
 	print("=== Server Response ===")
 	print(response.decode(errors='replace'))
+	time.sleep(2)

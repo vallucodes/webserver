@@ -14,24 +14,34 @@ enable_testing()
 
 # Use the general structure
 file(GLOB TEST_SOURCES test/unit/*.cpp)
+file(GLOB SRC_PARSER   src/parser/*.cpp)
+file(GLOB SRC_REQUEST  src/request/*.cpp)
+file(GLOB SRC_MESSAGE  src/message/*.cpp)
+file(GLOB SRC_RESPONSE src/response/*.cpp)
+
 foreach(test_file ${TEST_SOURCES})
 	get_filename_component(test_name ${test_file} NAME_WE)
-	add_executable(${test_name} ${test_file}
-	src/server/HelperFunctions.cpp
-	src/config/Config.cpp
-	src/config/ConfigValidator.cpp
-	src/config/ConfigExtractor.cpp
-	src/server/Server.cpp
+	add_executable({test_name}
+        ${test_file}
+        ${SRC_PARSER}
+        ${SRC_REQUEST}
+        ${SRC_MESSAGE}
+        ${SRC_RESPONSE}
+		src/server/HelperFunctions.cpp
+		src/config/Config.cpp
+		src/config/ConfigValidator.cpp
+		src/config/ConfigExtractor.cpp
+		src/server/Server.cpp
 	)
 
 	# Add include directories for each test
 	target_include_directories(${test_name} PRIVATE
 		${CMAKE_SOURCE_DIR}/src/server
 		${CMAKE_SOURCE_DIR}/inc
-		${CMAKE_SOURCE_DIR}/parser
-		${CMAKE_SOURCE_DIR}/request
-		${CMAKE_SOURCE_DIR}/response
-		${CMAKE_SOURCE_DIR}/message
+		${CMAKE_SOURCE_DIR}/src/parser
+		${CMAKE_SOURCE_DIR}/src/request
+		${CMAKE_SOURCE_DIR}/src/response
+		${CMAKE_SOURCE_DIR}/src/message
 	)
 
 	target_compile_definitions(${test_name} PRIVATE MAX_RESPONSE_SIZE=8)
