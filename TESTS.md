@@ -54,6 +54,10 @@ curl -v -X POST -F "file=@upload_test.txt" http://127.0.0.1:8080/uploads/
 curl -v http://127.0.0.1:8080/uploads/upload_test.txt
 rm -f upload_test.txt
 ```
+# 7. Infinitive loop
+```bash
+curl -v http://127.0.0.1:8080/cgi-bin/inf.py
+```
 
 ## Multi-Server Tests (8080, 8081, 8082)
 ```bash
