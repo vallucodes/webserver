@@ -4,7 +4,6 @@
 ```bash
 curl -v http://127.0.0.1:8080/
 curl -v http://127.0.0.1:8080/index.html
-curl -v http://127.0.0.1:8080/index.html
 curl -v http://127.0.0.1:8080/delete.html
 curl -v http://127.0.0.1:8080/favicon.ico
 curl -v http://127.0.0.1:8080/uploads/

@@ -141,8 +141,15 @@ std::string generateDirectoryListing(const std::string& dirPath, const std::stri
     std::string parentLink = "";
     if (requestPath != "/") {
         std::string parentPath = requestPath;
+
+        // Remove trailing slash if present
+        if (parentPath.back() == '/') {
+            parentPath.pop_back();
+        }
+
+        // Find the last slash to get the parent directory
         size_t lastSlash = parentPath.find_last_of('/');
-        if (lastSlash > 0) {
+        if (lastSlash != std::string::npos) {
             parentPath = parentPath.substr(0, lastSlash);
             if (parentPath.empty()) parentPath = "/";
             parentLink = "    <a href=\"" + parentPath + "\" class=\"back-link\">← Parent directory</a>\n";
