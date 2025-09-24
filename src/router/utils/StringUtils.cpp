@@ -36,5 +36,19 @@ std::string StringUtils::replacePlaceholder(std::string html, const std::string&
     return html;
 }
 
+std::string StringUtils::normalizePath(std::string path) {
+    // collapse multiple slashes
+    size_t i = 0, j = 0;
+    while (i < path.size()) {
+        path[j++] = path[i++];
+        if (path[j-1] == '/') {
+            while (i < path.size() && path[i] == '/') i++; // skip duplicates
+        }
+    }
+    path.resize(j);
+    if (path.empty()) path = "/";
+    return path;
+}
+
 } // namespace utils
 } // namespace router

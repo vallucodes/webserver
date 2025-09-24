@@ -14,7 +14,7 @@ bool parseRequestLineFormat(Request& req, const std::string& firstLineStr){
 
 bool isValidMethod(std::string_view method) {
     static const std::unordered_set<std::string_view> validMethods = {
-        "GET", "POST", "DELETE"
+        "GET", "POST", "DELETE", "PUT", "HEAD", "OPTIONS", "PATCH"
     };
     if (validMethods.find(method) == validMethods.end())
         return false;
@@ -111,8 +111,15 @@ bool isBadMethod(Request& req){
     if (req.getMethod() == "POST"){
         const auto& contentLength = req.getHeaders("content-length");
         const auto& transferEncoding = req.getHeaders("transfer-encoding");
-        if (contentLength.empty() && transferEncoding.empty())
-            return true;
+        // ILIA Added this
+        // Allow POST without Content-Length or Transfer-Encoding if body is empty
+        // This handles cases like POST with size 0 where Content-Length header is optional
+        if (contentLength.empty() && transferEncoding.empty()) {
+            // Check if body is actually empty (no data after headers)
+            // For now, we'll be more lenient and allow POST without Content-Length
+            // The actual body validation will be handled by the handlers
+            // return true;
+        }
     }
     if (req.getMethod() == "GET"){
         const auto& contentLength = req.getHeaders("content-length");

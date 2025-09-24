@@ -7,6 +7,8 @@
 #include "../HttpConstants.hpp"
 #include "../../response/Response.hpp"
 #include "../../request/Request.hpp"
+#include "../../router/handlers/Handlers.hpp"
+
 #include "FileUtils.hpp"
 #include <iostream> // for std::cout, std::endl
 #include <algorithm> // for std::transform
@@ -14,32 +16,6 @@
 namespace router {
 namespace utils {
 
-/** Determine if connection should be kept alive based on HTTP version and request headers */
-static bool shouldKeepAlive(const Request& req) {
-    // Check if client explicitly requests connection close
-    auto connectionHeaders = req.getHeaders("connection");
-    if (!connectionHeaders.empty()) {
-        std::string connectionValue = connectionHeaders[0];
-        // Convert to lowercase for case-insensitive comparison
-        std::transform(connectionValue.begin(), connectionValue.end(), connectionValue.begin(),
-                      [](unsigned char c){ return std::tolower(c); });
-
-        if (connectionValue == "close") {
-            return false;
-        }
-        if (connectionValue == "keep-alive") {
-            return true;
-        }
-    }
-
-    // HTTP/1.1 defaults to keep-alive, HTTP/1.0 defaults to close
-    std::string httpVersion = std::string(req.getHttpVersion());
-    if (httpVersion == "HTTP/1.1") {
-        return true;
-    }
-
-    return false;
-}
 
 void HttpResponseBuilder::setErrorResponse(Response& res, int status) {
     // Set the HTTP status line based on the error code
@@ -62,7 +38,8 @@ void HttpResponseBuilder::setErrorResponse(Response& res, int status) {
     // Set standard headers for HTML error responses
     res.setHeaders(http::CONTENT_TYPE, http::CONTENT_TYPE_HTML);
     res.setHeaders(http::CONTENT_LENGTH, std::to_string(getErrorPageHtml(status).length()));
-    res.setHeaders(http::CONNECTION, http::CONNECTION_CLOSE);
+    // Default to keep-alive for HTTP/1.1 compatibility
+    res.setHeaders(http::CONNECTION, http::CONNECTION_KEEP_ALIVE);
 
     // Set the response body with the error page HTML
     res.setBody(getErrorPageHtml(status));
@@ -72,10 +49,11 @@ void HttpResponseBuilder::setSuccessResponse(Response& res, const std::string& c
     res.setStatus(http::STATUS_OK_200);
     res.setHeaders(http::CONTENT_TYPE, contentType);
     res.setHeaders(http::CONTENT_LENGTH, std::to_string(content.length()));
-    res.setHeaders(http::CONNECTION, http::CONNECTION_CLOSE);
+    // Default to keep-alive for HTTP/1.1 compatibility
+    res.setHeaders(http::CONNECTION, http::CONNECTION_KEEP_ALIVE);
     res.setBody(content);
 }
-/*
+
 void HttpResponseBuilder::setErrorResponse(Response& res, int status, const Request& req) {
     // Set the HTTP status line based on the error code
     if (status == http::NOT_FOUND_404) {
@@ -123,7 +101,65 @@ void HttpResponseBuilder::setSuccessResponse(Response& res, const std::string& c
 
     res.setBody(content);
 }
-*/
+
+void HttpResponseBuilder::setMethodNotAllowedResponse(Response& res, const std::vector<std::string>& allowedMethods) {
+    // Set the HTTP status line
+    res.setStatus(http::STATUS_METHOD_NOT_ALLOWED_405);
+
+    // Set standard headers for HTML error responses
+    res.setHeaders(http::CONTENT_TYPE, http::CONTENT_TYPE_HTML);
+
+    // Build the Allow header from the allowed methods list
+    std::string allowHeader;
+    for (size_t i = 0; i < allowedMethods.size(); ++i) {
+        if (i > 0) {
+            allowHeader += ", ";
+        }
+        allowHeader += allowedMethods[i];
+    }
+    res.setHeaders(http::ALLOW, allowHeader);
+
+    // Set content length and connection header
+    std::string errorHtml = getErrorPageHtml(http::METHOD_NOT_ALLOWED_405);
+    res.setHeaders(http::CONTENT_LENGTH, std::to_string(errorHtml.length()));
+    res.setHeaders(http::CONNECTION, http::CONNECTION_KEEP_ALIVE);
+
+    // Set the response body with the error page HTML
+    res.setBody(errorHtml);
+}
+
+void HttpResponseBuilder::setMethodNotAllowedResponse(Response& res, const std::vector<std::string>& allowedMethods, const Request& req) {
+    // Set the HTTP status line
+    res.setStatus(http::STATUS_METHOD_NOT_ALLOWED_405);
+
+    // Set standard headers for HTML error responses
+    res.setHeaders(http::CONTENT_TYPE, http::CONTENT_TYPE_HTML);
+
+    // Build the Allow header from the allowed methods list
+    std::string allowHeader;
+    for (size_t i = 0; i < allowedMethods.size(); ++i) {
+        if (i > 0) {
+            allowHeader += ", ";
+        }
+        allowHeader += allowedMethods[i];
+    }
+    res.setHeaders(http::ALLOW, allowHeader);
+
+    // Set content length
+    std::string errorHtml = getErrorPageHtml(http::METHOD_NOT_ALLOWED_405);
+    res.setHeaders(http::CONTENT_LENGTH, std::to_string(errorHtml.length()));
+
+    // Set connection header based on keep-alive logic
+    if (shouldKeepAlive(req)) {
+        res.setHeaders(http::CONNECTION, http::CONNECTION_KEEP_ALIVE);
+    } else {
+        res.setHeaders(http::CONNECTION, http::CONNECTION_CLOSE);
+    }
+
+    // Set the response body with the error page HTML
+    res.setBody(errorHtml);
+}
+
 std::string HttpResponseBuilder::getErrorPageHtml(int status) {
     switch (status) {
         case http::NOT_FOUND_404:
@@ -139,6 +175,34 @@ std::string HttpResponseBuilder::getErrorPageHtml(int status) {
         default:
             // Fallback to generic 500 error for unknown status codes
             return FileUtils::readFileToString(error_page::ERROR_PAGE_INTERNAL_SERVER_ERROR_500);
+    }
+}
+
+void HttpResponseBuilder::setErrorResponse(Response& res, const Request& req) {
+    // Parse the status code from the request's status string
+    int statusCode = parseStatusCodeFromString(std::string(req.getStatus()));
+
+    // Use the existing method with keep-alive support
+    setErrorResponse(res, statusCode, req);
+}
+
+int HttpResponseBuilder::parseStatusCodeFromString(const std::string& statusString) {
+    // Extract the numeric status code from strings like "400 Bad Request"
+    if (statusString.find("400") != std::string::npos) {
+        return http::BAD_REQUEST_400;
+    } else if (statusString.find("403") != std::string::npos) {
+        return http::FORBIDDEN_403;
+    } else if (statusString.find("404") != std::string::npos) {
+        return http::NOT_FOUND_404;
+    } else if (statusString.find("405") != std::string::npos) {
+        return http::METHOD_NOT_ALLOWED_405;
+    } else if (statusString.find("413") != std::string::npos) {
+        return http::PAYLOAD_TOO_LARGE_413;
+    } else if (statusString.find("500") != std::string::npos) {
+        return http::INTERNAL_SERVER_ERROR_500;
+    } else {
+        // Default to 400 Bad Request for unknown status codes
+        return http::BAD_REQUEST_400;
     }
 }
 

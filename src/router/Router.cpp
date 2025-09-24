@@ -6,6 +6,7 @@
 #include "../../inc/webserv.hpp"
 #include "Router.hpp"
 #include "utils/HttpResponseBuilder.hpp"
+#include "utils/StringUtils.hpp"
 #include "HttpConstants.hpp"
 #include "handlers/Handlers.hpp"
 #include <algorithm> // for std::find
@@ -214,7 +215,7 @@ const Location* Router::findLocation(const Server& server, const std::string& pa
 void Router::handleRequest(const Server& server, const Request& req, Response& res) const {
     // Check if parser found errors
     if (req.getError()) {
-        router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400);
+        router::utils::HttpResponseBuilder::setErrorResponse(res, req);
         return;
     }
     // Extract method and path from the request
@@ -223,6 +224,9 @@ void Router::handleRequest(const Server& server, const Request& req, Response& r
 
     std::string method(method_view);
     std::string path(path_view);
+
+    // Normalize path by collapsing multiple consecutive slashes
+    path = router::utils::StringUtils::normalizePath(path);
 
     // Find the appropriate handler for this request
     const Handler* handler = findHandler(server.getName(), method, path);

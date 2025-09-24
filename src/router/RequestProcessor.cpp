@@ -29,19 +29,25 @@ void RequestProcessor::processRequest(const Request& req, const Handler* handler
     std::string method(method_view);
     std::string path(path_view);
 
-    /*
-    // Validate and normalize the path
-    if (!validatePath(path)) {
-        router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400);
+    // Validate HTTP method - return 405 Method Not Allowed for unsupported methods
+    if (method != http::GET && method != http::POST && method != http::DELETE) {
+        router::utils::HttpResponseBuilder::setErrorResponse(res, http::METHOD_NOT_ALLOWED_405);
         return;
     }
-
-    normalizePath(path);
-    */
 
     // Execute handler if available
     if (handler) {
         if (executeHandler(handler, req, res, location)) {
+            return;
+        }
+    }
+
+    // Check if method is allowed for this location
+    if (location) {
+        const auto& allowedMethods = location->allowed_methods;
+        bool methodAllowed = std::find(allowedMethods.begin(), allowedMethods.end(), method) != allowedMethods.end();
+        if (!methodAllowed) {
+            router::utils::HttpResponseBuilder::setErrorResponse(res, http::METHOD_NOT_ALLOWED_405, req);
             return;
         }
     }
@@ -52,7 +58,7 @@ void RequestProcessor::processRequest(const Request& req, const Handler* handler
     }
 
     // All attempts failed - return 404
-    router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404);
+    router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404, req);
 }
 
 /** Validate request path */
@@ -176,7 +182,8 @@ void RequestProcessor::generateErrorResponse(Response& res, int status,
 
     // Set common headers
     res.setHeaders(http::CONTENT_TYPE, http::CONTENT_TYPE_HTML);
-    res.setHeaders(http::CONNECTION, http::CONNECTION_CLOSE);
+    // Default to keep-alive for HTTP/1.1 compatibility
+    res.setHeaders(http::CONNECTION, http::CONNECTION_KEEP_ALIVE);
 
     // For now, set a simple error message
     // In a real implementation, this would load custom error pages
