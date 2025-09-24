@@ -61,7 +61,12 @@ uint64_t	getMaxClients() {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool	requestComplete(ClientRequestState& client_state) {
+void	setMaxBodySize(ClientRequestState& client_state, Cluster* cluster, int fd) {
+	Server conf = cluster->Cluster::findRelevantConfig(fd, client_state.buffer);
+	client_state.max_body_size = conf.getMaxBodySize();
+}
+
+bool	requestComplete(ClientRequestState& client_state, int fd, Cluster* cluster) {
 	// std::cout << "Buffer to be parsed currently: " << std::endl;
 	// std::cout << buffer << std::endl;
 	// buffer = client_state.buffer;
@@ -78,10 +83,12 @@ bool	requestComplete(ClientRequestState& client_state) {
 		client_state.data_validity = false;
 		return false;
 	}
-
 	// at this point non cleaned buffer has full header
 
 	// std::cout << "header end detected: " << pos2 << std::endl;
+
+	setMaxBodySize(client_state, cluster, fd);
+	// std::cout << "max body size for the request: " << client_state.max_body_size << std::endl;
 
 	int status = -1;
 	status = isChunkedBodyComplete(client_state, header_end);
@@ -110,10 +117,10 @@ bool	decodeChunkedBody(ClientRequestState& client_state) {
 		size_t chunkSize = 0;
 		std::istringstream(sizeLine) >> std::hex >> chunkSize;
 
-
 		if (chunkSize == 0) {
 			size_t trailersEnd = body.find("\r\n\r\n", pos);
 			if (trailersEnd == std::string::npos) {
+				// std::cout << "header not found" << std::endl;
 				client_state.data_validity = false;
 				endReq = false;
 				break;
@@ -126,6 +133,7 @@ bool	decodeChunkedBody(ClientRequestState& client_state) {
 
 		pos = lineEnd + 2;
 		if (pos + chunkSize + 2 > body.size()) {
+			// std::cout << "no carriage found at the end" << std::endl;
 			client_state.data_validity = false;
 			endReq = false;
 			break;
@@ -136,24 +144,22 @@ bool	decodeChunkedBody(ClientRequestState& client_state) {
 	}
 
 	client_state.clean_buffer = headers + result;
-	// size_t body_size = client_state.clean_buffer.substr(header_end).size();
-	// if (body_size > client_state._max_body_size) // TODO this must be somehow figured out to enforce max body size
+	size_t body_size = client_state.clean_buffer.substr(header_end).size();
+	// std::cout << "body size now: " << body_size << std::endl;
+	if (body_size > client_state.max_body_size) {
+		// std::cout << "body is longer than allowed limit" << std::endl;
+		client_state.data_validity = false;
+		endReq = false;
+		return endReq;
+	}
 	client_state.request_size = client_state.clean_buffer.size();
 	return (endReq);
 }
 
 int	isChunkedBodyComplete(ClientRequestState& client_state, size_t header_end) {
 	size_t pos = client_state.buffer.find("\r\nTransfer-Encoding: chunked\r\n");
-	if (pos != std::string::npos && pos < header_end) // search for body and only after we found the header
-	{
-		// decodeChunkedBody(buffer, data_validity);
-		// pos = buffer.find("0\r\n\r\n", header_end); // TODO test this
-		// if (pos == std::string::npos)
-		// 	return false;
-		// else
-		// 	return true;
+	if (pos != std::string::npos && pos < header_end)
 		return(decodeChunkedBody(client_state));
-	}
 	return -1;
 }
 
@@ -163,6 +169,11 @@ bool	isRequestBodyComplete(ClientRequestState& client_state, size_t header_end) 
 	std::smatch match;
 	if (std::regex_search(client_state.clean_buffer, match, std::regex(R"(Content-Length:\s*(\d+)\r?\n)"))) {
 		size_t body_expected_len = std::stoul(match[1].str());
+		if (body_expected_len > client_state.max_body_size) {
+			// std::cout << "body is expected to be longer than allowed limit" << std::endl;
+			client_state.data_validity = false;
+			return false;
+		}
 		if (remainder >= body_expected_len) {
 			// std::cout << "body received and there might another request starting after" << std::endl;
 			client_state.request_size = header_end + body_expected_len;

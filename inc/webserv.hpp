@@ -28,9 +28,9 @@ inline std::string readFileToString(const std::string& filename) {
     return buffer.str();
 }
 
-#define TIME_OUT_POLL		100
+#define TIME_OUT_POLL		1000
 #define TIME_OUT_REQUEST	5000
-#define TIME_OUT_RESPONSE	1000000
+#define TIME_OUT_RESPONSE	500000
 #define MAX_CLIENTS			900
 #define MAX_BUFFER_SIZE		10000000
 #define MAX_BODY_SIZE		10000000
