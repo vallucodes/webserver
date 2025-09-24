@@ -158,7 +158,7 @@ void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 	client_state.buffer.append(buffer, bytes);
 	client_state.receive_start = std::chrono::high_resolution_clock::now();
 
-	while (requestComplete(client_state)) {
+	while (requestComplete(client_state, _fds[i].fd, this)) {
 		buildRequest(client_state);
 		// call here the parser in future.
 		Server conf = findRelevantConfig(_fds[i].fd, client_state.clean_buffer);
@@ -167,22 +167,18 @@ void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 		Request req = parse.parseRequest(client_state.request);
 		Response res;
 
-
 		// Handle the request using the router
-		req.print(); //DEBUG PRINT
+		// req.print(); //DEBUG PRINT
 
 		_router.handleRequest(conf, req, res); // Pass server config for server-specific routing
-
-		res.print(); //DEBUG PRINT
 
 		// Convert response to HTTP string format
 		client_state.response = responseToString(res);
 
 		if (client_state.buffer.empty())
 			client_state.receive_start = {};
-		else
-		{
-			std::cout << "clock started\n";
+		else {
+			// std::cout << "clock started\n";
 			client_state.receive_start = std::chrono::high_resolution_clock::now();
 		}
 
@@ -213,10 +209,6 @@ void	Cluster::sendPendingData(size_t& i) {
 			_fds[i].events &= ~POLLOUT;
 			client_state.send_start = std::chrono::high_resolution_clock::time_point{};
 			client_state.waiting_response = false;
-			// Ilia added this
-			// Close connection after sending response (HTTP/1.0 style)
-			// or infinity loop
-			// dropClient(i, " - Response sent, closing connection");
 		}
 		else if (sent < 0)
 			dropClient(i, CLIENT_SEND_ERROR);
@@ -273,6 +265,10 @@ const Server&	Cluster::findRelevantConfig(int client_fd, const std::string& buff
 	return *conf->default_config;
 }
 
-const	std::set<int>& Cluster::getServerFds() const {
+const std::set<int>&	Cluster::getServerFds() const {
 	return _server_fds;
+}
+
+const std::map<int, ListenerGroup*>&	Cluster::getClients() const {
+	return _clients;
 }

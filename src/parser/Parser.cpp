@@ -164,7 +164,6 @@ Request Parser::parseRequest(const std::string& httpString) {
     Request req;
     std::string_view sv(httpString);
 
-    // Debug: original string parsing
     // std::cout << "\noriginal string is:" << httpString << std::endl;
     // std::cout << "end of string" <<  std::endl;
 
