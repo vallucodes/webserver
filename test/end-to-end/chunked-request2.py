@@ -3,7 +3,7 @@ import time
 
 # Server configuration
 HOST = '127.0.0.1'
-PORT = 8080
+PORT = 8082
 
 # Define tricky chunks
 chunks = [
@@ -30,10 +30,9 @@ with socket.create_connection((HOST, PORT)) as sock:
 	for i, chunk in enumerate(chunks):
 		chunk_bytes = chunk.encode('utf-8')         # encode first
 		size = f"{len(chunk_bytes):X}"              # chunk size in bytes
-		sock.sendall(f"{size}\r\n".encode())
-		sock.sendall(chunk_bytes)
-		sock.sendall(b"\r\n")
-		time.sleep(5)
+		frame = f"{size}\r\n".encode() + chunk_bytes + b"\r\n"
+		sock.sendall(frame)
+		time.sleep(1)
 
 	# Final zero-length chunk to indicate end of body
 	sock.sendall(b"0\r\n\r\n")

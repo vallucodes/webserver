@@ -177,9 +177,8 @@ void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 
 		if (client_state.buffer.empty())
 			client_state.receive_start = {};
-		else
-		{
-			std::cout << "clock started\n";
+		else {
+			// std::cout << "clock started\n";
 			client_state.receive_start = std::chrono::high_resolution_clock::now();
 		}
 
@@ -210,10 +209,6 @@ void	Cluster::sendPendingData(size_t& i) {
 			_fds[i].events &= ~POLLOUT;
 			client_state.send_start = std::chrono::high_resolution_clock::time_point{};
 			client_state.waiting_response = false;
-			// Ilia added this
-			// Close connection after sending response (HTTP/1.0 style)
-			// or infinity loop
-			// dropClient(i, " - Response sent, closing connection");
 		}
 		else if (sent < 0)
 			dropClient(i, CLIENT_SEND_ERROR);
@@ -277,7 +272,3 @@ const std::set<int>&	Cluster::getServerFds() const {
 const std::map<int, ListenerGroup*>&	Cluster::getClients() const {
 	return _clients;
 }
-
-// const std::vector<pollfd>	Cluster::getFds() const {
-// 	return _fds;
-// }

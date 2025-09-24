@@ -1,15 +1,25 @@
 import socket
 
 HOST = '127.0.0.1'
-PORT = 8081
+PORT = 8082
 
 request = (
 	"POST /uploads HTTP/1.1\r\n"
 	f"Host: {HOST}:{PORT}\r\n"
 	"Content-Type: text/plain\r\n"
-	"Content-Length: 5\r\n"  # length of "12345"
+	"Content-Length: 101\r\n"  # length of "12345"
 	"\r\n"
-	"12345"
+	"1234567890"
+	"1234567890"
+	"1234567890"
+	"1234567890"
+	"1234567890"
+	"1234567890"
+	"1234567890"
+	"1234567890"
+	"1234567890"
+	"1234567890"
+	"1"
 )
 
 with socket.create_connection((HOST, PORT)) as sock:
