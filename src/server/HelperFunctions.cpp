@@ -56,6 +56,26 @@ uint64_t	getMaxClients() {
 	return max_clients;
 }
 
+std::string	headersToString(const std::unordered_map<std::string, std::vector<std::string>>& headers) {
+	std::string result;
+	for (const auto& pair : headers) {
+		const std::string& key = pair.first;
+		const std::vector<std::string>& values = pair.second;
+		for (const auto& value : values) {
+			result += key + ": " + value + "\r\n";
+		}
+	}
+	return result;
+}
+
+std::string	responseToString(const Response& res) {
+	std::string responseStr = "HTTP/1.1 " + std::string(res.getStatus()) + "\r\n";
+	responseStr += headersToString(res.getAllHeaders());
+		responseStr += "\r\n";
+	responseStr += std::string(res.getBody());
+	return responseStr;
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void	setMaxBodySize(ClientRequestState& client_state, Cluster* cluster, int fd) {

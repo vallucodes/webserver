@@ -132,27 +132,6 @@ void	Cluster::handleClientInData(size_t& i) {
 	}
 }
 
-std::string	headersToString(const std::unordered_map<std::string, std::vector<std::string>>& headers) {
-	std::string result;
-	for (const auto& pair : headers) {
-		const std::string& key = pair.first;
-		const std::vector<std::string>& values = pair.second;
-		for (const auto& value : values) {
-			result += key + ": " + value + "\r\n";
-		}
-	}
-	return result;
-}
-
-// Convert Response object to HTTP string
-std::string	responseToString(const Response& res) {
-	std::string responseStr = "HTTP/1.1 " + std::string(res.getStatus()) + "\r\n";
-	responseStr += headersToString(res.getAllHeaders());
-		responseStr += "\r\n";
-	responseStr += std::string(res.getBody());
-	return responseStr;
-}
-
 void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 	ClientRequestState& client_state = _client_buffers[_fds[i].fd];
 	client_state.buffer.append(buffer, bytes);
@@ -168,7 +147,7 @@ void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 		Response res;
 
 		// Handle the request using the router
-		req.print(); //DEBUG PRINT
+		// req.print(); //DEBUG PRINT
 
 		_router.handleRequest(conf, req, res); // Pass server config for server-specific routing
 
@@ -177,12 +156,10 @@ void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 
 		if (client_state.buffer.empty())
 			client_state.receive_start = {};
-		else {
-			// std::cout << "clock started\n";
+		else
 			client_state.receive_start = std::chrono::high_resolution_clock::now();
-		}
 
-		_fds[i].events |= POLLOUT;			// start to listen if client is ready to receive response
+		// _fds[i].events |= POLLOUT;			// start to listen if client is ready to receive response
 		client_state.send_start = std::chrono::high_resolution_clock::now(); //this should be moved to the response part of code
 		client_state.waiting_response = true;
 	}
@@ -191,11 +168,11 @@ void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 		Server conf = findRelevantConfig(_fds[i].fd, client_state.clean_buffer); // thisc
 		Parser parse;
 		Request req = parse.parseRequest("400 Bad Request", client_state.kick_me, false);
-		req.print(); //DEBUG PRINT
+		// req.print(); //DEBUG PRINT
 		Response res;
 		_router.handleRequest(conf, req, res);
-		client_state.response = responseToString(res);
 		client_state.kick_me = true;
+		client_state.response = responseToString(res);
 		_fds[i].events |= POLLOUT;			// start to listen if client is ready to receive response
 		client_state.send_start = std::chrono::high_resolution_clock::now(); //this should be moved to the response part of code
 		client_state.waiting_response = true;

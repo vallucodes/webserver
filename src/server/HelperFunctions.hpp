@@ -5,6 +5,7 @@
 #include <sys/resource.h>
 #include <iomanip>
 #include "Cluster.hpp"
+#include "../response/Response.hpp"
 
 struct ClientRequestState;
 class Cluster;
@@ -16,6 +17,8 @@ void		setSocketToNonBlockingMode(int fd);
 void		checkNameRepitition(const std::vector<Server> configs, const Server config);
 uint64_t	getMaxClients();
 size_t		findHeader(const std::string& buffer);
+std::string	responseToString(const Response& res);
+std::string	headersToString(const std::unordered_map<std::string, std::vector<std::string>>& headers);
 
 bool	requestComplete(ClientRequestState& client_state, int fd, Cluster* cluster);
 void	setMaxBodySize(ClientRequestState& client_state, Cluster* cluster, int fd);
