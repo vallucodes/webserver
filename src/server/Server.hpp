@@ -9,10 +9,11 @@ struct Location
 	std::string					location;
 	std::vector<std::string>	allowed_methods;
 	std::string					index;
-	bool						autoindex;
+	bool						autoindex = false; // Ilia added, default value is false
 	std::string					cgi_path;
 	std::vector<std::string>	cgi_ext;
 	std::string					upload_path;
+	std::string					return_url;
 };
 
 class Server {

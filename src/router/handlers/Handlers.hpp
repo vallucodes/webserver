@@ -1,40 +1,38 @@
+/**
+ * @file Handlers.hpp
+ * @brief HTTP Request Handler Functions
+ */
+
 #pragma once
 
-#include <string>
+#include <string> // for std::string
 
 #include "../../request/Request.hpp"
 #include "../../response/Response.hpp"
 #include "../../router/Router.hpp"
+#include "../HttpConstants.hpp"
 
-// Function declarations
+/** Core HTTP Request Handler Functions */
 
-// Read the contents of a file into a string
-// @param filename Path to the file to read
-// @return String containing the file contents
-// @throws std::runtime_error if file cannot be opened or read
-std::string readFileToString(const std::string& filename);
+/** Resolve path relative to server root (nginx-style) */
+std::string resolvePath(const std::string& path, const std::string& server_root);
 
-// Handle GET requests for static files and pages
-// @param req The incoming HTTP request
-// @param res The response object to populate
-void get(const Request& req, Response& res);
+/** Handle GET requests for static files and pages */
+void get(const Request& req, Response& res, const Location* location = nullptr);
 
-// Handle POST requests for file uploads
-// @param req The incoming HTTP request containing multipart/form-data
-// @param res The response object to populate
-void post(const Request& req, Response& res);
+/** Handle POST requests for file uploads */
+void post(const Request& req, Response& res, const Location* location = nullptr, const std::string& server_root = "");
 
-// Handle DELETE requests for removing uploaded files
-// @param req The incoming HTTP request with file path in URL
-// @param res The response object to populate
-void del(const Request& req, Response& res);
+/** Handle DELETE requests for file removal */
+void del(const Request& req, Response& res, const Location* location = nullptr, const std::string& server_root = "");
 
-// Handle CGI requests for executable scripts (e.g., .php files)
-// @param req The incoming HTTP request
-// @param res The response object to populate
-void cgi(const Request& req, Response& res);
+/** Handle CGI requests for executable scripts */
+void cgi(const Request& req, Response& res, const Location* location = nullptr, const std::string& server_root = "");
 
-// Handle HTTP redirection requests
-// @param req The incoming HTTP request
-// @param res The response object to populate
-void redirect(const Request& req, Response& res);
+/** Handle HTTP redirection requests */
+void redirect(const Request& req, Response& res, const Location* location = nullptr);
+
+/** Check if file is CGI script */
+bool isCgiScriptWithLocation(const std::string& filename, const Location* location);
+
+bool shouldKeepAlive(const Request& req);

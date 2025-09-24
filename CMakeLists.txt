@@ -21,14 +21,19 @@ file(GLOB SRC_RESPONSE src/response/*.cpp)
 
 foreach(test_file ${TEST_SOURCES})
 	get_filename_component(test_name ${test_file} NAME_WE)
-	add_executable(${test_name}
+	add_executable({test_name}
         ${test_file}
         ${SRC_PARSER}
         ${SRC_REQUEST}
         ${SRC_MESSAGE}
         ${SRC_RESPONSE}
-        src/server/HelperFunctions.cpp
-    )
+		src/server/HelperFunctions.cpp
+		src/config/Config.cpp
+		src/config/ConfigValidator.cpp
+		src/config/ConfigExtractor.cpp
+		src/server/Server.cpp
+	)
+
 	# Add include directories for each test
 	target_include_directories(${test_name} PRIVATE
 		${CMAKE_SOURCE_DIR}/src/server

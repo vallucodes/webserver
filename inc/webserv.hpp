@@ -39,10 +39,17 @@ inline std::string readFileToString(const std::string& filename) {
 # define MAX_RESPONSE_SIZE	10000 // Default value for non-test builds
 #endif
 
+<<<<<<< HEAD
 #define CLIENT_DISCONNECT			" disconnected.\n"
 #define CLIENT_TIMEOUT				" dropped by the server: Timeout.\n"
 #define CLIENT_CLOSE_CONNECTION		" dropped by the server: Connection closed.\n"
 #define CLIENT_MALFORMED_REQUEST	" dropped by the server: Malformed request.\n"
 #define CLIENT_SEND_ERROR			" dropped by the server: send() failed.\n"
+=======
+#define CLIENT_DISCONNECT			" disconnected\n"
+#define CLIENT_TIMEOUT				" dropped by the server: Timeout\n"
+#define CLIENT_MALFORMED_REQUEST	" dropped by the server: Malformed request\n"
+#define CLIENT_SEND_ERROR			" dropped by the server: send() failed\n"
+>>>>>>> main
 
 #endif // WEBSERV_HPP

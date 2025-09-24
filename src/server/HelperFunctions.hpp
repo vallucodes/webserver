@@ -3,12 +3,16 @@
 #include <regex>
 #include <fcntl.h>
 #include <sys/resource.h>
+#include <iomanip>
 #include "Cluster.hpp"
 
 struct ClientRequestState;
 
+std::string	time_now();
+
 bool		isServerSocket(int fd, const std::set<int>& server_fds);
 void		setSocketToNonBlockingMode(int fd);
+void		checkNameRepitition(const std::vector<Server> configs, const Server config);
 uint64_t	getMaxClients();
 size_t		findHeader(const std::string& buffer);
 

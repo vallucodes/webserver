@@ -5,7 +5,6 @@ void	ConfigExtractor::extractFields(std::vector<Server>& servs, std::ifstream& c
 	Server		serv;
 
 	while (std::getline(cfg, line)) {
-		// std::cout << line << std::endl;
 		if (line.find("server {") != std::string::npos) {
 			serv = Server();
 			continue ;
@@ -46,6 +45,9 @@ void	ConfigExtractor::extractLocationFields(Server& serv, Location& loc, std::if
 		extractCgiPath(loc, line);
 		extractCgiExt(loc, line);
 		extractUploadPath(loc, line);
+
+		// Ilia added for redirect
+		extractReturn(loc, line);
 	}
 }
 
@@ -54,7 +56,6 @@ void	ConfigExtractor::extractPort(Server& serv, const std::string& line) {
 	std::smatch	match;
 	if (std::regex_search(line, match, re))
 	{
-		// std::cout << "port found: " << match[1] << std::endl;
 		serv.setPort(std::stoi(match[1]));
 	}
 }
@@ -202,5 +203,16 @@ void	ConfigExtractor::extractUploadPath(Location& loc, const std::string& line) 
 	{
 		// std::cout << "cgi_path found: " << match[1] << std::endl;
 		loc.upload_path = match[1];
+	}
+}
+
+// Ilia added for redirect
+void	ConfigExtractor::extractReturn(Location& loc, const std::string& line) {
+	std::regex	re("^\\s*return\\s+(\\S+)$");
+	std::smatch	match;
+	if (std::regex_search(line, match, re))
+	{
+		// std::cout << "return_url found: " << match[1] << std::endl;
+		loc.return_url = match[1];
 	}
 }

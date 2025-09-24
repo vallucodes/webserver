@@ -13,18 +13,17 @@ void	Cluster::config(const std::string& config_file) {
 	config.validate(config_file);
 	_configs = config.parse(config_file);
 	// printAllConfigs(_configs);
-	if (_configs.size() == 0)
-		throw std::runtime_error("Error: config file doesnt have any server"); // maybe this will be caught already in parsing
 	groupConfigs();
 	// printAllConfigGroups(_listener_groups);
 
-	_max_clients = 100;
+	_max_clients = 100; // TODO use getMaxClients()
 
-	// ASK ILIA to del this shit
-	_router.setupRouter();
+	_router.setupRouter(_configs);
 }
 
 void	Cluster::groupConfigs() {
+	if (_configs.size() == 0)
+		throw std::runtime_error("Error: config file doesnt have any server");
 	for (auto& config : _configs) {
 		if (_listener_groups.empty()) {
 			createGroup(config);
@@ -39,6 +38,7 @@ void	Cluster::groupConfigs() {
 			int	port_group = group.default_config->getPort();
 
 			if (IP_group == IP_conf && port_group == port_conf) {
+				checkNameRepitition(group.configs, config);
 				group.configs.push_back(config);
 				added = true;
 			}
@@ -59,7 +59,7 @@ void	Cluster::createGroup(const Server& conf) {
 }
 
 void	Cluster::create() {
-	std::cout << "Initializing servers...\n";
+	std::cout << CYAN << time_now() << "	Initializing servers...\n" << RESET;
 	for (auto& group : _listener_groups)
 	{
 		Server serv = *group.default_config;
@@ -82,7 +82,7 @@ void	Cluster::run() {
 				if (isServerSocket(_fds[i].fd, getServerFds()))	// check if fd is server or client
 					handleNewClient(i);
 				else
-					handleClientInData(i); // if client sends data before getting response, drop him for malformed request
+					handleClientInData(i);
 			}
 			if (_fds[i].revents & POLLOUT)
 				sendPendingData(i);
@@ -98,16 +98,19 @@ void	Cluster::handleNewClient(size_t i) {
 	}
 	sockaddr_in client_addr{};
 	socklen_t addrlen = sizeof(client_addr);
-	int client_fd = accept(_fds[i].fd, (sockaddr*)&client_addr, &addrlen); // 2nd argument: collect clients IP and port. 3rd argument tells size of the buffer of second argument
+	int client_fd = accept(_fds[i].fd, (sockaddr*)&client_addr, &addrlen);
 	if (client_fd < 0)
 		throw std::runtime_error("Error: accept");
 
 	setSocketToNonBlockingMode(client_fd);
 
-	std::cout << "New client connected: "
-			<< inet_ntoa(client_addr.sin_addr) << ":"
-			<< ntohs(client_addr.sin_port) << ". Assigned fd: "
-			<< client_fd << "\n";
+	std::cout << CYAN
+			<< time_now()
+			<< "	New client connected"
+			<< ". Assigned socket: "
+			<< client_fd << "\n"
+			<< RESET;
+
 	_fds.push_back({client_fd, POLLIN, 0});
 	_clients[client_fd] = _servers[_fds[i].fd];
 }
@@ -163,10 +166,14 @@ void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 		Parser parse;
 		Request req = parse.parseRequest(client_state.request, client_state.kick_me);
 		Response res;
-		// Handle the request using the router
-		_router.handleRequest(req, res); // correct
 
-		//res.print(); //DEBUG PRINT
+
+		// Handle the request using the router
+		req.print(); //DEBUG PRINT
+
+		_router.handleRequest(conf, req, res); // Pass server config for server-specific routing
+
+		res.print(); //DEBUG PRINT
 
 		// Convert response to HTTP string format
 		client_state.response = responseToString(res);
@@ -199,7 +206,7 @@ void	Cluster::sendPendingData(size_t& i) {
 
 	if (client_state.waiting_response == true) {
 		std::string response = popResponseChunk(client_state);
-		std::cout << RED << "Sending response to: " << _fds[i].fd << RESET << std::endl;
+		std::cout << RED << time_now() << "	Sending response to client " << _fds[i].fd << RESET << std::endl;
 		ssize_t sent = send(_fds[i].fd, response.c_str(), response.size(), 0);
 		if (sent >= 0 && client_state.response.empty()) {
 			// std::cout << "Response fully sent" << std::endl;
@@ -220,7 +227,7 @@ void	Cluster::sendPendingData(size_t& i) {
 }
 
 void	Cluster::dropClient(size_t& i, const std::string& msg) {
-	std::cout << CYAN << "Client " << _fds[i].fd << msg << RESET;
+	std::cout << CYAN << time_now() << "	Client " << _fds[i].fd << msg << RESET;
 	close (_fds[i].fd);
 	_client_buffers.erase(_fds[i].fd);
 	_fds.erase(_fds.begin() + i);

@@ -119,28 +119,29 @@ ConfigValidator::ConfigValidator() {
 		{"allow_methods", std::regex("^\\s*allow_methods(\\s+\\S+){1,9}$"), validateMethods},
 		{"index", std::regex("^\\s*index\\s+\\S+$"), validateIndex},
 		{"autoindex", std::regex("^\\s*autoindex\\s+\\S+$"), validateAutoindex},
-		{"cgi_path", std::regex("^\\s*cgi_path\\s+\\S+$"), nullptr},// this can be made more strict to enforce leading / to path
+		{"cgi_path", std::regex("^\\s*cgi_path\\s+\\S+$"), nullptr},
 		{"cgi_ext", std::regex("^\\s*cgi_ext(\\s+\\S+)+$"), validateExt},
-		{"upload_to", std::regex("^\\s*upload_to\\s+\\S+$"), nullptr}, // this can be made more strict to enforce leading / to path
-		{"return", std::regex("^\\s*return\\s+\\S+$"), nullptr} // this can be made more strict to enforce leading / to path
+		{"upload_to", std::regex("^\\s*upload_to\\s+\\S+$"), nullptr},
+		{"return", std::regex("^\\s*return\\s+\\S+$"), nullptr}
 	};
 }
 
 std::vector<std::string> ConfigValidator:: _methods = {
 	"GET",
 	"POST",
-	"DELETE",
-	"HEAD",
-	"PUT",
-	"PATCH",
-	"OPTIONS",
-	"CONNECT",
-	"TRACE"
+	"DELETE"
+	// "HEAD"
+	// "PUT",
+	// "PATCH",
+	// "OPTIONS",
+	// "CONNECT",
+	// "TRACE"
 };
 
 std::vector<std::string> ConfigValidator::_cgi_extensions = {
 	".py",
-	".php"
+	".php",
+	".js"
 };
 
 bool	ConfigValidator::validatePort(const std::string& line) {

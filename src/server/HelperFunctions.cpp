@@ -20,23 +20,28 @@ void	setSocketToNonBlockingMode(int sock) {
 	}
 }
 
-// bool	findHostInHeader(const std::string& buffer, size_t header_end) {
-// 	std::regex	re("Host:\\s+\\S+");
-// 	std::smatch	match;
-// 	std::string header = buffer.substr(0, header_end);
-// 	if (std::regex_search(header, match, re))
-// 	{
-// 		// std::cout << "Host found in header" << match[0] << std::endl;
-// 		return true;
-// 	}
-// 	return false;
-// }
+std::string	time_now() {
+	auto now = std::chrono::system_clock::now();
+	std::time_t t = std::chrono::system_clock::to_time_t(now);
+	std::tm tm = *std::localtime(&t);
+
+	std::ostringstream oss;
+	oss << std::put_time(&tm, "[%Y-%m-%d %H:%M:%S]");
+	return oss.str();
+}
 
 size_t	findHeader(const std::string& buffer) {
 	size_t pos = buffer.find("\r\n\r\n");
 	if (pos == std::string::npos)
 		return std::string::npos;
 	return pos + 4;
+}
+
+void	checkNameRepitition(const std::vector<Server> configs, const Server config) {
+	for (auto& conf : configs) {
+		if (conf.getName() == config.getName())
+			throw std::runtime_error("Error: Config: Ambiguous server name");
+	}
 }
 
 // after parsing config, should be checked that max amount of clients there should be less than max.
@@ -110,6 +115,7 @@ bool	decodeChunkedBody(ClientRequestState& client_state) {
 			size_t trailersEnd = body.find("\r\n\r\n", pos);
 			if (trailersEnd == std::string::npos) {
 				client_state.data_validity = false;
+				endReq = false;
 				break;
 			}
 			pos = trailersEnd + 4;
@@ -119,20 +125,20 @@ bool	decodeChunkedBody(ClientRequestState& client_state) {
 		}
 
 		pos = lineEnd + 2;
-		// if (pos + chunkSize + 2 > body.size()) {
-		// 	std::cout << "ASAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n";
-        //     //data_validity = false;
-        //     break;
-        // }
+		if (pos + chunkSize + 2 > body.size()) {
+			client_state.data_validity = false;
+			endReq = false;
+			break;
+		}
 
 		result.append(body.substr(pos, chunkSize));
 		pos += chunkSize + 2;
 	}
 
 	client_state.clean_buffer = headers + result;
+	// size_t body_size = client_state.clean_buffer.substr(header_end).size();
+	// if (body_size > client_state._max_body_size) // TODO this must be somehow figured out to enforce max body size
 	client_state.request_size = client_state.clean_buffer.size();
-	// if (endReq ==  false && data_validity == true)
-	// 	std::cout << buffer << std::endl;
 	return (endReq);
 }
 
