@@ -5,6 +5,9 @@ void	ConfigExtractor::extractFields(std::vector<Server>& servs, std::ifstream& c
 	Server		serv;
 
 	while (std::getline(cfg, line)) {
+		size_t first_non_space = line.find_first_not_of(" \t");
+		if (first_non_space == std::string::npos || line[first_non_space] == '#')
+			continue ;
 		if (line.find("server {") != std::string::npos) {
 			serv = Server();
 			continue ;

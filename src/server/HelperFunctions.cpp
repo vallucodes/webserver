@@ -44,17 +44,14 @@ void	checkNameRepitition(const std::vector<Server> configs, const Server config)
 	}
 }
 
-// after parsing config, should be checked that max amount of clients there should be less than max.
-// Or handled somehow, this is just temp fix. Its finding systems max fds and using that - 10.
 uint64_t	getMaxClients() {
 	struct rlimit rl;
 	if (getrlimit(RLIMIT_NOFILE, &rl) != 0)
 		throw std::runtime_error("Error: getrlimit");
 
-	// Reserve some FDs for standard I/O, listening socket, etc.
-	uint64_t reserved_fds = 10;
+	uint64_t reserved_fds = 100;
 	int max_clients = rl.rlim_cur - reserved_fds;
-	if (max_clients < 1)
+	if (max_clients < 2)
 		throw std::runtime_error("Error: Not enough fd's available to create a server");
 	return max_clients;
 }

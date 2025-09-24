@@ -16,7 +16,7 @@ void	Cluster::config(const std::string& config_file) {
 	groupConfigs();
 	// printAllConfigGroups(_listener_groups);
 
-	_max_clients = 100; // TODO use getMaxClients()
+	_max_clients = getMaxClients();
 
 	_router.setupRouter(_configs);
 }
