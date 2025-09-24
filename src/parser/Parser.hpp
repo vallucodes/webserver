@@ -9,7 +9,7 @@
 class Parser{
     private:
     public:
-        static Request parseRequest(const std::string& httpString, bool& kick_me);
+        static Request parseRequest(const std::string& httpString, bool& kick_me, bool bad_request);
         // static std::string serializeResponse(const Response& response);
 };
 

@@ -33,7 +33,7 @@ with socket.create_connection((HOST, PORT)) as sock:
 		sock.sendall(f"{size}\r\n".encode())
 		sock.sendall(chunk_bytes)
 		sock.sendall(b"\r\n")
-		time.sleep(5)
+		# time.sleep(5)
 
 	# Final zero-length chunk to indicate end of body
 	sock.sendall(b"0\r\n\r\n")

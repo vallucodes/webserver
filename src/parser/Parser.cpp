@@ -188,7 +188,7 @@ void findKeepAlive(const std::vector<std::string>& headers, bool& kick_me) {
 }
 
 
-Request Parser::parseRequest(const std::string& httpString, bool& kick_me) {
+Request Parser::parseRequest(const std::string& httpString, bool& kick_me, bool bad_request) {
     Request req;
     std::string_view sv(httpString);
 
@@ -197,6 +197,12 @@ Request Parser::parseRequest(const std::string& httpString, bool& kick_me) {
     // std::cout << "end of string" <<  std::endl;
 
     //Parse request line
+    if (bad_request)
+    {
+        req.setError(true);
+        req.setStatus(httpString);
+        return req;
+    }
     size_t pos = sv.find("\r\n");
     if (pos == std::string_view::npos){
         req.setError(true);

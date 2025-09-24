@@ -164,7 +164,7 @@ void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 		Server conf = findRelevantConfig(_fds[i].fd, client_state.clean_buffer);
 		// printServerConfig(conf); // this is simulating what will be sent to parser later
 		Parser parse;
-		Request req = parse.parseRequest(client_state.request, client_state.kick_me);
+		Request req = parse.parseRequest(client_state.request, client_state.kick_me, false);
 		Response res;
 
 
@@ -192,8 +192,13 @@ void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 	}
 
 	if (client_state.data_validity == false) {
-		// send response that payload is too large, 413
-		dropClient(i, CLIENT_MALFORMED_REQUEST);
+		Server conf = findRelevantConfig(_fds[i].fd, client_state.clean_buffer); // thisc
+		Parser parse;
+		Request req = parse.parseRequest("400 Bad Request", client_state.kick_me, false);
+		Response res;
+		_router.handleRequest(conf, req, res);
+		client_state.response = responseToString(res);
+		client_state.kick_me = true;
 	}
 }
 
