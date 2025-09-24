@@ -2,7 +2,7 @@ import socket
 import threading
 
 SERVER_HOST = '127.0.0.1'
-SERVER_PORT = 8081
+SERVER_PORT = 8082
 NUM_CLIENTS = 10
 
 def client_task(id):
