@@ -646,7 +646,7 @@ std::string parseChunkedBody(const std::string& body) {
 }
 
 /** Set up CGI environment variables */
-std::vector<std::string> setupCgiEnvironment(const Request& req, const std::string& scriptPath, const std::string& scriptName) {
+std::vector<std::string> setupCgiEnvironment(const Request& req, const std::string& scriptPath, const std::string& scriptName, const Server& server) {
     std::vector<std::string> env;
 
     // Basic CGI environment variables
@@ -708,10 +708,10 @@ std::vector<std::string> setupCgiEnvironment(const Request& req, const std::stri
         env.push_back("CONTENT_LENGTH=" + std::to_string(body.length()));
     }
 
-    // Server information
+    // Server information - now using dynamic values from server config
     env.push_back("SERVER_SOFTWARE=webserv/1.0");
-    env.push_back("SERVER_NAME=localhost");
-    env.push_back("SERVER_PORT=8080");
+    env.push_back("SERVER_NAME=" + server.getName());
+    env.push_back("SERVER_PORT=" + std::to_string(server.getPort()));
 
     // Remote client info (simplified)
     env.push_back("REMOTE_ADDR=127.0.0.1");
@@ -913,12 +913,18 @@ std::string executeCgiScript(const std::string& scriptPath, const std::vector<st
 }
 
 /** Handle CGI requests for executable scripts */
-void cgi(const Request& req, Response& res, const Location* location, const std::string& server_root) {
+void cgi(const Request& req, Response& res, const Location* location, const std::string& server_root, const Server* server) {
     try {
         // Validate location configuration
         if (!location || location->cgi_path.empty() || location->cgi_ext.empty()) {
             router::utils::HttpResponseBuilder::setErrorResponse(res, http::FORBIDDEN_403);
             // router::utils::HttpResponseBuilder::setErrorResponse(res, http::FORBIDDEN_403, req);
+            return;
+        }
+
+        // Validate server configuration
+        if (!server) {
+            router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
             return;
         }
 
@@ -966,9 +972,9 @@ void cgi(const Request& req, Response& res, const Location* location, const std:
             return;
         }
 
-        // Set up CGI environment
+        // Set up CGI environment - now passing server information
         std::string scriptName = std::filesystem::path(filePath).filename().string();
-        auto env = setupCgiEnvironment(req, filePath, scriptName);
+        auto env = setupCgiEnvironment(req, filePath, scriptName, *server);
 
         // Get and process request body for CGI input
         std::string body = std::string(req.getBody());
