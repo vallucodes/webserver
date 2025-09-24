@@ -16,7 +16,7 @@ void	Cluster::config(const std::string& config_file) {
 	groupConfigs();
 	// printAllConfigGroups(_listener_groups);
 
-	_max_clients = 100; // TODO use getMaxClients()
+	_max_clients = getMaxClients();
 
 	_router.setupRouter(_configs);
 }
@@ -196,6 +196,9 @@ void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 		_router.handleRequest(conf, req, res);
 		client_state.response = responseToString(res);
 		client_state.kick_me = true;
+		_fds[i].events |= POLLOUT;			// start to listen if client is ready to receive response
+		client_state.send_start = std::chrono::high_resolution_clock::now(); //this should be moved to the response part of code
+		client_state.waiting_response = true;
 	}
 }
 

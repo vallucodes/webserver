@@ -44,17 +44,14 @@ void	checkNameRepitition(const std::vector<Server> configs, const Server config)
 	}
 }
 
-// after parsing config, should be checked that max amount of clients there should be less than max.
-// Or handled somehow, this is just temp fix. Its finding systems max fds and using that - 10.
 uint64_t	getMaxClients() {
 	struct rlimit rl;
 	if (getrlimit(RLIMIT_NOFILE, &rl) != 0)
 		throw std::runtime_error("Error: getrlimit");
 
-	// Reserve some FDs for standard I/O, listening socket, etc.
-	uint64_t reserved_fds = 10;
+	uint64_t reserved_fds = 100;
 	int max_clients = rl.rlim_cur - reserved_fds;
-	if (max_clients < 1)
+	if (max_clients < 2)
 		throw std::runtime_error("Error: Not enough fd's available to create a server");
 	return max_clients;
 }
@@ -209,8 +206,4 @@ std::string	popResponseChunk(ClientRequestState& client_state) {
 
 void	buildRequest(ClientRequestState& client_state) {
 	client_state.request = client_state.clean_buffer.substr(0, client_state.request_size);
-	// std::cout << "request: \n" << client_state.request << std::endl;
-	// client_state.buffer = client_state.clean_buffer.substr(client_state.request_size); // this is unnescessary in chunked case because buffer has uncleaned leftovers
-	// buffer = client_state.buffer.substr(client_state.request_size);
-	// std::cout << "buffer empty?: \n" << client_state.buffer.empty() << std::endl;
 }
