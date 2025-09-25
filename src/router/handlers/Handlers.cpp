@@ -16,7 +16,7 @@ using namespace http;
 
 #include <fstream> // for std::ifstream, std::ofstream
 #include <sstream> // for std::istringstream
-#include <filesystem> // for std::filesystem::directory_iterator, std::filesystem::path, std::filesystem::exists, std::filesystem::is_directory, std::filesystem::is_regular_file, std::filesystem::create_directories, std::filesystem::remove, std::filesystem::file_size, std::filesystem::last_write_time
+// #include <filesystem> // for std::filesystem::directory_iterator, std::filesystem::path, std::filesystem::exists, std::filesystem::is_directory, std::filesystem::is_regular_file, std::filesystem::create_directories, std::filesystem::remove, std::filesystem::file_size, std::filesystem::last_write_time
 #include <cctype> // for std::tolower, std::isspace
 #include <unistd.h> // for pipe, fork, dup2, close, write, read, chdir, execve, STDIN_FILENO, STDOUT_FILENO
 #include <ctime> // for time, time_t, strftime
@@ -827,12 +827,21 @@ void cgi(const Request& req, Response& res, const Location* location, const std:
 
         // 3. File Existence and Executability Phase
         std::string filePath = router::utils::StringUtils::determineFilePathCGI(filePathView, location, server_root);
-
-        // Check if file exists and is executable
-        if (!std::filesystem::exists(filePath)) {
-            router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404);
+        if (router::utils::isFileExistsAndExecutable(filePath, res) != true) {
             return;
         }
+
+        // // Check if file path is empty
+        // if (filePath.empty()) {
+        //     router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400);
+        //     return;
+        // }
+
+        // // Check if file exists and is executable
+        // if (!std::filesystem::exists(filePath)) {
+        //     router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404);
+        //     return;
+        // }
 
         // Verify it's a CGI script using location-configured extensions
         if (!isCgiScriptWithLocation(filePath, location)) {

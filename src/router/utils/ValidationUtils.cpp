@@ -45,5 +45,19 @@ bool isValidPath(const std::string_view& path, Response& res) {
     return true;
 }
 
+bool isFileExistsAndExecutable(const std::string& filePath, Response& res) {
+    if (filePath.empty()) {
+        router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400);
+        return false;
+    }
+
+    // Check if file exists and is executable
+    if (!std::filesystem::exists(filePath)) {
+        router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404);
+        return false;
+    }
+
+    return true;
+}
 } // namespace utils
 } // namespace router
