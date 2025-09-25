@@ -6,11 +6,14 @@
 #pragma once
 
 #include <string> // for std::string
+#include <vector> // for std::vector
 
 #include "../../request/Request.hpp"
 #include "../../response/Response.hpp"
-#include "../../router/Router.hpp"
-#include "../HttpConstants.hpp"
+
+// Forward declarations
+struct Location;
+class Server;
 
 /** Core HTTP Request Handler Functions */
 

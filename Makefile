@@ -23,6 +23,7 @@ HEADERS		= inc/webserv.hpp \
 				src/router/utils/HttpResponseBuilder.hpp \
 				src/router/utils/ValidationUtils.hpp \
 				src/router/utils/Utils.hpp \
+				src/router/handlers/CgiExecutor.hpp \
 				src/request/Request.hpp \
 				src/response/Response.hpp \
 				src/message/AMessage.hpp \
@@ -44,6 +45,7 @@ SRCS		= src/main.cpp \
 				src/router/utils/HttpResponseBuilder.cpp \
 				src/router/utils/ValidationUtils.cpp \
 				src/router/utils/Utils.cpp \
+				src/router/handlers/CgiExecutor.cpp \
 				src/request/Request.cpp \
 				src/response/Response.cpp \
 				src/message/AMessage.cpp \

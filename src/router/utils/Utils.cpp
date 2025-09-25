@@ -1,5 +1,7 @@
 #include "Utils.hpp"
 #include "../../server/Server.hpp"
+#include <algorithm> // for std::transform
+#include <cctype> // for std::tolower
 
 namespace router {
 namespace utils {
