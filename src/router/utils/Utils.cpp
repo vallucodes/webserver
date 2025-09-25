@@ -1,7 +1,15 @@
 #include "Utils.hpp"
 #include "../../server/Server.hpp"
+#include "../HttpConstants.hpp"
+#include "HttpResponseBuilder.hpp"
+#include "StringUtils.hpp"
+#include "FileUtils.hpp"
 #include <algorithm> // for std::transform
 #include <cctype> // for std::tolower
+#include <filesystem> // for std::filesystem
+#include <iostream> // for std::cout
+#include <chrono> // for time handling
+#include <ctime> // for strftime, localtime
 
 namespace router {
 namespace utils {
@@ -255,6 +263,157 @@ std::vector<std::string> setupCgiEnvironment(const Request& req, const std::stri
     env.push_back("PATH=/usr/bin:/bin:/usr/local/bin");
 
     return env;
+}
+
+/** Generate HTML directory listing */
+std::string generateDirectoryListing(const std::string& dirPath, const std::string& requestPath) {
+    // Load template file
+    std::string templatePath = page::WWW + "/autoindex_template.html";
+    std::string html;
+
+    try {
+        html = FileUtils::readFileToString(templatePath);
+    } catch (const std::exception& e) {
+        // Fallback to fallback template file if main template fails
+        std::cout << "Warning: Could not load autoindex template: " << e.what() << std::endl;
+        std::string fallbackPath = page::WWW + "/autoindex_fallback.html";
+        try {
+            html = FileUtils::readFileToString(fallbackPath);
+        } catch (const std::exception& e2) {
+            // If both templates fail, return a simple error message
+            std::cout << "Error: Could not load fallback template: " << e2.what() << std::endl;
+            return "<html><body><h1>Error</h1><p>Could not load directory listing template.</p></body></html>";
+        }
+    }
+
+    // Replace placeholders
+    html = StringUtils::replaceAll(html, "{{PATH}}", requestPath);
+
+    // Generate parent directory link
+    std::string parentLink = "";
+    if (requestPath != "/") {
+        std::string parentPath = requestPath;
+
+        // Remove trailing slash if present
+        if (parentPath.back() == '/') {
+            parentPath.pop_back();
+        }
+
+        // Find the last slash to get the parent directory
+        size_t lastSlash = parentPath.find_last_of('/');
+        if (lastSlash != std::string::npos) {
+            parentPath = parentPath.substr(0, lastSlash);
+            if (parentPath.empty()) parentPath = "/";
+            parentLink = "    <a href=\"" + parentPath + "\" class=\"back-link\">← Parent directory</a>\n";
+        }
+    }
+    html = StringUtils::replaceAll(html, "{{PARENT_LINK}}", parentLink);
+
+    // Generate directory items
+    std::string items = "";
+    try {
+        for (const auto& entry : std::filesystem::directory_iterator(dirPath)) {
+            std::string name = entry.path().filename().string();
+            std::string linkPath = requestPath;
+            if (linkPath.back() != '/') linkPath += '/';
+            linkPath += name;
+
+            bool isDir = entry.is_directory();
+            std::string icon = isDir ? "📁" : "📄";
+            std::string cssClass = isDir ? "dir-icon" : "file-icon";
+
+            // Get file size
+            std::string sizeStr = "-";
+            if (!isDir) {
+                try {
+                    auto size = entry.file_size();
+                    if (size < 1024) sizeStr = std::to_string(size) + " B";
+                    else if (size < 1024 * 1024) sizeStr = std::to_string(size / 1024) + " KB";
+                    else sizeStr = std::to_string(size / (1024 * 1024)) + " MB";
+                } catch (...) {}
+            }
+
+            // Get last modified time
+            std::string dateStr = "-";
+            try {
+                auto time = entry.last_write_time();
+                auto time_t = std::chrono::system_clock::to_time_t(std::chrono::file_clock::to_sys(time));
+                char buffer[20];
+                strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M", localtime(&time_t));
+                dateStr = buffer;
+            } catch (...) {}
+
+            items += "        <div class=\"item\">\n";
+            items += "            <span class=\"" + cssClass + "\">" + icon + "</span>\n";
+            items += "            <a href=\"" + linkPath + "\" class=\"name\">" + name + "</a>\n";
+            items += "            <span class=\"size\">" + sizeStr + "</span>\n";
+            items += "            <span class=\"date\">" + dateStr + "</span>\n";
+            items += "        </div>\n";
+        }
+    } catch (const std::exception& e) {
+        items += "        <div class=\"item\">Error reading directory: " + std::string(e.what()) + "</div>\n";
+    }
+
+    html = StringUtils::replaceAll(html, "{{ITEMS}}", items);
+
+    return html;
+}
+
+bool handleDirectoryRequest(const std::string& dirPath, const std::string& requestPath,
+                           const Location* location, Response& res, const Request& req) {
+    // Try autoindex first if enabled
+    if (location && location->autoindex) {
+        std::string dirListing = generateDirectoryListing(dirPath, requestPath);
+        HttpResponseBuilder::setSuccessResponse(res, dirListing, http::CONTENT_TYPE_HTML);
+        return true;
+    }
+
+    // Combine location-specific, global, and default index files
+    std::vector<std::string> indexPaths;
+    if (location && !location->index.empty()) {
+        std::string indexPath = dirPath;
+        if (!indexPath.ends_with('/')) indexPath += '/';
+        indexPaths.push_back(indexPath + location->index); // Location-specific index
+        indexPaths.push_back(page::WWW + "/" + location->index); // Global index
+    }
+    for (const auto& defaultFile : page::DEFAULT_INDEX_FILES) {
+        indexPaths.push_back(dirPath + "/" + defaultFile); // Default index files
+    }
+
+    // Try each index file in order
+    for (const auto& path : indexPaths) {
+        if (std::filesystem::exists(path) && std::filesystem::is_regular_file(path)) {
+            std::string fileContent = FileUtils::readFileToString(path);
+            std::string contentType = FileUtils::getContentType(path);
+            HttpResponseBuilder::setSuccessResponse(res, fileContent, contentType, req);
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/** Create simple success message */
+std::string createSuccessMessage(const std::string& filename, const std::string& action) {
+    return "File '" + filename + "' " + action + " successfully!";
+}
+
+/**
+ * @brief Serve a static file
+ * @param filePath Path to the file to serve
+ * @param res Response object
+ * @param req HTTP request
+ * @return true if served successfully
+ */
+bool serveStaticFile(const std::string& filePath, Response& res, const Request& req) {
+  try {
+    std::string fileContent = FileUtils::readFileToString(filePath);
+    std::string contentType = FileUtils::getContentType(filePath);
+    HttpResponseBuilder::setSuccessResponse(res, fileContent, contentType, req);
+    return true;
+  } catch (const std::exception&) {
+    return false;
+  }
 }
 
 } // namespace utils
