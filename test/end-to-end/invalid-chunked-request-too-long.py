@@ -1,3 +1,5 @@
+# set max body size in confign to 100, then test this with "1" and without
+
 import socket
 import time
 
@@ -30,12 +32,11 @@ request_headers = (
 )
 
 with socket.create_connection((HOST, PORT)) as sock:
-	# Send headers first
 	sock.sendall(request_headers.encode())
 
 	for i, chunk in enumerate(chunks):
-		chunk_bytes = chunk.encode('utf-8')         # encode first
-		size = f"{len(chunk_bytes):X}"              # chunk size in bytes
+		chunk_bytes = chunk.encode('utf-8')
+		size = f"{len(chunk_bytes):X}"
 		frame = f"{size}\r\n".encode() + chunk_bytes + b"\r\n"
 		sock.sendall(frame)
 

@@ -175,7 +175,7 @@ bool	isRequestBodyComplete(ClientRequestState& client_state, size_t header_end) 
 	client_state.clean_buffer = client_state.buffer;
 	size_t remainder = client_state.clean_buffer.size() - header_end;
 	std::smatch match;
-	if (std::regex_search(client_state.clean_buffer, match, std::regex(R"(Content-Length:\s*(\d+)\r?\n)"))) {
+	if (std::regex_search(client_state.clean_buffer, match, std::regex(R"(Content-Length:\s*(\d+)\s*\r?\n)"))) {
 		size_t body_expected_len = std::stoul(match[1].str());
 		if (body_expected_len > client_state.max_body_size) {
 			client_state.data_validity = false;

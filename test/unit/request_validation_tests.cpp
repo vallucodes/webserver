@@ -5,7 +5,7 @@
 // Test 1: Simple chunked body decoding
 TEST(DecodeChunkedBodyTest, DecodeSimpleChunkedBody) {
 	ClientRequestState client_state;
-
+	client_state.max_body_size = 1000;
 	client_state.buffer =
 		"POST / HTTP/1.1\r\n"
 		"Transfer-Encoding: chunked\r\n"
@@ -30,7 +30,7 @@ TEST(DecodeChunkedBodyTest, DecodeSimpleChunkedBody) {
 // Test 2: Single chunk
 TEST(DecodeChunkedBodyTest, DecodeSingleChunk) {
 	ClientRequestState client_state;
-
+	client_state.max_body_size = 1000;
 	client_state.buffer =
 		"POST / HTTP/1.1\r\n"
 		"Content-Type: text/plain\r\n"
@@ -54,7 +54,7 @@ TEST(DecodeChunkedBodyTest, DecodeSingleChunk) {
 // Test 3: Empty chunks (only terminator)
 TEST(DecodeChunkedBodyTest, DecodeEmptyChunks) {
 	ClientRequestState client_state;
-
+	client_state.max_body_size = 1000;
 	client_state.buffer =
 		"GET / HTTP/1.1\r\n"
 		"Host: example.com\r\n"
@@ -76,7 +76,7 @@ TEST(DecodeChunkedBodyTest, DecodeEmptyChunks) {
 // Test 4: Hexadecimal chunk sizes
 TEST(DecodeChunkedBodyTest, DecodeHexadecimalChunkSizes) {
 	ClientRequestState client_state;
-
+	client_state.max_body_size = 1000;
 	client_state.buffer =
 		"POST / HTTP/1.1\r\n"
 		"Content-Type: application/json\r\n"
@@ -101,7 +101,7 @@ TEST(DecodeChunkedBodyTest, DecodeHexadecimalChunkSizes) {
 // Test 5: Multiple small chunks
 TEST(DecodeChunkedBodyTest, DecodeMultipleSmallChunks) {
 	ClientRequestState client_state;
-
+	client_state.max_body_size = 1000;
 	client_state.buffer =
 		"POST /upload HTTP/1.1\r\n"
 		"Host: example.com\r\n"
@@ -129,7 +129,7 @@ TEST(DecodeChunkedBodyTest, DecodeMultipleSmallChunks) {
 // Test 6: Chunked body with binary data
 TEST(DecodeChunkedBodyTest, DecodeChunkedBinaryData) {
 	ClientRequestState client_state;
-
+	client_state.max_body_size = 1000;
 	client_state.buffer =
 		"POST /binary HTTP/1.1\r\n"
 		"Content-Type: application/octet-stream\r\n"
@@ -154,7 +154,7 @@ TEST(DecodeChunkedBodyTest, DecodeChunkedBinaryData) {
 // Test 7: Malformed chunk (incomplete)
 TEST(DecodeChunkedBodyTest, HandleIncompleteChunk) {
 	ClientRequestState client_state;
-
+	client_state.max_body_size = 1000;
 	client_state.buffer =
 		"POST / HTTP/1.1\r\nContent-Type: text/plain\r\n\r\n5\r\nHello"; // Missing \r\n and terminator
 
@@ -173,7 +173,7 @@ TEST(DecodeChunkedBodyTest, HandleIncompleteChunk) {
 // Test 8: Large chunk size in hex
 TEST(DecodeChunkedBodyTest, DecodeLargeHexChunkSize) {
 	ClientRequestState client_state;
-
+	client_state.max_body_size = 1000;
 	std::string large_data(255, 'A'); // 255 characters of 'A'
 	client_state.buffer =
 		"POST / HTTP/1.1\r\n"
@@ -194,191 +194,208 @@ TEST(DecodeChunkedBodyTest, DecodeLargeHexChunkSize) {
 	EXPECT_TRUE(client_state.data_validity);
 }
 
-// // Test 9: Large chunk size in hex
-// TEST(DecodeChunkedBodyTest, DecodeLargeHexChunkSize) {
-// 	ClientRequestState client_state;
-
-// 	client_state.buffer =
-// 		"POST / HTTP/1.1\r\n"
-// 		"Content-Type: application/json\r\n"
-// 		"\r\n"
-// 		"F\r\n{\"test\":\"data\"}\r\n"
-// 		"B\r\n, \"more\":1}\r\n"
-// 		"0\r\n\r\n";
-
-// 	std::string expected =
-// 		"POST / HTTP/1.1\r\n"
-// 		"Content-Type: application/json\r\n"
-// 		"\r\n"
-// 		"{\"test\":\"data\"}, \"more\":1}";
-
-// 	client_state.data_validity = true;
-// 	decodeChunkedBody(client_state);
-
-// 	EXPECT_EQ(client_state.clean_buffer, expected);
-// 	EXPECT_TRUE(client_state.data_validity);
-// }
-
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 #define MAX_BODY_SIZE 10000000
 
-TEST(RequestCompleteTest, ReturnFalseForLargeBuffer) {
+// Test 1: Body exceeds max_body_size should return false and set data_validity to false
+TEST(IsRequestBodyCompleteTest, ReturnFalseForLargeBody) {
 	ClientRequestState client_state;
-	client_state.buffer = std::string(11 * 1024 * 1024, 'a'); // 11MB buffer
+	client_state.max_body_size = 1024;
+	client_state.buffer =
+		"POST / HTTP/1.1\r\n"
+		"Content-Length: 2048\r\n"
+		"\r\n"
+		"body_content_here";
+	size_t header_end = client_state.buffer.find("\r\n\r\n") + 4;
 
-	EXPECT_FALSE(requestComplete(client_state));
+	EXPECT_FALSE(isRequestBodyComplete(client_state, header_end));
 	EXPECT_FALSE(client_state.data_validity);
 }
 
-// Test 2: No header end should return false
-TEST(RequestCompleteTest, ReturnFalseIfNoHeaderEnd) {
+// Test 2: No Content-Length header should return true (no body expected)
+TEST(IsRequestBodyCompleteTest, ReturnTrueIfNoContentLength) {
 	ClientRequestState client_state;
-	client_state.buffer = "GET / HTTP/1.1\r\nContent-Length: 10"; // no \r\n\r\n
+	client_state.max_body_size = 1000;
+	client_state.buffer = "GET / HTTP/1.1\r\n\r\n";
+	size_t header_end = client_state.buffer.find("\r\n\r\n") + 4;
 
-	EXPECT_FALSE(requestComplete(client_state));
-	EXPECT_TRUE(client_state.data_validity); // Should remain true
+	EXPECT_TRUE(isRequestBodyComplete(client_state, header_end));
+	EXPECT_TRUE(client_state.data_validity);
+	EXPECT_EQ(client_state.request_size, header_end);
 }
 
-// Test 3: Valid chunked request should return true
-TEST(RequestCompleteTest, ReturnTrueForValidChunkedRequest) {
+// Test 3: Complete body with Content-Length should return true
+TEST(IsRequestBodyCompleteTest, ReturnTrueForCompleteBody) {
 	ClientRequestState client_state;
+	client_state.max_body_size = 1000;
 	client_state.buffer =
-		"GET / HTTP/1.1\r\n"
-		"Transfer-Encoding: chunked\r\n"
+		"POST / HTTP/1.1\r\n"
+		"Content-Length: 4\r\n"
 		"\r\n"
-		"4\r\nWiki\r\n"
-		"0\r\n\r\n";
+		"Wiki";
+	size_t header_end = client_state.buffer.find("\r\n\r\n") + 4;
 
-	EXPECT_TRUE(requestComplete(client_state));
+	EXPECT_TRUE(isRequestBodyComplete(client_state, header_end));
 	EXPECT_TRUE(client_state.data_validity);
+	EXPECT_EQ(client_state.request_size, header_end + 4);
 }
 
-// Test 4: Missing body should return false
-TEST(RequestCompleteTest, ReturnFalseNoBody) {
+// Test 4: Incomplete body should return false
+TEST(IsRequestBodyCompleteTest, ReturnFalseForIncompleteBody) {
 	ClientRequestState client_state;
-	client_state.buffer =
-		"GET / HTTP/1.1\r\n"
-		"Transfer-Encoding: chunked\r\n"
-		"4\r\nWiki\r\n"
-		"0\r\n\r\n"; // Missing \r\n\r\n after headers
-
-	EXPECT_FALSE(requestComplete(client_state));
-	EXPECT_TRUE(client_state.data_validity);
-}
-
-// Test 5: Short body should return false
-TEST(RequestCompleteTest, ReturnFalseForShortBody) {
-	ClientRequestState client_state;
+	client_state.max_body_size = 1000;
 	client_state.buffer =
 		"POST / HTTP/1.1\r\n"
 		"Content-Length: 10\r\n"
 		"\r\n"
-		"12345"; // Only 5 chars, expecting 10
+		"Wiki";
+	size_t header_end = client_state.buffer.find("\r\n\r\n") + 4;
 
-	EXPECT_FALSE(requestComplete(client_state));
+	EXPECT_FALSE(isRequestBodyComplete(client_state, header_end));
 	EXPECT_TRUE(client_state.data_validity);
 }
 
-// Test 6: Correct body size should return true
-TEST(RequestCompleteTest, ReturnTrueForCorrectBodySize) {
+// Test 5: Zero Content-Length should return true
+TEST(IsRequestBodyCompleteTest, ReturnTrueForZeroContentLength) {
 	ClientRequestState client_state;
+	client_state.max_body_size = 1000;
+	client_state.buffer =
+		"POST / HTTP/1.1\r\n"
+		"Content-Length: 0\r\n"
+		"\r\n";
+	size_t header_end = client_state.buffer.find("\r\n\r\n") + 4;
+
+	EXPECT_TRUE(isRequestBodyComplete(client_state, header_end));
+	EXPECT_TRUE(client_state.data_validity);
+	EXPECT_EQ(client_state.request_size, header_end);
+}
+
+// Test 6: Exact body size should return true
+TEST(IsRequestBodyCompleteTest, ReturnTrueForExactBodySize) {
+	ClientRequestState client_state;
+	client_state.max_body_size = 1000;
 	client_state.buffer =
 		"POST / HTTP/1.1\r\n"
 		"Content-Length: 5\r\n"
 		"\r\n"
 		"12345";
+	size_t header_end = client_state.buffer.find("\r\n\r\n") + 4;
 
-	EXPECT_TRUE(requestComplete(client_state));
+	EXPECT_TRUE(isRequestBodyComplete(client_state, header_end));
 	EXPECT_TRUE(client_state.data_validity);
+	EXPECT_EQ(client_state.request_size, header_end + 5);
 }
 
-// Test 7: More than one request should return true
-TEST(RequestCompleteTest, ReturnTrueMoreThanOneRequest) {
+// Test 7: More data than Content-Length should return true and set correct request_size
+TEST(IsRequestBodyCompleteTest, ReturnTrueWithExtraData) {
 	ClientRequestState client_state;
-	client_state.buffer =
+	client_state.max_body_size = 1000;
+	std::string original_buffer =
 		"POST / HTTP/1.1\r\n"
 		"Content-Length: 5\r\n"
 		"\r\n"
-		"12345678910"; // Extra data beyond Content-Length
+		"12345EXTRA_DATA";
+	client_state.buffer = original_buffer;
+	size_t header_end = client_state.buffer.find("\r\n\r\n") + 4;
 
-	EXPECT_TRUE(requestComplete(client_state));
+	EXPECT_TRUE(isRequestBodyComplete(client_state, header_end));
 	EXPECT_TRUE(client_state.data_validity);
+	EXPECT_EQ(client_state.request_size, header_end + 5);
+	EXPECT_EQ(client_state.buffer, "EXTRA_DATA");
 }
 
-// Test 8: Empty request should return false
-TEST(RequestCompleteTest, ReturnFalseForEmptyRequest) {
+// Test 8: Empty buffer with header_end at 0 should return true
+TEST(IsRequestBodyCompleteTest, ReturnTrueForEmptyBuffer) {
 	ClientRequestState client_state;
+	client_state.max_body_size = 1000;
 	client_state.buffer = "";
+	size_t header_end = 0;
 
-	EXPECT_FALSE(requestComplete(client_state));
-	EXPECT_TRUE(client_state.data_validity); // Empty is not invalid, just incomplete
-}
-
-// Test 9: Header only request should return true
-TEST(RequestCompleteTest, ReturnTrueMoreThanOneRequestOnlyHeader) {
-	ClientRequestState client_state;
-	client_state.buffer =
-		"POST / HTTP/1.1\r\n"
-		"\r\n"
-		"12345678910";
-
-	EXPECT_TRUE(requestComplete(client_state));
+	EXPECT_TRUE(isRequestBodyComplete(client_state, header_end));
 	EXPECT_TRUE(client_state.data_validity);
+	EXPECT_EQ(client_state.request_size, 0);
 }
 
-// Test 10: CRLF in body should not affect completion
-TEST(RequestCompleteTest, ReturnFalseCRLFCRLFInBodyStatusTrue) {
+// Test 9: Headers only without Content-Length should return true
+TEST(IsRequestBodyCompleteTest, ReturnTrueForHeadersOnly) {
 	ClientRequestState client_state;
+	client_state.max_body_size = 1000;
 	client_state.buffer =
-		"POST / HTTP/1.1\r\n"
-		"Content-Length: 500\r\n"
-		"\r\n"
-		"12345678910\r\n\r\n2134256"; // Body contains CRLF but not 500 chars
-
-	EXPECT_FALSE(requestComplete(client_state)); // Not enough body content
-	EXPECT_TRUE(client_state.data_validity);
-}
-
-// Test 11: Only header should return true
-TEST(RequestCompleteTest, ReturnTrueOnlyHeader) {
-	ClientRequestState client_state;
-	client_state.buffer =
-		"POST / HTTP/1.1\r\n"
+		"GET / HTTP/1.1\r\n"
+		"Host: example.com\r\n"
 		"\r\n";
+	size_t header_end = client_state.buffer.find("\r\n\r\n") + 4;
 
-	EXPECT_TRUE(requestComplete(client_state));
+	EXPECT_TRUE(isRequestBodyComplete(client_state, header_end));
 	EXPECT_TRUE(client_state.data_validity);
+	EXPECT_EQ(client_state.request_size, header_end);
 }
 
-// Test 12: Fake content length in body, request not complete
-TEST(RequestCompleteTest, ReturnFalseFakeContentLengthInBody) {
+// Test 10: Content-Length with spaces should work
+TEST(IsRequestBodyCompleteTest, ReturnTrueWithSpacesInContentLength) {
 	ClientRequestState client_state;
+	client_state.max_body_size = 1000;
 	client_state.buffer =
 		"POST / HTTP/1.1\r\n"
-		"Content-Length: 500\r\n"
+		"Content-Length:   5   \r\n"  // Spaces around value
 		"\r\n"
-		"12345678910\r\n\r\n2134256\r\nContent-Length: 5\r\n\r\n12345"; // Body contains fake "Content-Length: "
+		"12345";
+	size_t header_end = client_state.buffer.find("\r\n\r\n") + 4;
 
-	EXPECT_FALSE(requestComplete(client_state)); // Not enough body content
+	EXPECT_TRUE(isRequestBodyComplete(client_state, header_end));
 	EXPECT_TRUE(client_state.data_validity);
+	EXPECT_EQ(client_state.request_size, header_end + 5);
 }
 
-// Test 13: Ignore Fake Content-Length in Body, Request Completes Successfully
-TEST(RequestCompleteTest, ReturnTrueIgnoreFakeContentLengthInBody) {
+// Test 11: Multiple Content-Length headers (first one should be used)
+TEST(IsRequestBodyCompleteTest, ReturnTrueWithMultipleContentLength) {
 	ClientRequestState client_state;
+	client_state.max_body_size = 1000;
+	client_state.buffer =
+		"POST / HTTP/1.1\r\n"
+		"Content-Length: 5\r\n"
+		"Content-Length: 10\r\n"  // Second one should be ignored
+		"\r\n"
+		"12345";
+	size_t header_end = client_state.buffer.find("\r\n\r\n") + 4;
+
+	EXPECT_TRUE(isRequestBodyComplete(client_state, header_end));
+	EXPECT_TRUE(client_state.data_validity);
+	EXPECT_EQ(client_state.request_size, header_end + 5); // Uses first Content-Length
+}
+
+// Test 12: Fake Content-Length in body should be ignored
+TEST(IsRequestBodyCompleteTest, ReturnTrueIgnoreFakeContentLengthInBody) {
+	ClientRequestState client_state;
+	client_state.max_body_size = 1000;
+	client_state.buffer =
+		"POST / HTTP/1.1\r\n"
+		"Content-Length: 30\r\n"
+		"\r\n"
+		"Content-Length: 500\r\nFakeBody1";
+	size_t header_end = client_state.buffer.find("\r\n\r\n") + 4;
+
+	EXPECT_TRUE(isRequestBodyComplete(client_state, header_end));
+	EXPECT_TRUE(client_state.data_validity);
+	EXPECT_EQ(client_state.request_size, header_end + 30);
+}
+
+// Test 13: Body at max_body_size limit should return true
+TEST(IsRequestBodyCompleteTest, ReturnTrueForBodyAtMaxSize) {
+	ClientRequestState client_state;
+	client_state.max_body_size = 5;
 	client_state.buffer =
 		"POST / HTTP/1.1\r\n"
 		"Content-Length: 5\r\n"
 		"\r\n"
-		"12345\r\nContent-Length: 500\r\n";
-		// Fake "Content-Length" appears *after* the real body
+		"12345";
+	size_t header_end = client_state.buffer.find("\r\n\r\n") + 4;
 
-	EXPECT_TRUE(requestComplete(client_state));    // Request complete
-	EXPECT_TRUE(client_state.data_validity);       // Still valid request
-	EXPECT_EQ(client_state.request_size, client_state.clean_buffer.find("\r\n\r\n") + 4 + 5);
-	// request_size points just past the real body
+	EXPECT_TRUE(isRequestBodyComplete(client_state, header_end));
+	EXPECT_TRUE(client_state.data_validity);
+	EXPECT_EQ(client_state.request_size, header_end + 5);
 }
-
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

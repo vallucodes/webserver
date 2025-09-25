@@ -3,7 +3,7 @@ import threading
 
 SERVER_HOST = '127.0.0.1'
 SERVER_PORT = 8081
-NUM_CLIENTS = 10
+NUM_CLIENTS = 1000
 
 def client_task(id):
 	try:
