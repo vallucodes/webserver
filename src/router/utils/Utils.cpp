@@ -1,4 +1,4 @@
-#include "CgiUtils.hpp"
+#include "Utils.hpp"
 #include "../../server/Server.hpp"
 
 namespace router {

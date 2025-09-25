@@ -8,7 +8,7 @@
 #include "../utils/FileUtils.hpp"
 #include "../utils/HttpResponseBuilder.hpp"
 #include "../utils/ValidationUtils.hpp"
-#include "../utils/CgiUtils.hpp"
+#include "../utils/Utils.hpp"
 #include "Handlers.hpp"
 #include "../Router.hpp"
 #include "../HttpConstants.hpp"
