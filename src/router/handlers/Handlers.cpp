@@ -287,7 +287,25 @@ void post(const Request& req, Response& res, const Location* location, const std
             return;
         }
 
-        std::string_view body = req.getBody();
+        // Handle chunked request body if needed
+        std::string processedBody = std::string(req.getBody());
+        auto transferEncoding = req.getHeaders("transfer-encoding");
+        bool isChunked = false;
+
+        if (!transferEncoding.empty()) {
+            for (const auto& encoding : transferEncoding) {
+                if (encoding.find("chunked") != std::string::npos) {
+                    isChunked = true;
+                    break;
+                }
+            }
+        }
+
+        // Unchunk the body if it's chunked
+        if (isChunked) {
+            processedBody = router::utils::parseChunkedRequestBody(processedBody);
+        }
+
         const auto& contentTypeKey = req.getHeaders("content-type");
 
         if (contentTypeKey.empty()) {
@@ -314,7 +332,7 @@ void post(const Request& req, Response& res, const Location* location, const std
         }
 
         const std::string boundary = "--" + contentType.substr(boundaryPos + 9);
-        const std::string bodyStr(body);
+        const std::string bodyStr(processedBody);
 
         // Find file boundaries
         const size_t fileStart = bodyStr.find(boundary);

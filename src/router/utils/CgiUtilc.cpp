@@ -44,6 +44,7 @@ std::string parseChunkedRequestBody(const std::string& body) {
 
     while (pos < body.length()) {
         // Find the end of the chunk size line
+        // \r is carriage return, \n is line feed (CRLF)
         size_t lineEnd = body.find("\r\n", pos);
         if (lineEnd == std::string::npos) {
             lineEnd = body.find("\n", pos);
@@ -53,16 +54,30 @@ std::string parseChunkedRequestBody(const std::string& body) {
         // Extract chunk size
         std::string chunkSizeStr = body.substr(pos, lineEnd - pos);
         size_t chunkSize = 0;
+
+        /*
+        1f\r\n
+        abcdefghijklmnopqrstuvwxyz123\r\n
+        0\r\n
+        \r\n
+        */
+        // example: 1f\r\n -> 31
+        // read 31 bytes → "abcdefghijklmnopqrstuvwxyz123"
+        // example: 0\r\n -> 0
+        // read 0 bytes → ""
         try {
+            // should be a valid hexadecimal number
+            // convrt to unsigned long with base 16
             chunkSize = std::stoul(chunkSizeStr, nullptr, 16);
         } catch (...) {
             break; // Invalid chunk size
         }
 
-        // If chunk size is 0, we're done
+        // If chunk size is 0, no more chunks
         if (chunkSize == 0) break;
 
         // Move past the chunk size line
+        // start from the next line
         pos = lineEnd + (body[lineEnd] == '\r' ? 2 : 1);
 
         // Extract chunk data
@@ -80,7 +95,7 @@ std::string parseChunkedRequestBody(const std::string& body) {
             break; // Invalid chunk
         }
     }
-
+    // example: "abcdefghijklmnopqrstuvwxyz123"
     return result;
 }
 
@@ -96,13 +111,18 @@ std::vector<std::string> setupCgiEnvironment(const Request& req, const std::stri
     env.push_back("SCRIPT_NAME=" + scriptName);
     env.push_back("SCRIPT_FILENAME=" + scriptPath);
 
-    // Fix PATH_INFO - should be the path portion after the script name
+    // PATH_INFO and PATH_TRANSLATED
     std::string pathStr(req.getPath());
+    // Find the position of the query string
+    // example: /cgi-bin/script.py?name=Ilia&age=43
     size_t queryPos = pathStr.find('?');
+    // If there is a query string, extract the path before it
+    // example: /cgi-bin/script.py
     std::string pathWithoutQuery = (queryPos != std::string::npos) ? pathStr.substr(0, queryPos) : pathStr;
 
-    // Extract PATH_INFO (path after script name)
+    // PATH_INFO
     std::string pathInfo = "";
+    // example: /cgi-bin/script.py?name=Ilia&age=43 -> /cgi-bin/script.py
     if (pathWithoutQuery.length() > scriptName.length()) {
         pathInfo = pathWithoutQuery.substr(scriptName.length());
     }
@@ -111,18 +131,34 @@ std::vector<std::string> setupCgiEnvironment(const Request& req, const std::stri
 
     // Query string handling
     if (queryPos != std::string::npos) {
+        // example: /cgi-bin/script.py?name=Ilia&age=43 -> name=Ilia&age=43
         env.push_back("QUERY_STRING=" + pathStr.substr(queryPos + 1));
     } else {
+        // example: /cgi-bin/script.py -> ""
         env.push_back("QUERY_STRING=");
     }
 
     // Content handling - handle chunked requests
     std::string body = std::string(req.getBody());
     auto transferEncoding = req.getHeaders("transfer-encoding");
+    // example: transfer-encoding: chunked
     bool isChunked = false;
 
+    /*
+    HTTP/1.1 200 OK
+    Transfer-Encoding: chunked
+
+    4\r\n
+    Wiki\r\n
+    5\r\n
+    pedia\r\n
+    0\r\n
+    \r\n
+    */
     if (!transferEncoding.empty()) {
+        // example: transfer-encoding: chunked -> true
         for (const auto& encoding : transferEncoding) {
+            // example: transfer-encoding: chunked -> true
             if (encoding.find("chunked") != std::string::npos) {
                 isChunked = true;
                 break;
