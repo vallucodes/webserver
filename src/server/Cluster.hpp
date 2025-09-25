@@ -6,11 +6,12 @@
 #include <set>
 #include <chrono>
 #include <iostream>
+#include <errno.h>
 
 #include "webserv.hpp"
 #include "Server.hpp"
 #include "HelperFunctions.hpp"
-#include "devHelpers.hpp"
+#include "dev/devHelpers.hpp"
 #include "../router/Router.hpp"
 #include "../config/Config.hpp"
 #include "../parser/Parser.hpp"
@@ -28,6 +29,8 @@
 #define CLIENT_CLOSE_CONNECTION		" dropped by the server: Connection closed.\n"
 #define CLIENT_MALFORMED_REQUEST	" dropped by the server: Malformed request.\n"
 #define CLIENT_SEND_ERROR			" dropped by the server: send() failed.\n"
+
+extern volatile sig_atomic_t signal_to_terminate;
 
 struct ListenerGroup {
 	int	fd;
@@ -64,8 +67,8 @@ class Cluster {
 
 		std::map<int, ClientRequestState>	_client_buffers;	// storing client related information
 
-		void			groupConfigs();
-		void			createGroup(const Server& conf);
+		void	groupConfigs();
+		void	createGroup(const Server& conf);
 
 		void	handleNewClient(size_t i);
 		void	handleClientInData(size_t& i);
@@ -76,11 +79,13 @@ class Cluster {
 		void	prepareResponse(ClientRequestState& client_state, const Server& conf, Request& req, int i);
 
 	public:
+		~Cluster();
+
 		void	config(const std::string& config);
 		void	create();
 		void	run();
 
 		const Server&	findRelevantConfig(int client_fd, const std::string& buffer);
-		const std::set<int>&					getServerFds() const;
-		const std::map<int, ListenerGroup*>&	getClients() const;
+
+		const std::set<int>&	getServerFds() const;
 };

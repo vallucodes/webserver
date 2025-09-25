@@ -1,12 +1,15 @@
 #include "Cluster.hpp"
 
-
 void	Cluster::config(const std::string& config_file) {
 	Config config;
+
+	signal(SIGINT, handleSigTerminate);
+	signal(SIGTERM, handleSigTerminate);
 
 	config.validate(config_file);
 	_configs = config.parse(config_file);
 	groupConfigs();
+
 	_max_clients = getMaxClients();
 	_router.setupRouter(_configs);
 }
@@ -25,7 +28,7 @@ void	Cluster::groupConfigs() {
 		bool added = false;
 		for (auto& group : _listener_groups) {
 			uint32_t IP_group =group.default_config->getAddress();
-			int	port_group = group.default_config->getPort();
+			int port_group = group.default_config->getPort();
 
 			if (IP_group == IP_conf && port_group == port_conf) {
 				checkNameRepitition(group.configs, config);
@@ -62,10 +65,13 @@ void	Cluster::create() {
 }
 
 void	Cluster::run() {
-	while (true)
+	while (signal_to_terminate == false)
 	{
-		if (poll(_fds.data(), _fds.size(), TIME_OUT_POLL) < 0)
-			throw std::runtime_error("Error: poll");
+		if (poll(_fds.data(), _fds.size(), TIME_OUT_POLL) < 0) {
+			if (errno == EINTR)
+				continue ;
+			throw std::runtime_error("Error: poll()");
+		}
 
 		for (size_t i = 0; i < _fds.size(); ++i) {
 			if (_fds[i].revents & POLLIN) {
@@ -218,6 +224,7 @@ const std::set<int>&	Cluster::getServerFds() const {
 	return _server_fds;
 }
 
-const std::map<int, ListenerGroup*>&	Cluster::getClients() const {
-	return _clients;
+Cluster::~Cluster() {
+	for (const pollfd& fd : _fds)
+		close(fd.fd);
 }

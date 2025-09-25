@@ -33,7 +33,7 @@ class Server {
 		Server() = default;
 		~Server() = default;
 
-		int	create();
+		int		create();
 
 		void	setAddress(uint32_t address);
 		void	setPort(int port);
@@ -42,15 +42,14 @@ class Server {
 		void	setRoot(const std::string& root);
 		void	setIndex(const std::string& index);
 		void	setErrorPage(int error_index, const std::string& page);
-
 		void	setLocation(Location loc);
 
-		uint32_t			getAddress() const;
-		int					getPort() const;
-		int					getMaxBodySize() const;
-		const std::string&	getName() const;
-		const std::string&	getRoot() const;
-		const std::string&	getIndex() const;
+		uint32_t							getAddress() const;
+		int									getPort() const;
+		int									getMaxBodySize() const;
+		const std::string&					getName() const;
+		const std::string&					getRoot() const;
+		const std::string&					getIndex() const;
 		const std::map<int, std::string>&	getErrorPages() const;
 		const std::vector<Location>&		getLocations() const;
 };

@@ -1,7 +1,7 @@
 #include <iostream>
 
-#include "../config/Config.hpp"
-#include "Cluster.hpp"
+#include "../../config/Config.hpp"
+#include "../Cluster.hpp"
 
 struct ListenerGroup;
 
