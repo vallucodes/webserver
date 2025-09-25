@@ -109,7 +109,7 @@ bool isBadHeader(Request& req) {
     // Check for duplicate unique headers
     for (const auto& [key, values] : headers) {
         if (uniqueHeaders.count(key) && values.size() > 1) {
-            return true; 
+            return true;
         }
     }
     return false;
@@ -196,7 +196,7 @@ Request Parser::parseRequest(const std::string& httpString, bool& kick_me, bool 
     // std::cout << "end of string" <<  std::endl;
 
     //Parse request line
-    std::cout << "\n--------- incoming string ----------\n" << httpString << "\n---------- END ----------\n" << std::endl;
+    // std::cout << "\n--------- incoming string ----------\n" << httpString << "\n---------- END ----------\n" << std::endl;
     if (bad_request)
     {
         req.setError(true);

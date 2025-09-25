@@ -1,6 +1,9 @@
+#include <iostream>
+
 #include "../config/Config.hpp"
 #include "Cluster.hpp"
-#include <iostream>
+
+struct ListenerGroup;
 
 void	printAllConfigGroups(std::vector<ListenerGroup>& groups);
 void	printAllConfigs(std::vector<Server> cfg);

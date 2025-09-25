@@ -13,7 +13,7 @@ chunks = [
 
 # Build the raw HTTP request headers
 request_headers = (
-	"POST /uploads HTTP/1.1\r\n"
+	"GET /uploads HTTP/1.1\r\n"
 	"Host: localhost\r\n"
 	"Transfer-Encoding: chunked\r\n"
 	"\r\n"
@@ -28,7 +28,7 @@ with socket.create_connection((HOST, PORT)) as sock:
 		size = f"{len(chunk_bytes):X}"     # hex chunk size
 		frame = f"{size}\r\n".encode() + chunk_bytes + b"\r\n"
 		sock.sendall(frame)
-		time.sleep(1)
+		# time.sleep(1)
 
 	# Final zero-length chunk to indicate end of body
 	sock.sendall(b"0\r\n\r\n")
@@ -40,3 +40,4 @@ with socket.create_connection((HOST, PORT)) as sock:
 	response = sock.recv(8192)
 	print("=== Server Response ===")
 	print(response.decode(errors='replace'))
+	time.sleep(20)

@@ -3,7 +3,7 @@ import threading
 
 SERVER_HOST = '127.0.0.1'	# Change to your server IP
 SERVER_PORT = 8081			# Change to your server port
-NUM_CLIENTS = 10			# Number of clients to create
+NUM_CLIENTS = 100			# Number of clients to create
 
 def client_task(id):
 	try:

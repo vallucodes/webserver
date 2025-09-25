@@ -1,23 +1,13 @@
-#include "../../inc/webserv.hpp"
 #include "Cluster.hpp"
-#include "devHelpers.hpp"
-#include "../config/Config.hpp"
-#include "../parser/Parser.hpp"
-#include "../request/Request.hpp"
-#include "../router/Router.hpp"
+
 
 void	Cluster::config(const std::string& config_file) {
-
 	Config config;
 
 	config.validate(config_file);
 	_configs = config.parse(config_file);
-	// printAllConfigs(_configs);
 	groupConfigs();
-	// printAllConfigGroups(_listener_groups);
-
 	_max_clients = getMaxClients();
-
 	_router.setupRouter(_configs);
 }
 
@@ -78,8 +68,8 @@ void	Cluster::run() {
 			throw std::runtime_error("Error: poll");
 
 		for (size_t i = 0; i < _fds.size(); ++i) {
-			if (_fds[i].revents & POLLIN) {						// check if there is data to read related to fd
-				if (isServerSocket(_fds[i].fd, getServerFds()))	// check if fd is server or client
+			if (_fds[i].revents & POLLIN) {
+				if (isServerSocket(_fds[i].fd, getServerFds()))
 					handleNewClient(i);
 				else
 					handleClientInData(i);
@@ -92,10 +82,9 @@ void	Cluster::run() {
 }
 
 void	Cluster::handleNewClient(size_t i) {
-	if (_fds.size() >= _max_clients) {
-		// std::cout << "Server busy: can't accept new clients\n";
+	if (_fds.size() >= _max_clients)
 		return ;
-	}
+
 	sockaddr_in client_addr{};
 	socklen_t addrlen = sizeof(client_addr);
 	int client_fd = accept(_fds[i].fd, (sockaddr*)&client_addr, &addrlen);
@@ -120,37 +109,17 @@ void	Cluster::handleClientInData(size_t& i) {
 	int bytes = recv(_fds[i].fd, buffer, sizeof(buffer), 0);
 	if (bytes <= 0)
 		dropClient(i, CLIENT_DISCONNECT);
-	else {
-		// std::cout << "START----------------------------------------------------------\n";
-		// std::cout << "bytes: " << bytes << std::endl;
-		// std::cout << "buffer received (hex): ";
-		// for (int j = 0; j < bytes; ++j) {
-		// 	printf("%02X ", (unsigned char)buffer[j]);
-		// }
-		// std::cout << "\nEND----------------------------------------------------------\n";
+	else
 		processReceivedData(i, buffer, bytes);
-	}
 }
 
-std::string	headersToString(const std::unordered_map<std::string, std::vector<std::string>>& headers) {
-	std::string result;
-	for (const auto& pair : headers) {
-		const std::string& key = pair.first;
-		const std::vector<std::string>& values = pair.second;
-		for (const auto& value : values) {
-			result += key + ": " + value + "\r\n";
-		}
-	}
-	return result;
-}
-
-// Convert Response object to HTTP string
-std::string	responseToString(const Response& res) {
-	std::string responseStr = "HTTP/1.1 " + std::string(res.getStatus()) + "\r\n";
-	responseStr += headersToString(res.getAllHeaders());
-		responseStr += "\r\n";
-	responseStr += std::string(res.getBody());
-	return responseStr;
+void	Cluster::prepareResponse(ClientRequestState& client_state, const Server& conf, Request& req, int i) {
+	Response res;
+	_router.handleRequest(conf, req, res);
+	client_state.response = responseToString(res);
+	_fds[i].events |= POLLOUT;
+	client_state.send_start = std::chrono::high_resolution_clock::now();
+	client_state.waiting_response = true;
 }
 
 void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
@@ -159,53 +128,25 @@ void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 	client_state.receive_start = std::chrono::high_resolution_clock::now();
 
 	while (requestComplete(client_state, _fds[i].fd, this)) {
-		buildRequest(client_state);
-		// call here the parser in future.
-		Server conf = findRelevantConfig(_fds[i].fd, client_state.clean_buffer);
-		// printServerConfig(conf); // this is simulating what will be sent to parser later
+		client_state.request = client_state.clean_buffer.substr(0, client_state.request_size);
+		const Server& conf = findRelevantConfig(_fds[i].fd, client_state.clean_buffer);
 		Parser parse;
 		Request req = parse.parseRequest(client_state.request, client_state.kick_me, false);
-		Response res;
-
-		// Handle the request using the router
-		req.print(); //DEBUG PRINT
-
-		_router.handleRequest(conf, req, res); // Pass server config for server-specific routing
-
-		// Convert response to HTTP string format
-		client_state.response = responseToString(res);
-
-		if (client_state.buffer.empty())
-			client_state.receive_start = {};
-		else {
-			// std::cout << "clock started\n";
-			client_state.receive_start = std::chrono::high_resolution_clock::now();
-		}
-
-		_fds[i].events |= POLLOUT;			// start to listen if client is ready to receive response
-		client_state.send_start = std::chrono::high_resolution_clock::now(); //this should be moved to the response part of code
-		client_state.waiting_response = true;
+		prepareResponse(client_state, conf, req, i);
+		setTimer(client_state);
 	}
 
 	if (client_state.data_validity == false) {
-		Server conf = findRelevantConfig(_fds[i].fd, client_state.clean_buffer); // thisc
+		const Server& conf = findRelevantConfig(_fds[i].fd, client_state.clean_buffer);
 		Parser parse;
 		Request req = parse.parseRequest("400 Bad Request", client_state.kick_me, false);
-		req.print(); //DEBUG PRINT
-		Response res;
-		_router.handleRequest(conf, req, res);
-		client_state.response = responseToString(res);
+		prepareResponse(client_state, conf, req, i);
 		client_state.kick_me = true;
-		_fds[i].events |= POLLOUT;			// start to listen if client is ready to receive response
-		client_state.send_start = std::chrono::high_resolution_clock::now(); //this should be moved to the response part of code
-		client_state.waiting_response = true;
 	}
 }
 
 void	Cluster::sendPendingData(size_t& i) {
-	// --- Send minimal HTTP response ---
 	ClientRequestState& client_state = _client_buffers[_fds[i].fd];
-	// std::cout << "in sendPendingData(). Response: \n" << client_state.response << std::endl;
 	if (!client_state.response.size())
 		return ;
 
@@ -214,7 +155,6 @@ void	Cluster::sendPendingData(size_t& i) {
 		std::cout << RED << time_now() << "	Sending response to client " << _fds[i].fd << RESET << std::endl;
 		ssize_t sent = send(_fds[i].fd, response.c_str(), response.size(), 0);
 		if (sent >= 0 && client_state.response.empty()) {
-			// std::cout << "Response fully sent" << std::endl;
 			_fds[i].events &= ~POLLOUT;
 			client_state.send_start = std::chrono::high_resolution_clock::time_point{};
 			client_state.waiting_response = false;
@@ -233,7 +173,6 @@ void	Cluster::dropClient(size_t& i, const std::string& msg) {
 	_client_buffers.erase(_fds[i].fd);
 	_fds.erase(_fds.begin() + i);
 	--i;
-	// std::cout << "Currently active clients: " << _fds.size() - getServerFds().size() << "\n";
 }
 
 void	Cluster::checkForTimeouts() {
@@ -244,7 +183,6 @@ void	Cluster::checkForTimeouts() {
 		if (_client_buffers[_fds[i].fd].receive_start != std::chrono::high_resolution_clock::time_point{}) {
 			auto elapsed = now - _client_buffers[_fds[i].fd].receive_start;
 			auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count();
-			// std::cout << "Timeout checker request:" << elapsed_ms << std::endl;
 			if (elapsed_ms > TIME_OUT_REQUEST && _client_buffers[_fds[i].fd].buffer.size() > 0)
 				dropClient(i, CLIENT_TIMEOUT);
 		}
@@ -252,7 +190,6 @@ void	Cluster::checkForTimeouts() {
 		if (_client_buffers[_fds[i].fd].send_start != std::chrono::high_resolution_clock::time_point{}) {
 			auto elapsed = now - _client_buffers[_fds[i].fd].send_start;
 			auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count();
-			// std::cout << "Timeout checker response:" << elapsed_ms << std::endl;
 			if (elapsed_ms > TIME_OUT_RESPONSE && _client_buffers[_fds[i].fd].response.size() > 0)
 				dropClient(i, CLIENT_TIMEOUT);
 		}
@@ -265,7 +202,7 @@ const Server&	Cluster::findRelevantConfig(int client_fd, const std::string& buff
 	size_t			header_end = findHeader(buffer);
 	std::string		header = buffer.substr(0, header_end);
 
-	std::regex	re("Host:\\s*([^:\\s]+)"); // add optional case of port :8080 to be ignored if its there
+	std::regex	re("Host:\\s*([^:\\s]+)");
 	if (!std::regex_search(header, match, re))
 		return *conf->default_config;
 

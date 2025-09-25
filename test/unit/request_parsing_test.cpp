@@ -4,9 +4,9 @@
 #include "../src/message/AMessage.hpp"
 
 // Utility: wrap Parser::parseRequest into something easy to test
-static Request parse(const std::string& raw, bool& kick_me) {
+static Request parse(const std::string& raw, bool& kick_me, bool bad_request) {
     Parser parser;
-    return parser.parseRequest(raw, kick_me);
+    return parser.parseRequest(raw, kick_me, bad_request);
 }
 
 // ✅ Test: simple valid GET request
