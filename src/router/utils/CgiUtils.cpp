@@ -1,4 +1,4 @@
-#include "CgiUtilc.hpp"
+#include "CgiUtils.hpp"
 #include "../../server/Server.hpp"
 
 namespace router {
@@ -101,6 +101,7 @@ std::string parseChunkedRequestBody(const std::string& body) {
 
 
 /** Set up CGI environment variables */
+// READ: https://datatracker.ietf.org/doc/html/rfc3875
 std::vector<std::string> setupCgiEnvironment(const Request& req, const std::string& scriptPath, const std::string& scriptName, const Server& server) {
     std::vector<std::string> env;
 
@@ -180,18 +181,21 @@ std::vector<std::string> setupCgiEnvironment(const Request& req, const std::stri
     if (!contentLength.empty()) {
         env.push_back("CONTENT_LENGTH=" + contentLength[0]);
     } else {
-        // Use the actual body size (after unchunking if needed)
+        // Use the actual body size
         env.push_back("CONTENT_LENGTH=" + std::to_string(body.length()));
     }
 
-    // Server information - now using dynamic values from server config
+    // Server information - using dynamic values from server config
     env.push_back("SERVER_SOFTWARE=webserv/1.0");
     env.push_back("SERVER_NAME=" + server.getName());
     env.push_back("SERVER_PORT=" + std::to_string(server.getPort()));
 
     // Remote client info (simplified)
-    env.push_back("REMOTE_ADDR=127.0.0.1");
-    env.push_back("REMOTE_HOST=localhost");
+    // env.push_back("REMOTE_ADDR=127.0.0.1");
+    env.push_back("REMOTE_ADDR=" + req.getHeaders("host")[0]);
+
+    // env.push_back("REMOTE_HOST=localhost");
+    env.push_back("REMOTE_HOST=" + req.getHeaders("host")[0]);
 
     // Add PATH for finding executables
     env.push_back("PATH=/usr/bin:/bin:/usr/local/bin");

@@ -8,7 +8,7 @@
 #include "../utils/FileUtils.hpp"
 #include "../utils/HttpResponseBuilder.hpp"
 #include "../utils/ValidationUtils.hpp"
-#include "../utils/CgiUtilc.hpp"
+#include "../utils/CgiUtils.hpp"
 #include "Handlers.hpp"
 #include "../Router.hpp"
 #include "../HttpConstants.hpp"
@@ -481,40 +481,6 @@ void del(const Request& req, Response& res, const Location* location, const std:
 
 // ***************** CGI HANDLER ***************** //
 
-/** Check if file is CGI script */
-// bool isCgiScriptWithLocation(const std::string& filename, const Location* location) {
-//     if (!location || location->cgi_ext.empty()) {
-//         return false;
-//     }
-
-//     size_t dotPos = filename.find_last_of('.');
-//     if (dotPos != std::string::npos) {
-//         std::string ext = filename.substr(dotPos + 1);
-//         // Convert to lowercase for case-insensitive comparison
-//         for (char& c : ext) {
-//             c = std::tolower(c);
-//         }
-
-//         // Check against location-configured extensions
-//         for (const auto& allowedExt : location->cgi_ext) {
-//             std::string allowedExtLower = allowedExt;
-//             for (char& c : allowedExtLower) {
-//                 c = std::tolower(c);
-//             }
-//             // Remove leading dot from allowed extension for comparison
-//             if (allowedExtLower.length() > 0 && allowedExtLower[0] == '.') {
-//                 allowedExtLower = allowedExtLower.substr(1);
-//             }
-//             if (ext == allowedExtLower) {
-//                 return true;
-//             }
-//         }
-//     }
-//     return false;
-// }
-
-
-
 
 /** Execute CGI script and capture output */
 std::string executeCgiScript(const std::string& scriptPath, const std::vector<std::string>& env, const std::string& input) {
@@ -739,6 +705,8 @@ void cgi(const Request& req, Response& res, const Location* location, const std:
         }
 
         // 5. CGI Execution Phase
+        // READ: https://datatracker.ietf.org/doc/html/rfc3875
+
         // Get the script name: /cgi-bin/script.py -> script.py
         // Wrap to path object, extract the filename, and convert to string
         std::string scriptName = std::filesystem::path(filePath).filename().string();
