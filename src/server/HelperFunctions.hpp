@@ -13,6 +13,8 @@ class	Cluster;
 
 std::string	time_now();
 
+void		handleSigTerminate(int sig);
+
 bool		isServerSocket(int fd, const std::set<int>& server_fds);
 void		setSocketToNonBlockingMode(int fd);
 void		checkNameRepitition(const std::vector<Server> configs, const Server config);
@@ -22,10 +24,10 @@ std::string	responseToString(const Response& res);
 std::string	headersToString(const std::unordered_map<std::string, std::vector<std::string>>& headers);
 void		setTimer(ClientRequestState& client_state);
 
-bool	requestComplete(ClientRequestState& client_state, int fd, Cluster* cluster);
-void	setMaxBodySize(ClientRequestState& client_state, Cluster* cluster, int fd);
-bool	decodeChunkedBody(ClientRequestState& client_state);
-int		isChunkedBodyComplete(ClientRequestState& client_state, size_t header_end);
-bool	isRequestBodyComplete(ClientRequestState& client_state, size_t header_end);
+bool		requestComplete(ClientRequestState& client_state, int fd, Cluster* cluster);
+void		setMaxBodySize(ClientRequestState& client_state, Cluster* cluster, int fd);
+bool		decodeChunkedBody(ClientRequestState& client_state);
+int			isChunkedBodyComplete(ClientRequestState& client_state, size_t header_end);
+bool		isRequestBodyComplete(ClientRequestState& client_state, size_t header_end);
 
-std::string		popResponseChunk(ClientRequestState& client_state);
+std::string	popResponseChunk(ClientRequestState& client_state);

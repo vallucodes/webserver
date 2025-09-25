@@ -1,5 +1,12 @@
 #include "HelperFunctions.hpp"
 
+volatile sig_atomic_t	signal_to_terminate = false;
+
+void	handleSigTerminate(int sig) {
+	signal_to_terminate = sig;
+	std::cout << RED << "\n" << time_now() << "	Server closed\n" << RESET;
+}
+
 bool	isServerSocket(int fd, const std::set<int>& server_fds) {
 	std::set<int>::iterator it = server_fds.find(fd);
 	if (it != server_fds.end())
