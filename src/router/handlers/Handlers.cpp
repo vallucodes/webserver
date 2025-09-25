@@ -7,6 +7,7 @@
 #include "../utils/StringUtils.hpp"
 #include "../utils/FileUtils.hpp"
 #include "../utils/HttpResponseBuilder.hpp"
+#include "../utils/ValidationUtils.hpp"
 #include "Handlers.hpp"
 #include "../Router.hpp"
 #include "../HttpConstants.hpp"
@@ -912,19 +913,30 @@ std::string executeCgiScript(const std::string& scriptPath, const std::vector<st
     }
 }
 
+
+
 /** Handle CGI requests for executable scripts */
 void cgi(const Request& req, Response& res, const Location* location, const std::string& server_root, const Server* server) {
     try {
-        // Validate location configuration
-        if (!location || location->cgi_path.empty() || location->cgi_ext.empty()) {
-            router::utils::HttpResponseBuilder::setErrorResponse(res, http::FORBIDDEN_403);
-            // router::utils::HttpResponseBuilder::setErrorResponse(res, http::FORBIDDEN_403, req);
-            return;
+        // 1. Validation Phase (Return 403 if validation fails)
+        /*
+        location /cgi-bin {
+            allow_methods GET POST
+            cgi_path cgi-bin
+            cgi_ext .py .js
+            index index.html
         }
+        */
+        // Validate location configuration
+        // if (!location || location->cgi_path.empty() || location->cgi_ext.empty()) {
+        //     router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404);
+        //     // router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404, req);
+        //     return;
+        // }
 
-        // Validate server configuration
-        if (!server) {
-            router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
+        // 1. Server and config Validation Phase
+
+        if (router::utils::isValidateLocationServer(res, location, server) != true) {
             return;
         }
 

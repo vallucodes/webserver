@@ -172,6 +172,8 @@ void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 
 		_router.handleRequest(conf, req, res); // Pass server config for server-specific routing
 
+		res.print(); //DEBUG PRINT
+
 		// Convert response to HTTP string format
 		client_state.response = responseToString(res);
 
