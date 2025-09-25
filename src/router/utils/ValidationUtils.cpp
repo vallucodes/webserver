@@ -5,8 +5,15 @@
 
 namespace router {
 namespace utils {
-
-bool isValidateLocationServer(Response& res, const Location* location, const Server* server) {
+/*
+    location /cgi-bin {
+        allow_methods GET POST
+        cgi_path cgi-bin
+        cgi_ext .py .js
+        index index.html
+    }
+*/
+bool isValidLocationServer(Response& res, const Location* location, const Server* server) {
     if (!location) {
         router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404);
         return false;
@@ -25,6 +32,14 @@ bool isValidateLocationServer(Response& res, const Location* location, const Ser
     }
     if (server->getRoot().empty()) {
         router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
+        return false;
+    }
+    return true;
+}
+
+bool isValidPath(const std::string_view& path, Response& res) {
+    if (path.empty()) {
+        router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400);
         return false;
     }
     return true;

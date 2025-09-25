@@ -4,6 +4,8 @@
  */
 
 #include "StringUtils.hpp"
+#include "../HttpConstants.hpp"
+#include "../../server/Server.hpp" // for Location struct definition
 #include <algorithm> // for std::remove_if, std::find_if
 
 namespace router {
@@ -18,14 +20,27 @@ std::string StringUtils::replaceAll(std::string str, const std::string& from, co
     return str;
 }
 
-// std::string StringUtils::sanitizeFilename(std::string filename) {
-//     const std::string forbiddenChars = "/\\:*?\"<>|";
-//     filename.erase(std::remove_if(filename.begin(), filename.end(),
-//         [&forbiddenChars](char c) {
-//             return forbiddenChars.find(c) != std::string::npos;
-//         }), filename.end());
-//     return filename;
-// }
+std::string StringUtils::determineFilePath(const std::string_view& path, const Location* location, const std::string& server_root) {
+    if (path == page::ROOT_HTML || path == page::INDEX_HTML_PATH) {
+        return page::INDEX_HTML;
+    }
+    else {
+        // Use location-configured CGI path
+        // Strip the location prefix from the request path
+        std::string requestPath = std::string(path);
+        std::string locationPrefix = location->location;
+
+        // Remove the location prefix from the request path
+        if (requestPath.length() > locationPrefix.length() &&
+            requestPath.substr(0, locationPrefix.length()) == locationPrefix) {
+            requestPath = requestPath.substr(locationPrefix.length());
+        }
+
+        // Resolve CGI path (nginx-style)
+        std::string cgiPath = StringUtils::resolvePath(location->cgi_path, server_root);
+        return cgiPath + requestPath;
+    }
+}
 
 std::string StringUtils::replacePlaceholder(std::string html, const std::string& placeholder, const std::string& replacement) {
     size_t pos = 0;
@@ -48,6 +63,41 @@ std::string StringUtils::normalizePath(std::string path) {
     path.resize(j);
     if (path.empty()) path = "/";
     return path;
+}
+/**
+ * @brief Resolve path relative to server root (nginx-style)
+ * @param path Path from configuration (can be relative or absolute)
+ * @param server_root Server root directory
+ * @return Resolved absolute path
+ */
+std::string StringUtils::resolvePath(const std::string& path, const std::string& server_root) {
+    if (path.empty()) {
+        return server_root;
+    }
+
+    // If path starts with server_root, it's a full absolute path - use as-is
+    if (path.find(server_root) == 0) {
+        return path;
+    }
+
+    // If path starts with '/', it's relative to server root - append to server root
+    if (path[0] == '/') {
+        std::string resolved = server_root;
+        if (!resolved.empty() && resolved.back() != '/') {
+            resolved += '/';
+        }
+        resolved += path.substr(1); // Remove leading '/'
+        return resolved;
+    }
+
+    // Relative path - resolve against server root
+    std::string resolved = server_root;
+    if (!resolved.empty() && resolved.back() != '/') {
+        resolved += '/';
+    }
+    resolved += path;
+
+    return resolved;
 }
 
 } // namespace utils

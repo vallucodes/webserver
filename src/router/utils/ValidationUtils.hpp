@@ -9,7 +9,8 @@ class Server;
 namespace router {
 namespace utils {
 
-bool isValidateLocationServer(Response& res, const Location* location, const Server* server);
+bool isValidLocationServer(Response& res, const Location* location, const Server* server);
+bool isValidPath(const std::string_view& path, Response& res);
 
 } // namespace utils
 } // namespace router

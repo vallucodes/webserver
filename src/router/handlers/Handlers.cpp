@@ -28,41 +28,7 @@ using namespace http;
 
 // ***************** HELPERS ***************** //
 
-/**
- * @brief Resolve path relative to server root (nginx-style)
- * @param path Path from configuration (can be relative or absolute)
- * @param server_root Server root directory
- * @return Resolved absolute path
- */
-std::string resolvePath(const std::string& path, const std::string& server_root) {
-    if (path.empty()) {
-        return server_root;
-    }
 
-    // If path starts with server_root, it's a full absolute path - use as-is
-    if (path.find(server_root) == 0) {
-        return path;
-    }
-
-    // If path starts with '/', it's relative to server root - append to server root
-    if (path[0] == '/') {
-        std::string resolved = server_root;
-        if (!resolved.empty() && resolved.back() != '/') {
-            resolved += '/';
-        }
-        resolved += path.substr(1); // Remove leading '/'
-        return resolved;
-    }
-
-    // Relative path - resolve against server root
-    std::string resolved = server_root;
-    if (!resolved.empty() && resolved.back() != '/') {
-        resolved += '/';
-    }
-    resolved += path;
-
-    return resolved;
-}
 
 /** Determine if connection should be kept alive based on HTTP version and request headers */
 bool shouldKeepAlive(const Request& req) {
@@ -476,7 +442,7 @@ void post(const Request& req, Response& res, const Location* location, const std
         }
 
         // Resolve upload path (nginx-style)
-        std::string uploadPath = resolvePath(location->upload_path, server_root);
+        std::string uploadPath = router::utils::StringUtils::resolvePath(location->upload_path, server_root);
 
         // Use resolved path
         const std::string filePath = uploadPath + "/" + filename;
@@ -534,7 +500,7 @@ void del(const Request& req, Response& res, const Location* location, const std:
         }
 
         // Resolve upload path (nginx-style)
-        std::string uploadPath = resolvePath(location->upload_path, server_root);
+        std::string uploadPath = router::utils::StringUtils::resolvePath(location->upload_path, server_root);
 
         // Use resolved path
         const std::string filePath = uploadPath + "/" + filename;
@@ -918,55 +884,20 @@ std::string executeCgiScript(const std::string& scriptPath, const std::vector<st
 /** Handle CGI requests for executable scripts */
 void cgi(const Request& req, Response& res, const Location* location, const std::string& server_root, const Server* server) {
     try {
-        // 1. Validation Phase (Return 403 if validation fails)
-        /*
-        location /cgi-bin {
-            allow_methods GET POST
-            cgi_path cgi-bin
-            cgi_ext .py .js
-            index index.html
-        }
-        */
-        // Validate location configuration
-        // if (!location || location->cgi_path.empty() || location->cgi_ext.empty()) {
-        //     router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404);
-        //     // router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404, req);
-        //     return;
-        // }
-
         // 1. Server and config Validation Phase
-
-        if (router::utils::isValidateLocationServer(res, location, server) != true) {
+        if (router::utils::isValidLocationServer(res, location, server) != true) {
             return;
         }
 
+        // 2. Path Resolution Phase
         // Extract and validate file path
         std::string_view filePathView = req.getPath();
-        if (filePathView.empty()) {
-            router::utils::HttpResponseBuilder::setErrorResponse(res, http::FORBIDDEN_403);
-            // router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404, req);
+        if (router::utils::isValidPath(filePathView, res) != true) {
             return;
         }
 
-        std::string filePath;
-        if (filePathView == page::ROOT_HTML || filePathView == page::INDEX_HTML_PATH) {
-            filePath = page::INDEX_HTML;
-        } else {
-            // Use location-configured CGI path
-            // Strip the location prefix from the request path
-            std::string requestPath = std::string(filePathView);
-            std::string locationPrefix = location->location;
-
-            // Remove the location prefix from the request path
-            if (requestPath.length() > locationPrefix.length() &&
-                requestPath.substr(0, locationPrefix.length()) == locationPrefix) {
-                requestPath = requestPath.substr(locationPrefix.length());
-            }
-
-            // Resolve CGI path (nginx-style)
-            std::string cgiPath = resolvePath(location->cgi_path, server_root);
-            filePath = cgiPath + requestPath;
-        }
+        // 3. File Existence and Executability Phase
+        std::string filePath = router::utils::StringUtils::determineFilePath(filePathView, location, server_root);
 
         // Check if file exists and is executable
         if (!std::filesystem::exists(filePath)) {
