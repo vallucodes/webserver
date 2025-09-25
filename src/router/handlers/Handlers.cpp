@@ -32,33 +32,6 @@ using namespace http;
 
 
 
-/** Determine if connection should be kept alive based on HTTP version and request headers */
-bool shouldKeepAlive(const Request& req) {
-    // Check if client explicitly requests connection close
-    auto connectionHeaders = req.getHeaders("connection");
-    if (!connectionHeaders.empty()) {
-        std::string connectionValue = connectionHeaders[0];
-        // Convert to lowercase for case-insensitive comparison
-        std::transform(connectionValue.begin(), connectionValue.end(), connectionValue.begin(),
-                      [](unsigned char c){ return std::tolower(c); });
-
-        if (connectionValue == "close") {
-            return false;
-        }
-        if (connectionValue == "keep-alive") {
-            return true;
-        }
-    }
-
-    // HTTP/1.1 defaults to keep-alive, HTTP/1.0 defaults to close
-    std::string httpVersion = std::string(req.getHttpVersion());
-    if (httpVersion == "HTTP/1.1") {
-        return true;
-    }
-
-    return false;
-}
-
 /** Create simple success message */
 std::string createSuccessMessage(const std::string& filename, const std::string& action) {
     return "File '" + filename + "' " + action + " successfully!";
@@ -75,7 +48,7 @@ void setCommonHeaders(Response& res, const std::string& contentType, size_t cont
     res.setHeaders(http::CONTENT_LENGTH, std::to_string(contentLength));
 
     // Set connection header based on keep-alive logic
-    if (shouldKeepAlive(req)) {
+    if (router::utils::shouldKeepAlive(req)) {
         res.setHeaders(http::CONNECTION, http::CONNECTION_KEEP_ALIVE);
     } else {
         res.setHeaders(http::CONNECTION, http::CONNECTION_CLOSE);
@@ -546,31 +519,30 @@ void cgi(const Request& req, Response& res, const Location* location, const std:
             res.setHeaders(headerName, headerValue);
         }
 
-        // Set default content type if not specified
+        // 6.3. Set default content type if not specified
         auto contentType = res.getHeaders("Content-Type");
         if (contentType.empty()) {
             res.setHeaders(http::CONTENT_TYPE, http::CONTENT_TYPE_HTML);
         }
 
-        // Set connection header based on keep-alive logic
-        if (shouldKeepAlive(req)) {
+        // 6.4. Set connection header based on keep-alive logic
+        if (router::utils::shouldKeepAlive(req)) {
             res.setHeaders(http::CONNECTION, http::CONNECTION_KEEP_ALIVE);
         } else {
             res.setHeaders(http::CONNECTION, http::CONNECTION_CLOSE);
         }
 
-        // Set response body
+        // 6.5. Set response body
         res.setBody(cgiResult.body);
 
-        // Set Content-Length header based on body size
+        // 6.6. Set Content-Length header based on body size
         res.setHeaders(http::CONTENT_LENGTH, std::to_string(cgiResult.body.length()));
 
     } catch (const std::runtime_error& e) {
-        // File not found or read error
+        // 7. File not found or read error
         router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404);
         // router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404, req);
     } catch (const std::exception& e) {
-        // Unexpected error
         router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
         // router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req);
     }
@@ -603,7 +575,7 @@ void redirect(const Request& req, Response& res, const Location* location) {
         res.setHeaders(http::LOCATION, redirectUrl);
 
         // Set connection header based on keep-alive logic
-        if (shouldKeepAlive(req)) {
+        if (router::utils::shouldKeepAlive(req)) {
             res.setHeaders(http::CONNECTION, http::CONNECTION_KEEP_ALIVE);
         } else {
             res.setHeaders(http::CONNECTION, http::CONNECTION_CLOSE);

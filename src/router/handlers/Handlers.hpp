@@ -34,5 +34,3 @@ void cgi(const Request& req, Response& res, const Location* location = nullptr, 
 
 /** Handle HTTP redirection requests */
 void redirect(const Request& req, Response& res, const Location* location = nullptr);
-
-bool shouldKeepAlive(const Request& req);

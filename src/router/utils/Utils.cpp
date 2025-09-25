@@ -6,6 +6,34 @@
 namespace router {
 namespace utils {
 
+
+/** Determine if connection should be kept alive based on HTTP version and request headers */
+bool shouldKeepAlive(const Request& req) {
+    // Check if client explicitly requests connection close
+    auto connectionHeaders = req.getHeaders("connection");
+    if (!connectionHeaders.empty()) {
+        std::string connectionValue = connectionHeaders[0];
+        // Convert to lowercase for case-insensitive comparison
+        std::transform(connectionValue.begin(), connectionValue.end(), connectionValue.begin(),
+                      [](unsigned char c){ return std::tolower(c); });
+
+        if (connectionValue == "close") {
+            return false;
+        }
+        if (connectionValue == "keep-alive") {
+            return true;
+        }
+    }
+
+    // HTTP/1.1 defaults to keep-alive, HTTP/1.0 defaults to close
+    std::string httpVersion = std::string(req.getHttpVersion());
+    if (httpVersion == "HTTP/1.1") {
+        return true;
+    }
+
+    return false;
+}
+
 /** Check if the request is chunked */
 bool isChunked(const Request& req) {
     // READ: https://www.rfc-editor.org/rfc/rfc7230#section-3.3.1

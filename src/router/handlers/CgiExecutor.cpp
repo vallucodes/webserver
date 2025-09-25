@@ -254,10 +254,18 @@ CgiResult executeAndParseCgiScript(const std::string& scriptPath, const std::vec
             std::string headerName = headerLine.substr(0, colonPos);
             std::string headerValue = headerLine.substr(colonPos + 1);
 
-            // Trim whitespace
+            // Full trim (leading and trailing whitespace)
+
+            // Trim leading whitespace
+            // Scans through the string from the start until it finds the first character that is not whitespace
+            // [](int ch) -> bool: A lambda function (inline) that returns true when the char is not whitespace
             headerValue.erase(headerValue.begin(), std::find_if(headerValue.begin(), headerValue.end(), [](int ch) {
                 return !std::isspace(ch);
             }));
+
+            // Trim trailing whitespace
+            // Scans through the string from the end until it finds the first character that is not whitespace
+            // [](int ch) -> bool: A lambda function (inline) that returns true when the char is not whitespace
             headerValue.erase(std::find_if(headerValue.rbegin(), headerValue.rend(), [](int ch) {
                 return !std::isspace(ch);
             }).base(), headerValue.end());

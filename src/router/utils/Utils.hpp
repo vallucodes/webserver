@@ -13,6 +13,7 @@ namespace utils {
 
 bool isCgiScriptWithLocation(const std::string& filename, const Location* location);
 bool isChunked(const Request& req);
+bool shouldKeepAlive(const Request& req);
 std::string parseChunkedRequestBody(const std::string& body);
 std::vector<std::string> setupCgiEnvironment(const Request& req, const std::string& scriptPath, const std::string& scriptName, const Server& server);
 

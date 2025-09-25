@@ -7,9 +7,9 @@
 #include "../HttpConstants.hpp"
 #include "../../response/Response.hpp"
 #include "../../request/Request.hpp"
-#include "../../router/handlers/Handlers.hpp"
-
+#include "Utils.hpp"
 #include "FileUtils.hpp"
+
 #include <iostream> // for std::cout, std::endl
 #include <algorithm> // for std::transform
 
@@ -77,7 +77,7 @@ void HttpResponseBuilder::setErrorResponse(Response& res, int status, const Requ
     res.setHeaders(http::CONTENT_LENGTH, std::to_string(getErrorPageHtml(status).length()));
 
     // Set connection header based on keep-alive logic
-    if (shouldKeepAlive(req)) {
+    if (router::utils::shouldKeepAlive(req)) {
         res.setHeaders(http::CONNECTION, http::CONNECTION_KEEP_ALIVE);
     } else {
         res.setHeaders(http::CONNECTION, http::CONNECTION_CLOSE);
@@ -93,7 +93,7 @@ void HttpResponseBuilder::setSuccessResponse(Response& res, const std::string& c
     res.setHeaders(http::CONTENT_LENGTH, std::to_string(content.length()));
 
     // Set connection header based on keep-alive logic
-    if (shouldKeepAlive(req)) {
+    if (router::utils::shouldKeepAlive(req)) {
         res.setHeaders(http::CONNECTION, http::CONNECTION_KEEP_ALIVE);
     } else {
         res.setHeaders(http::CONNECTION, http::CONNECTION_CLOSE);
@@ -150,7 +150,7 @@ void HttpResponseBuilder::setMethodNotAllowedResponse(Response& res, const std::
     res.setHeaders(http::CONTENT_LENGTH, std::to_string(errorHtml.length()));
 
     // Set connection header based on keep-alive logic
-    if (shouldKeepAlive(req)) {
+    if (router::utils::shouldKeepAlive(req)) {
         res.setHeaders(http::CONNECTION, http::CONNECTION_KEEP_ALIVE);
     } else {
         res.setHeaders(http::CONNECTION, http::CONNECTION_CLOSE);
