@@ -20,7 +20,7 @@ std::string StringUtils::replaceAll(std::string str, const std::string& from, co
     return str;
 }
 
-std::string StringUtils::determineFilePath(const std::string_view& path, const Location* location, const std::string& server_root) {
+std::string StringUtils::determineFilePathCGI(const std::string_view& path, const Location* location, const std::string& server_root) {
     if (path == page::ROOT_HTML || path == page::INDEX_HTML_PATH) {
         return page::INDEX_HTML;
     }
@@ -40,6 +40,14 @@ std::string StringUtils::determineFilePath(const std::string_view& path, const L
         std::string cgiPath = StringUtils::resolvePath(location->cgi_path, server_root);
         return cgiPath + requestPath;
     }
+}
+
+std::string StringUtils::determineFilePathBasic(const std::string& requestPath) {
+    if (requestPath == "/" || requestPath == "/index.html") {
+        return page::INDEX_HTML;
+    }
+
+    return page::WWW + requestPath;
 }
 
 std::string StringUtils::replacePlaceholder(std::string html, const std::string& placeholder, const std::string& replacement) {

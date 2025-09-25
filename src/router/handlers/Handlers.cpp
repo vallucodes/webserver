@@ -174,60 +174,6 @@ std::string generateDirectoryListing(const std::string& dirPath, const std::stri
     return html;
 }
 
-/**
- * @brief Handle directory requests with autoindex or index files
- * @param dirPath Directory path
- * @param requestPath Request path
- * @param location Location configuration
- * @param res Response object
- * @return true if handled successfully
- */
-// bool handleDirectoryRequest(const std::string& dirPath, const std::string& requestPath,
-//                            const Location* location, Response& res) {
-//   // Try autoindex first if enabled
-//   if (location && location->autoindex) {
-//     std::string dirListing = generateDirectoryListing(dirPath, requestPath);
-//     router::utils::HttpResponseBuilder::setSuccessResponse(res, dirListing, http::CONTENT_TYPE_HTML, req);
-//     return true;
-//   }
-
-//   // Try location-specific index file
-//   if (location && !location->index.empty()) {
-//     std::string indexPath = dirPath;
-//     if (!indexPath.ends_with('/')) indexPath += '/';
-//     indexPath += location->index;
-
-//     if (std::filesystem::exists(indexPath) && std::filesystem::is_regular_file(indexPath)) {
-//       std::string fileContent = router::utils::FileUtils::readFileToString(indexPath);
-//       std::string contentType = router::utils::FileUtils::getContentType(indexPath);
-//       router::utils::HttpResponseBuilder::setSuccessResponse(res, fileContent, contentType, req);
-//       return true;
-//     }
-
-//     // Try global index file
-//     std::string globalIndexPath = page::WWW + "/" + location->index;
-//     if (std::filesystem::exists(globalIndexPath) && std::filesystem::is_regular_file(globalIndexPath)) {
-//       std::string fileContent = router::utils::FileUtils::readFileToString(globalIndexPath);
-//       std::string contentType = router::utils::FileUtils::getContentType(globalIndexPath);
-//       router::utils::HttpResponseBuilder::setSuccessResponse(res, fileContent, contentType, req);
-//       return true;
-//     }
-//   }
-
-//   // Try default index files
-//   for (const auto& defaultFile : page::DEFAULT_INDEX_FILES) {
-//     std::string defaultPath = dirPath + "/" + defaultFile;
-//     if (std::filesystem::exists(defaultPath) && std::filesystem::is_regular_file(defaultPath)) {
-//       std::string fileContent = router::utils::FileUtils::readFileToString(defaultPath);
-//       std::string contentType = router::utils::FileUtils::getContentType(defaultPath);
-//       router::utils::HttpResponseBuilder::setSuccessResponse(res, fileContent, contentType, req);
-//       return true;
-//     }
-//   }
-
-//   return false;
-// }
-
 bool handleDirectoryRequest(const std::string& dirPath, const std::string& requestPath,
                            const Location* location, Response& res, const Request& req) {
     // Try autoindex first if enabled
@@ -263,23 +209,6 @@ bool handleDirectoryRequest(const std::string& dirPath, const std::string& reque
     return false;
 }
 
-/**
- * @brief Determine the file path to serve based on request and location
- * @param requestPath Request path
- * @param location Location configuration
- * @return File path to serve
- */
-std::string determineFilePath(const std::string& requestPath) {
-  if (requestPath == "/" || requestPath == "/index.html") {
-    return page::INDEX_HTML;
-  }
-
-//   if (location) {
-//     return page::WWW + requestPath;
-//   }
-
-  return page::WWW + requestPath;
-}
 
 /**
  * @brief Serve a static file
@@ -317,7 +246,7 @@ void get(const Request& req, Response& res, const Location* location) {
     }
 
     std::string requestPath = std::string(filePathView);
-    std::string filePath = determineFilePath(requestPath);
+    std::string filePath = router::utils::StringUtils::determineFilePathBasic(requestPath);
 
     // Handle directory requests
     if (std::filesystem::is_directory(filePath)) {
@@ -897,12 +826,11 @@ void cgi(const Request& req, Response& res, const Location* location, const std:
         }
 
         // 3. File Existence and Executability Phase
-        std::string filePath = router::utils::StringUtils::determineFilePath(filePathView, location, server_root);
+        std::string filePath = router::utils::StringUtils::determineFilePathCGI(filePathView, location, server_root);
 
         // Check if file exists and is executable
         if (!std::filesystem::exists(filePath)) {
             router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404);
-            // router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404, req);
             return;
         }
 
