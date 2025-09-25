@@ -289,20 +289,8 @@ void post(const Request& req, Response& res, const Location* location, const std
 
         // Handle chunked request body if needed
         std::string processedBody = std::string(req.getBody());
-        auto transferEncoding = req.getHeaders("transfer-encoding");
-        bool isChunked = false;
 
-        if (!transferEncoding.empty()) {
-            for (const auto& encoding : transferEncoding) {
-                if (encoding.find("chunked") != std::string::npos) {
-                    isChunked = true;
-                    break;
-                }
-            }
-        }
-
-        // Unchunk the body if it's chunked
-        if (isChunked) {
+        if (router::utils::isChunked(req)) {
             processedBody = router::utils::parseChunkedRequestBody(processedBody);
         }
 
@@ -714,7 +702,7 @@ void cgi(const Request& req, Response& res, const Location* location, const std:
             scriptName = scriptName.substr(0, queryPos);
         }
 
-        // CGI Environment Setup
+        // 5.1. CGI Environment Setup
         auto env = router::utils::setupCgiEnvironment(req, filePath, scriptName, *server);
 
         // DEBUG: Print all environment variables
@@ -725,38 +713,20 @@ void cgi(const Request& req, Response& res, const Location* location, const std:
         std::cout << "=================================" << std::endl;
         // END DEBUG
 
-        // Get and process request body for CGI input
+        // 5.2. Get and process request body for CGI input
         std::string body = std::string(req.getBody());
-        auto transferEncoding = req.getHeaders("transfer-encoding");
-        bool isChunked = false;
 
-        if (!transferEncoding.empty()) {
-            for (const auto& encoding : transferEncoding) {
-                if (encoding.find("chunked") != std::string::npos) {
-                    isChunked = true;
-                    break;
-                }
-            }
-        }
-
-        // Unchunk the body if it's chunked
-        if (isChunked) {
+        // 5.3. Unchunk the body if it's chunked
+        if (router::utils::isChunked(req)) {
             body = router::utils::parseChunkedRequestBody(body);
         }
 
-        // Execute CGI script
-        // std::cout << "CGI: Executing script: " << filePath << std::endl;
+        // 5.4. Execute CGI script
         std::string cgiOutput = executeCgiScript(filePath, env, body);
-
-        // std::cout << "CGI: Script output length: " << cgiOutput.length() << std::endl;
         if (cgiOutput.empty()) {
-            // std::cout << "CGI: Script execution failed - returning 500 error" << std::endl;
-            // router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req);
             router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
             return;
         }
-        // std::cout << "CGI: Script executed successfully" << std::endl;
-
         // Parse CGI output (simple parsing - in production you'd want more robust parsing)
         // CGI output format: headers followed by blank line, then body
         size_t headerEnd = cgiOutput.find("\r\n\r\n");

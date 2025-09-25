@@ -4,6 +4,26 @@
 namespace router {
 namespace utils {
 
+/** Check if the request is chunked */
+bool isChunked(const Request& req) {
+    // READ: https://www.rfc-editor.org/rfc/rfc7230#section-3.3.1
+    auto transferEncoding = req.getHeaders("transfer-encoding");
+    // example: transfer-encoding: chunked
+    bool findChunk = false;
+    if (!transferEncoding.empty()) {
+        // example: transfer-encoding: chunked -> true
+        for (const auto& encoding : transferEncoding) {
+            std::string lowerEncoding = encoding;
+            std::transform(lowerEncoding.begin(), lowerEncoding.end(), lowerEncoding.begin(), ::tolower);
+            if (lowerEncoding.find("chunked") != std::string::npos) {
+                findChunk = true;
+                break;
+            }
+        }
+    }
+    return findChunk;
+}
+
 bool isCgiScriptWithLocation(const std::string& filename, const Location* location) {
     if (!location || location->cgi_ext.empty()) {
         return false;

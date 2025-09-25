@@ -11,7 +11,7 @@ curl -v http://127.0.0.1:8080/imgs/
 curl -v http://127.0.0.1:8080/cgi-bin/
 curl -v "http://127.0.0.1:8080/cgi-bin/hello.py"
 curl -v "http://127.0.0.1:8080/cgi-bin/hello.js"
-curl -v -L http://12.0.0.1:8080/old # to see the second real request
+curl -v -L http://127.0.0.1:8080/old # to see the second real request
 ```
 
 ## 2. POST Requests → Should Work
