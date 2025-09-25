@@ -470,10 +470,6 @@ void del(const Request& req, Response& res, const Location* location, const std:
 
 // ***************** CGI HANDLER ***************** //
 
-
-
-
-
 /** Handle CGI requests for executable scripts */
 void cgi(const Request& req, Response& res, const Location* location, const std::string& server_root, const Server* server) {
     try {
@@ -534,62 +530,20 @@ void cgi(const Request& req, Response& res, const Location* location, const std:
             body = router::utils::parseChunkedRequestBody(body);
         }
 
-        // 5.4. Execute CGI script
-        std::string cgiOutput = executeCgiScript(filePath, env, body);
-        if (cgiOutput.empty()) {
+        // 5.4. Execute CGI script and parse output
+        CgiResult cgiResult = executeAndParseCgiScript(filePath, env, body);
+        if (!cgiResult.success) {
             router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
             return;
         }
-        // Parse CGI output (simple parsing - in production you'd want more robust parsing)
-        // CGI output format: headers followed by blank line, then body
-        size_t headerEnd = cgiOutput.find("\r\n\r\n");
-        if (headerEnd == std::string::npos) {
-            headerEnd = cgiOutput.find("\n\n");
-        }
 
-        std::string headersPart;
-        std::string bodyPart;
+        // 6. Set response from parsed CGI result
+        // 6.1. Set response status from CGI output
+        res.setStatus(cgiResult.status);
 
-        if (headerEnd != std::string::npos) {
-            headersPart = cgiOutput.substr(0, headerEnd);
-            bodyPart = cgiOutput.substr(headerEnd + (cgiOutput[headerEnd] == '\r' ? 4 : 2));
-        } else {
-            // No headers, treat whole output as body
-            bodyPart = cgiOutput;
-        }
-
-        // Set response status (default to 200 if not specified)
-        res.setStatus(http::STATUS_OK_200);
-
-        // Parse and set headers from CGI output
-        std::istringstream headerStream(headersPart);
-        std::string headerLine;
-        while (std::getline(headerStream, headerLine)) {
-            // Remove \r if present
-            if (!headerLine.empty() && headerLine.back() == '\r') {
-                headerLine.pop_back();
-            }
-
-            size_t colonPos = headerLine.find(':');
-            if (colonPos != std::string::npos) {
-                std::string headerName = headerLine.substr(0, colonPos);
-                std::string headerValue = headerLine.substr(colonPos + 1);
-
-                // Trim whitespace
-                headerValue.erase(headerValue.begin(), std::find_if(headerValue.begin(), headerValue.end(), [](int ch) {
-                    return !std::isspace(ch);
-                }));
-                headerValue.erase(std::find_if(headerValue.rbegin(), headerValue.rend(), [](int ch) {
-                    return !std::isspace(ch);
-                }).base(), headerValue.end());
-
-                // Special handling for Status header
-                if (headerName == "Status") {
-                    res.setStatus("HTTP/1.1 " + headerValue);
-                } else {
-                    res.setHeaders(headerName, headerValue);
-                }
-            }
+        // 6.2. Set headers from CGI output
+        for (const auto& [headerName, headerValue] : cgiResult.headers) {
+            res.setHeaders(headerName, headerValue);
         }
 
         // Set default content type if not specified
@@ -606,10 +560,10 @@ void cgi(const Request& req, Response& res, const Location* location, const std:
         }
 
         // Set response body
-        res.setBody(bodyPart);
+        res.setBody(cgiResult.body);
 
         // Set Content-Length header based on body size
-        res.setHeaders(http::CONTENT_LENGTH, std::to_string(bodyPart.length()));
+        res.setHeaders(http::CONTENT_LENGTH, std::to_string(cgiResult.body.length()));
 
     } catch (const std::runtime_error& e) {
         // File not found or read error
