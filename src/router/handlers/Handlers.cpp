@@ -18,9 +18,11 @@ using namespace http;
 #include <filesystem> // for std::filesystem::directory_iterator, std::filesystem::path, std::filesystem::exists, std::filesystem::is_directory, std::filesystem::is_regular_file, std::filesystem::create_directories, std::filesystem::remove, std::filesystem::file_size, std::filesystem::last_write_time
 #include <cctype> // for std::tolower, std::isspace
 #include <unistd.h> // for pipe, fork, dup2, close, write, read, chdir, execve, STDIN_FILENO, STDOUT_FILENO
-#include <sys/wait.h> // for waitpid, WIFEXITED, WEXITSTATUS
-#include <ctime> // for strftime
+#include <ctime> // for time, time_t, strftime
+#include <sys/wait.h> // for waitpid, WNOHANG, WIFEXITED, WEXITSTATUS
+#include <signal.h> // for kill, SIGKILL
 #include <cstdlib> // for std::stoul
+#include <fcntl.h> // for fcntl, F_GETFL, F_SETFL, O_NONBLOCK
 
 
 // ***************** HELPERS ***************** //
@@ -139,8 +141,15 @@ std::string generateDirectoryListing(const std::string& dirPath, const std::stri
     std::string parentLink = "";
     if (requestPath != "/") {
         std::string parentPath = requestPath;
+
+        // Remove trailing slash if present
+        if (parentPath.back() == '/') {
+            parentPath.pop_back();
+        }
+
+        // Find the last slash to get the parent directory
         size_t lastSlash = parentPath.find_last_of('/');
-        if (lastSlash > 0) {
+        if (lastSlash != std::string::npos) {
             parentPath = parentPath.substr(0, lastSlash);
             if (parentPath.empty()) parentPath = "/";
             parentLink = "    <a href=\"" + parentPath + "\" class=\"back-link\">← Parent directory</a>\n";
@@ -637,7 +646,7 @@ std::string parseChunkedBody(const std::string& body) {
 }
 
 /** Set up CGI environment variables */
-std::vector<std::string> setupCgiEnvironment(const Request& req, const std::string& scriptPath, const std::string& scriptName) {
+std::vector<std::string> setupCgiEnvironment(const Request& req, const std::string& scriptPath, const std::string& scriptName, const Server& server) {
     std::vector<std::string> env;
 
     // Basic CGI environment variables
@@ -699,10 +708,10 @@ std::vector<std::string> setupCgiEnvironment(const Request& req, const std::stri
         env.push_back("CONTENT_LENGTH=" + std::to_string(body.length()));
     }
 
-    // Server information
+    // Server information - now using dynamic values from server config
     env.push_back("SERVER_SOFTWARE=webserv/1.0");
-    env.push_back("SERVER_NAME=localhost");
-    env.push_back("SERVER_PORT=8080");
+    env.push_back("SERVER_NAME=" + server.getName());
+    env.push_back("SERVER_PORT=" + std::to_string(server.getPort()));
 
     // Remote client info (simplified)
     env.push_back("REMOTE_ADDR=127.0.0.1");
@@ -841,18 +850,57 @@ std::string executeCgiScript(const std::string& scriptPath, const std::vector<st
         }
         close(pipe_in[1]); // Send EOF
 
-        // Read output from CGI
+        // Read output from CGI with timeout
         std::string output;
         char buffer[4096];
         ssize_t bytesRead;
+        int timeout = 5; // 5 second timeout
+        time_t startTime = time(nullptr);
 
-        while ((bytesRead = read(pipe_out[0], buffer, sizeof(buffer))) > 0) {
-            output.append(buffer, bytesRead);
+        // Make pipe non-blocking
+        while (time(nullptr) - startTime < timeout) {
+        // Check if child has finished
+        int status;
+        pid_t result = waitpid(pid, &status, WNOHANG);
+
+        if (result == pid) {
+            // Child finished, read remaining output
+            while ((bytesRead = read(pipe_out[0], buffer, sizeof(buffer))) > 0) {
+                output.append(buffer, bytesRead);
+            }
+            close(pipe_out[0]);
+            return (WIFEXITED(status) && WEXITSTATUS(status) == 0) ? output : "";
+        } else if (result == 0) {
+            // Child still running, check if data available with select()
+            fd_set readfds;
+            FD_ZERO(&readfds);
+            FD_SET(pipe_out[0], &readfds);
+
+            struct timeval tv;
+            tv.tv_sec = 0;
+            tv.tv_usec = 500000; // 5sec timeout
+
+            if (select(pipe_out[0] + 1, &readfds, nullptr, nullptr, &tv) > 0) {
+                // Data available, read it
+                bytesRead = read(pipe_out[0], buffer, sizeof(buffer));
+                if (bytesRead > 0) {
+                    output.append(buffer, bytesRead);
+                }
+            }
         }
+    }
 
         close(pipe_out[0]);
 
-        // Wait for child to finish
+        // Check if timeout occurred
+        if (time(nullptr) - startTime >= timeout) {
+            std::cout << "CGI: Script timeout after " << timeout << " seconds - killing process" << std::endl;
+            kill(pid, SIGKILL);
+            waitpid(pid, nullptr, 0); // Wait for cleanup
+            return "";
+        }
+
+        // Wait for child to finish and get exit status
         int status;
         waitpid(pid, &status, 0);
 
@@ -865,12 +913,18 @@ std::string executeCgiScript(const std::string& scriptPath, const std::vector<st
 }
 
 /** Handle CGI requests for executable scripts */
-void cgi(const Request& req, Response& res, const Location* location, const std::string& server_root) {
+void cgi(const Request& req, Response& res, const Location* location, const std::string& server_root, const Server* server) {
     try {
         // Validate location configuration
         if (!location || location->cgi_path.empty() || location->cgi_ext.empty()) {
             router::utils::HttpResponseBuilder::setErrorResponse(res, http::FORBIDDEN_403);
             // router::utils::HttpResponseBuilder::setErrorResponse(res, http::FORBIDDEN_403, req);
+            return;
+        }
+
+        // Validate server configuration
+        if (!server) {
+            router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
             return;
         }
 
@@ -918,9 +972,9 @@ void cgi(const Request& req, Response& res, const Location* location, const std:
             return;
         }
 
-        // Set up CGI environment
+        // Set up CGI environment - now passing server information
         std::string scriptName = std::filesystem::path(filePath).filename().string();
-        auto env = setupCgiEnvironment(req, filePath, scriptName);
+        auto env = setupCgiEnvironment(req, filePath, scriptName, *server);
 
         // Get and process request body for CGI input
         std::string body = std::string(req.getBody());
