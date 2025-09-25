@@ -8,6 +8,7 @@
 #include "../utils/FileUtils.hpp"
 #include "../utils/HttpResponseBuilder.hpp"
 #include "../utils/ValidationUtils.hpp"
+#include "../utils/CgiUtilc.hpp"
 #include "Handlers.hpp"
 #include "../Router.hpp"
 #include "../HttpConstants.hpp"
@@ -463,36 +464,36 @@ void del(const Request& req, Response& res, const Location* location, const std:
 // ***************** CGI HANDLER ***************** //
 
 /** Check if file is CGI script */
-bool isCgiScriptWithLocation(const std::string& filename, const Location* location) {
-    if (!location || location->cgi_ext.empty()) {
-        return false;
-    }
+// bool isCgiScriptWithLocation(const std::string& filename, const Location* location) {
+//     if (!location || location->cgi_ext.empty()) {
+//         return false;
+//     }
 
-    size_t dotPos = filename.find_last_of('.');
-    if (dotPos != std::string::npos) {
-        std::string ext = filename.substr(dotPos + 1);
-        // Convert to lowercase for case-insensitive comparison
-        for (char& c : ext) {
-            c = std::tolower(c);
-        }
+//     size_t dotPos = filename.find_last_of('.');
+//     if (dotPos != std::string::npos) {
+//         std::string ext = filename.substr(dotPos + 1);
+//         // Convert to lowercase for case-insensitive comparison
+//         for (char& c : ext) {
+//             c = std::tolower(c);
+//         }
 
-        // Check against location-configured extensions
-        for (const auto& allowedExt : location->cgi_ext) {
-            std::string allowedExtLower = allowedExt;
-            for (char& c : allowedExtLower) {
-                c = std::tolower(c);
-            }
-            // Remove leading dot from allowed extension for comparison
-            if (allowedExtLower.length() > 0 && allowedExtLower[0] == '.') {
-                allowedExtLower = allowedExtLower.substr(1);
-            }
-            if (ext == allowedExtLower) {
-                return true;
-            }
-        }
-    }
-    return false;
-}
+//         // Check against location-configured extensions
+//         for (const auto& allowedExt : location->cgi_ext) {
+//             std::string allowedExtLower = allowedExt;
+//             for (char& c : allowedExtLower) {
+//                 c = std::tolower(c);
+//             }
+//             // Remove leading dot from allowed extension for comparison
+//             if (allowedExtLower.length() > 0 && allowedExtLower[0] == '.') {
+//                 allowedExtLower = allowedExtLower.substr(1);
+//             }
+//             if (ext == allowedExtLower) {
+//                 return true;
+//             }
+//         }
+//     }
+//     return false;
+// }
 
 /** Parse chunked request body */
 std::string parseChunkedBody(const std::string& body) {
@@ -814,37 +815,26 @@ std::string executeCgiScript(const std::string& scriptPath, const std::vector<st
 void cgi(const Request& req, Response& res, const Location* location, const std::string& server_root, const Server* server) {
     try {
         // 1. Server and config Validation Phase
-        if (router::utils::isValidLocationServer(res, location, server) != true) {
+        if (!router::utils::isValidLocationServer(res, location, server)) {
             return;
         }
 
         // 2. Path Resolution Phase
         // Extract and validate file path
         std::string_view filePathView = req.getPath();
-        if (router::utils::isValidPath(filePathView, res) != true) {
+        if (!router::utils::isValidPath(filePathView, res)) {
             return;
         }
 
         // 3. File Existence and Executability Phase
         std::string filePath = router::utils::StringUtils::determineFilePathCGI(filePathView, location, server_root);
-        if (router::utils::isFileExistsAndExecutable(filePath, res) != true) {
+        if (!router::utils::isFileExistsAndExecutable(filePath, res)) {
             return;
         }
 
-        // // Check if file path is empty
-        // if (filePath.empty()) {
-        //     router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400);
-        //     return;
-        // }
 
-        // // Check if file exists and is executable
-        // if (!std::filesystem::exists(filePath)) {
-        //     router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404);
-        //     return;
-        // }
-
-        // Verify it's a CGI script using location-configured extensions
-        if (!isCgiScriptWithLocation(filePath, location)) {
+        // 4. File Validation Phase
+        if (!router::utils::isCgiScriptWithLocation(filePath, location)) {
             // Not a CGI script, handle as regular file
             std::string fileContent = router::utils::FileUtils::readFileToString(filePath);
             std::string contentType = router::utils::FileUtils::getContentType(filePath);
@@ -852,7 +842,7 @@ void cgi(const Request& req, Response& res, const Location* location, const std:
             return;
         }
 
-        // Set up CGI environment - now passing server information
+        // 5. CGI Execution Phase
         std::string scriptName = std::filesystem::path(filePath).filename().string();
         auto env = setupCgiEnvironment(req, filePath, scriptName, *server);
 

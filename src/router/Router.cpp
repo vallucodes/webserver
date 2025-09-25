@@ -11,6 +11,7 @@
 #include "handlers/Handlers.hpp"
 #include <algorithm> // for std::find
 
+using namespace router::utils;
 
 /** Default constructor */
 Router::Router() {}
@@ -197,14 +198,14 @@ const Location* Router::findLocation(const Server& server, const std::string& pa
  * @param status HTTP status code
  * @return HTML content string
  */
-// Now using HttpResponseBuilder::getErrorPageHtml instead
+// Now using router::utils::HttpResponseBuilder::getErrorPageHtml instead
 
 /**
  * @brief Set up error response
  * @param res Response object
  * @param status HTTP status code
  */
-// Now using HttpResponseBuilder::setErrorResponse instead
+// Now using router::utils::HttpResponseBuilder::setErrorResponse instead
 
 /** Process HTTP request and route to handler */
 void Router::handleRequest(const Server& server, const Request& req, Response& res) const {

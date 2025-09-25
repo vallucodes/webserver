@@ -9,6 +9,8 @@
 #include <iostream> // for std::cout, std::endl
 #include <algorithm> // for std::find
 
+using namespace router::utils;
+
 /** Default constructor */
 RequestProcessor::RequestProcessor() {
     // Constructor can be used for initialization if needed
@@ -31,7 +33,7 @@ void RequestProcessor::processRequest(const Request& req, const Handler* handler
 
     // Validate HTTP method - return 405 Method Not Allowed for unsupported methods
     if (method != http::GET && method != http::POST && method != http::DELETE) {
-        router::utils::HttpResponseBuilder::setErrorResponse(res, http::METHOD_NOT_ALLOWED_405);
+router::utils::HttpResponseBuilder::setErrorResponse(res, http::METHOD_NOT_ALLOWED_405);
         return;
     }
 
@@ -47,7 +49,7 @@ void RequestProcessor::processRequest(const Request& req, const Handler* handler
         const auto& allowedMethods = location->allowed_methods;
         bool methodAllowed = std::find(allowedMethods.begin(), allowedMethods.end(), method) != allowedMethods.end();
         if (!methodAllowed) {
-            router::utils::HttpResponseBuilder::setErrorResponse(res, http::METHOD_NOT_ALLOWED_405, req);
+router::utils::HttpResponseBuilder::setErrorResponse(res, http::METHOD_NOT_ALLOWED_405, req);
             return;
         }
     }
@@ -58,7 +60,7 @@ void RequestProcessor::processRequest(const Request& req, const Handler* handler
     }
 
     // All attempts failed - return 404
-    router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404, req);
+router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404, req);
 }
 
 /** Validate request path */
@@ -134,10 +136,10 @@ bool RequestProcessor::executeHandler(const Handler* handler,
         (*handler)(req, res, location);
         return true;
     } catch (const std::exception& e) {
-        router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
+router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
         return false;
     } catch (...) {
-        router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
+router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
         return false;
     }
 }
