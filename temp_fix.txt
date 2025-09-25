@@ -1,0 +1,11 @@
+    // PATH_INFO - should be the path portion after the script name
+    std::string pathInfo = "";
+    // For /cgi-bin/hello.py, scriptName is "hello.py", so PATH_INFO should be empty
+    // For /cgi-bin/script.py/extra/path, scriptName is "script.py", so PATH_INFO should be "/extra/path"
+    std::string scriptPathInUrl = "/" + scriptName;
+    if (pathWithoutQuery.length() > scriptPathInUrl.length() &&
+        pathWithoutQuery.substr(0, scriptPathInUrl.length()) == scriptPathInUrl) {
+        pathInfo = pathWithoutQuery.substr(scriptPathInUrl.length());
+    }
+    env.push_back("PATH_INFO=" + pathInfo);
+    env.push_back("PATH_TRANSLATED=" + scriptPath + pathInfo);

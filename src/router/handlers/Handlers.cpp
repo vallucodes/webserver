@@ -705,14 +705,25 @@ void cgi(const Request& req, Response& res, const Location* location, const std:
         }
 
         // 5. CGI Execution Phase
-        // READ: https://datatracker.ietf.org/doc/html/rfc3875
+        // READ: https://www.rfc-editor.org/rfc/rfc3875
 
-        // Get the script name: /cgi-bin/script.py -> script.py
-        // Wrap to path object, extract the filename, and convert to string
-        std::string scriptName = std::filesystem::path(filePath).filename().string();
+        std::string scriptName = std::string(req.getPath());
+        // Remove query string if present
+        size_t queryPos = scriptName.find('?');
+        if (queryPos != std::string::npos) {
+            scriptName = scriptName.substr(0, queryPos);
+        }
 
         // CGI Environment Setup
         auto env = router::utils::setupCgiEnvironment(req, filePath, scriptName, *server);
+
+        // DEBUG: Print all environment variables
+        std::cout << "=== CGI Environment Variables ===" << std::endl;
+        for (const auto& envVar : env) {
+            std::cout << envVar << std::endl;
+        }
+        std::cout << "=================================" << std::endl;
+        // END DEBUG
 
         // Get and process request body for CGI input
         std::string body = std::string(req.getBody());

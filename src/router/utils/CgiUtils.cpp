@@ -121,14 +121,18 @@ std::vector<std::string> setupCgiEnvironment(const Request& req, const std::stri
     // example: /cgi-bin/script.py
     std::string pathWithoutQuery = (queryPos != std::string::npos) ? pathStr.substr(0, queryPos) : pathStr;
 
-    // PATH_INFO
+    // PATH_INFO - should be the path portion after the script name
     std::string pathInfo = "";
-    // example: /cgi-bin/script.py?name=Ilia&age=43 -> /cgi-bin/script.py
-    if (pathWithoutQuery.length() > scriptName.length()) {
+    // For /cgi-bin/hello.py, scriptName is "/cgi-bin/hello.py", so PATH_INFO should be empty
+    // For /cgi-bin/script.py/extra/path, scriptName is "/cgi-bin/script.py", so PATH_INFO should be "/extra/path"
+    if (pathWithoutQuery.length() > scriptName.length() &&
+        pathWithoutQuery.substr(0, scriptName.length()) == scriptName) {
         pathInfo = pathWithoutQuery.substr(scriptName.length());
     }
     env.push_back("PATH_INFO=" + pathInfo);
-    env.push_back("PATH_TRANSLATED=" + scriptPath + pathInfo);
+    if (!pathInfo.empty()) {
+        env.push_back("PATH_TRANSLATED=" + (scriptPath + pathInfo));
+    }
 
     // Query string handling
     if (queryPos != std::string::npos) {
@@ -192,10 +196,10 @@ std::vector<std::string> setupCgiEnvironment(const Request& req, const std::stri
 
     // Remote client info (simplified)
     // env.push_back("REMOTE_ADDR=127.0.0.1");
-    env.push_back("REMOTE_ADDR=" + req.getHeaders("host")[0]);
+    env.push_back("REMOTE_ADDR=127.0.0.1");
 
     // env.push_back("REMOTE_HOST=localhost");
-    env.push_back("REMOTE_HOST=" + req.getHeaders("host")[0]);
+    env.push_back("REMOTE_HOST=localhost");
 
     // Add PATH for finding executables
     env.push_back("PATH=/usr/bin:/bin:/usr/local/bin");
