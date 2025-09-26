@@ -1,4 +1,6 @@
 #include "CgiExecutor.hpp"
+#include "../HttpConstants.hpp"
+
 #include <filesystem> // for std::filesystem::path, std::filesystem::parent_path, std::filesystem::filename
 #include <unistd.h> // for pipe, fork, dup2, close, write, read, chdir, execve, STDIN_FILENO, STDOUT_FILENO
 #include <sys/wait.h> // for waitpid, WNOHANG, WIFEXITED, WEXITSTATUS
@@ -193,7 +195,7 @@ std::string executeCgiScript(const std::string& scriptPath, const std::vector<st
       std::cout << "CGI: Script timeout after " << timeout << " seconds - killing process" << std::endl;
       kill(pid, SIGKILL);
       waitpid(pid, nullptr, 0); // Wait for cleanup
-      return "";
+      return "CGI_TIMEOUT_504";
     }
 
     // Wait for child to finish and get exit status
@@ -217,6 +219,16 @@ CgiResult executeAndParseCgiScript(const std::string& scriptPath, const std::vec
   std::string cgiOutput = executeCgiScript(scriptPath, env, input);
   if (cgiOutput.empty()) {
     return result; // success = false by default
+  }
+
+  // Check for timeout marker
+  if (cgiOutput == "CGI_TIMEOUT_504") {
+    result.success = false;
+    result.status = http::STATUS_GATEWAY_TIMEOUT_504;
+    result.body = "<html><body><h1>504 Gateway Timeout</h1><p>CGI script execution timed out</p></body></html>";
+    result.headers["Content-Type"] = "text/html";
+    result.headers["Content-Length"] = std::to_string(result.body.length());
+    return result;
   }
 
   result.success = true;
@@ -283,7 +295,7 @@ CgiResult executeAndParseCgiScript(const std::string& scriptPath, const std::vec
 
   // Set default status if not specified
   if (result.status.empty()) {
-    result.status = "HTTP/1.1 200 OK";
+    result.status = http::STATUS_OK_200;
   }
 
   return result;

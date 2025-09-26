@@ -329,8 +329,13 @@ void cgi(const Request& req, Response& res, const Location* location, const std:
      // 5.4. Execute CGI script and parse output
      CgiResult cgiResult = executeAndParseCgiScript(filePath, env, body);
      if (!cgiResult.success) {
+         // If CGI failed, check if it's a timeout (504) or other error
+         if (cgiResult.status.find("504") != std::string::npos) {
+             router::utils::HttpResponseBuilder::setErrorResponse(res, http::GATEWAY_TIMEOUT_504);
+             return;
+         }
          router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
-       return;
+         return;
      }
 
   // 6. Set response from parsed CGI result

@@ -31,6 +31,8 @@ void HttpResponseBuilder::setErrorResponse(Response& res, int status) {
     res.setStatus(http::STATUS_FORBIDDEN_403);
   } else if (status == http::INTERNAL_SERVER_ERROR_500) {
     res.setStatus(http::STATUS_INTERNAL_SERVER_ERROR_500);
+  } else if (status == http::GATEWAY_TIMEOUT_504) {
+    res.setStatus(http::STATUS_GATEWAY_TIMEOUT_504);
   } else {
     res.setStatus(http::STATUS_INTERNAL_SERVER_ERROR_500);
   }
@@ -68,6 +70,8 @@ void HttpResponseBuilder::setErrorResponse(Response& res, int status, const Requ
     res.setStatus(http::STATUS_FORBIDDEN_403);
   } else if (status == http::INTERNAL_SERVER_ERROR_500) {
     res.setStatus(http::STATUS_INTERNAL_SERVER_ERROR_500);
+  } else if (status == http::GATEWAY_TIMEOUT_504) {
+    res.setStatus(http::STATUS_GATEWAY_TIMEOUT_504);
   } else {
     res.setStatus(http::STATUS_INTERNAL_SERVER_ERROR_500);
   }
@@ -172,6 +176,8 @@ std::string HttpResponseBuilder::getErrorPageHtml(int status) {
       return FileUtils::readFileToString(error_page::ERROR_PAGE_PAYLOAD_TOO_LARGE_413);
     case http::INTERNAL_SERVER_ERROR_500:
       return FileUtils::readFileToString(error_page::ERROR_PAGE_INTERNAL_SERVER_ERROR_500);
+    case http::GATEWAY_TIMEOUT_504:
+      return FileUtils::readFileToString(error_page::ERROR_PAGE_GATEWAY_TIMEOUT_504);
     default:
       // Fallback to generic 500 error for unknown status codes
       return FileUtils::readFileToString(error_page::ERROR_PAGE_INTERNAL_SERVER_ERROR_500);
@@ -200,6 +206,8 @@ int HttpResponseBuilder::parseStatusCodeFromString(const std::string& statusStri
     return http::PAYLOAD_TOO_LARGE_413;
   } else if (statusString.find("500") != std::string::npos) {
     return http::INTERNAL_SERVER_ERROR_500;
+  } else if (statusString.find("504") != std::string::npos) {
+    return http::GATEWAY_TIMEOUT_504;
   } else {
     // Default to 400 Bad Request for unknown status codes
     return http::BAD_REQUEST_400;

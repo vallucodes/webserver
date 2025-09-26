@@ -22,6 +22,7 @@ namespace http {
   const std::string STATUS_BAD_REQUEST_400 = "400 Bad Request";
   const std::string STATUS_PAYLOAD_TOO_LARGE_413 = "413 Payload Too Large";
   const std::string STATUS_INTERNAL_SERVER_ERROR_500 = "500 Internal Server Error";
+  const std::string STATUS_GATEWAY_TIMEOUT_504 = "504 Gateway Timeout";
 
   // HTTP Status Codes (Numeric Values)
   const int OK_200 = 200;
@@ -32,6 +33,7 @@ namespace http {
   const int BAD_REQUEST_400 = 400;
   const int PAYLOAD_TOO_LARGE_413 = 413;
   const int INTERNAL_SERVER_ERROR_500 = 500;
+  const int GATEWAY_TIMEOUT_504 = 504;
 
   // HTTP Methods
   const std::string GET = "GET";
@@ -68,6 +70,7 @@ namespace error_page {
   const std::string ERROR_PAGE_BAD_REQUEST_400 = "www/errors/bad_request_400.html";
   const std::string ERROR_PAGE_PAYLOAD_TOO_LARGE_413 = "www/errors/internal_server_error_500.html";
   const std::string ERROR_PAGE_INTERNAL_SERVER_ERROR_500 = "www/errors/internal_server_error_500.html";
+  const std::string ERROR_PAGE_GATEWAY_TIMEOUT_504 = "www/errors/gateway_timeout_504.html";
 }
 
 /**
