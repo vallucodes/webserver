@@ -6,7 +6,7 @@
 // Utility: wrap Parser::parseRequest into something easy to test
 static Request parse(const std::string& raw, bool& kick_me) {
     Parser parser;
-    return parser.parseRequest(raw, kick_me);
+    return parser.parseRequest(raw, kick_me, false);
 }
 
 // ✅ Test: simple valid GET request
