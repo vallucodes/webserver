@@ -247,3 +247,8 @@ void Router::listRoutes() const {
   std::cout << "=========================\n" << std::endl;
 }
 
+void Router::requestTimeOut() {
+  // Log the 408 Request Timeout event
+  std::cout << "408 Request Timeout - Client request timed out" << std::endl;
+}
+

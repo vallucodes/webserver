@@ -32,6 +32,8 @@ void HttpResponseBuilder::setErrorResponse(Response& res, int status, const Requ
     res.setStatus(http::STATUS_INTERNAL_SERVER_ERROR_500);
   } else if (status == http::GATEWAY_TIMEOUT_504) {
     res.setStatus(http::STATUS_GATEWAY_TIMEOUT_504);
+  } else if (status == http::REQUEST_TIMEOUT_408) {
+    res.setStatus(http::STATUS_REQUEST_TIMEOUT_408);
   } else {
     res.setStatus(http::STATUS_INTERNAL_SERVER_ERROR_500);
   }
@@ -127,6 +129,8 @@ std::string HttpResponseBuilder::getErrorPageHtml(int status) {
       return FileUtils::readFileToString(error_page::ERROR_PAGE_INTERNAL_SERVER_ERROR_500);
     case http::GATEWAY_TIMEOUT_504:
       return FileUtils::readFileToString(error_page::ERROR_PAGE_GATEWAY_TIMEOUT_504);
+    case http::REQUEST_TIMEOUT_408:
+      return FileUtils::readFileToString(error_page::ERROR_PAGE_REQUEST_TIMEOUT_408);
     default:
       // Fallback to generic 500 error for unknown status codes
       return FileUtils::readFileToString(error_page::ERROR_PAGE_INTERNAL_SERVER_ERROR_500);
@@ -157,6 +161,8 @@ int HttpResponseBuilder::parseStatusCodeFromString(const std::string& statusStri
     return http::INTERNAL_SERVER_ERROR_500;
   } else if (statusString.find("504") != std::string::npos) {
     return http::GATEWAY_TIMEOUT_504;
+  } else if (statusString.find("408") != std::string::npos) {
+    return http::REQUEST_TIMEOUT_408;
   } else {
     // Default to 400 Bad Request for unknown status codes
     return http::BAD_REQUEST_400;

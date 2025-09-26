@@ -40,6 +40,9 @@ class Router {
     /** Process HTTP request and route to handler */
     void handleRequest(const Server& server, const Request& req, Response& res) const;
 
+    /** Handle request timeout (408) */
+    void requestTimeOut();
+
   private:
     /** Find handler for server/method/path */
     const Handler* findHandler(const std::string& server_name, const std::string& method, const std::string& path) const;
