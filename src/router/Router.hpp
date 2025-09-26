@@ -45,13 +45,13 @@ class Router {
 
   private:
     /** Find handler for server/method/path */
-    const Handler* findHandler(const std::string& server_name, const std::string& method, const std::string& path) const;
+    const Handler* findHandler(int server_port, const std::string& method, const std::string& path) const;
 
     /** Find matching location configuration */
     const Location* findLocation(const Server& server, const std::string& path) const;
 
-    /** Route storage: server name → path → HTTP method → Handler */
-    std::map<std::string, std::map<std::string, std::map<std::string, Handler>>> _routes;
+    /** Route storage: server port → path → HTTP method → Handler */
+    std::map<int, std::map<std::string, std::map<std::string, Handler>>> _routes;
 
     /** Request processor for complex request logic */
     RequestProcessor _requestProcessor;
