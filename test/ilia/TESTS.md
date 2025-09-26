@@ -51,8 +51,8 @@ curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8080/uploads/ # 200 OK (
 curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8080/imgs/ # 200 OK (directory listing)
 
 # 3xx Redirection Codes
-curl -s -o /dev/null -w "%{http_code}" --max-time 5 http://127.0.0.1:8080/old # 302 Found (redirect)
-
+curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8080/old # 302
+  
 # 4xx Client Error Codes
 curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8080/nonexistent.html # 404 Not Found
 curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8080/cgi-bin/nonexistent.py # 404 Not Found

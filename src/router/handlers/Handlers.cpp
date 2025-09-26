@@ -415,6 +415,10 @@ void redirect(const Request& req, Response& res, const Location* location) {
   // Set Content-Type header
   res.setHeaders(http::CONTENT_TYPE, http::CONTENT_TYPE_HTML);
 
+  // Set Content-Length header
+  res.setHeaders(http::CONTENT_LENGTH, std::to_string(body.length()));
+
+
   } catch (const std::exception& e) {
      // Unexpected error
      router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req);
