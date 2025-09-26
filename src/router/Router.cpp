@@ -86,15 +86,15 @@ void Router::setupRouter(const std::vector<Server>& configs) {
 
 /** Register a new route */
 void Router::addRoute(int server_port, std::string_view method, std::string_view path, Handler handler) {
-  _routes[std::to_string(server_port)][std::string(path)][std::string(method)] = std::move(handler);
+  _routes[server_port][std::string(path)][std::string(method)] = std::move(handler);
 }
 
 // ========================= REQUEST HANDLING =========================
 
 /** Find handler for server/method/path */
-const Router::Handler* Router::findHandler(const std::string& server_name, const std::string& method, const std::string& path) const {
+const Router::Handler* Router::findHandler(int server_port, const std::string& method, const std::string& path) const {
   // Step 1: Find the server in our routing table
-  auto server_it = _routes.find(server_name);
+  auto server_it = _routes.find(server_port);
   if (server_it == _routes.end()) {
     return nullptr; // Server not found in routing table
   }
@@ -216,7 +216,7 @@ void Router::handleRequest(const Server& server, const Request& req, Response& r
   path = router::utils::StringUtils::normalizePath(path);
 
   // Find the appropriate handler for this request
-  const Handler* handler = findHandler(server.getName(), method, path);
+  const Handler* handler = findHandler(server.getPort(), method, path);
 
   // Find the matching location configuration for this request
   const Location* location = findLocation(server, path);
@@ -232,8 +232,8 @@ void Router::listRoutes() const {
 
   std::cout << "=== Available routes: ===" << std::endl;
   for (const auto& server_pair : _routes) {
-    const std::string& server_name = server_pair.first;
-    std::cout << "Server: " << server_name << std::endl;
+    int server_port = server_pair.first;
+    std::cout << "Server Port: " << server_port << std::endl;
 
     for (const auto& path_pair : server_pair.second) {
       const std::string& path = path_pair.first;
