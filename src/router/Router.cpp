@@ -54,8 +54,8 @@ void Router::setupRouter(const std::vector<Server>& configs) {
                 } else if (!location.cgi_path.empty() && !location.cgi_ext.empty()) {
                     // CGI location: Both CGI path and extension are configured
                     // Use CGI handler for script execution (supports any HTTP method)
-                    handler = [server_root](const Request& req, Response& res, const Location* loc) {
-                        cgi(req, res, loc, server_root);
+                    handler = [server_root, &server](const Request& req, Response& res, const Location* loc) {
+                        cgi(req, res, loc, server_root, &server);
                     };
                 } else if (method == http::POST && !location.upload_path.empty()) {
                     // POST request to upload location: Handle file uploads
@@ -67,11 +67,6 @@ void Router::setupRouter(const std::vector<Server>& configs) {
                     handler = [server_root](const Request& req, Response& res, const Location* loc) {
                         del(req, res, loc, server_root);
                     };
-                // if HEAD method needed
-                // } else if (method == "GET" || method == "HEAD") {
-                //     // GET/HEAD requests: Handle static file serving
-                //     // HEAD is identical to GET but without response body
-                //     handler = get;
                 } else {
                     // Default handler for other methods or configurations
                     handler = get;

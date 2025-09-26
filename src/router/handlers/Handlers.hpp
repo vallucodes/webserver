@@ -27,7 +27,7 @@ void post(const Request& req, Response& res, const Location* location = nullptr,
 void del(const Request& req, Response& res, const Location* location = nullptr, const std::string& server_root = "");
 
 /** Handle CGI requests for executable scripts */
-void cgi(const Request& req, Response& res, const Location* location = nullptr, const std::string& server_root = "");
+void cgi(const Request& req, Response& res, const Location* location = nullptr, const std::string& server_root = "", const Server* server = nullptr);
 
 /** Handle HTTP redirection requests */
 void redirect(const Request& req, Response& res, const Location* location = nullptr);

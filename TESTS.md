@@ -4,12 +4,11 @@
 ```bash
 curl -v http://127.0.0.1:8080/
 curl -v http://127.0.0.1:8080/index.html
-curl -v http://127.0.0.1:8080/index.html
 curl -v http://127.0.0.1:8080/delete.html
 curl -v http://127.0.0.1:8080/favicon.ico
 curl -v http://127.0.0.1:8080/uploads/
 curl -v http://127.0.0.1:8080/imgs/
-curl -v http://127.0.0.1:8080/cgi-bin/ 
+curl -v http://127.0.0.1:8080/cgi-bin/
 curl -v "http://127.0.0.1:8080/cgi-bin/hello.py"
 curl -v "http://127.0.0.1:8080/cgi-bin/hello.js"
 curl -v -L http://127.0.0.1:8080/old # to see the second real request
@@ -44,7 +43,7 @@ curl -v -X OPTIONS http://127.0.0.1:8080/
 ```bash
 curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8080/ # 200
 curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8080/nonexistent.html #404
-curl -s -o /dev/null -w "%{http_code}" -X PUT http://127.0.0.1:8080/ #400
+curl -s -o /dev/null -w "%{http_code}" -X PUT http://127.0.0.1:8080/ #405
 ```
 
 ## 6. Upload File and Get It Back
@@ -53,6 +52,10 @@ echo "upload test $(date)" > upload_test.txt
 curl -v -X POST -F "file=@upload_test.txt" http://127.0.0.1:8080/uploads/
 curl -v http://127.0.0.1:8080/uploads/upload_test.txt
 rm -f upload_test.txt
+```
+# 7. Infinitive loop
+```bash
+curl -v http://127.0.0.1:8080/cgi-bin/inf.py
 ```
 
 ## Multi-Server Tests (8080, 8081, 8082)

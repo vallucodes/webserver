@@ -14,7 +14,7 @@ requests = (
 	"\r\n"
 	"GET / HTTP/1.1\r\n"
 	"Host: localhost\r\n"
-	"Connection: close\r\n"
+	"Connection: keep-alive\r\n"
 	"\r\n"
 	"GET / HTTP/1.1\r\n"
 	"Host: localhost\r\n"

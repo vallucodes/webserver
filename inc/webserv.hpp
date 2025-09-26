@@ -10,39 +10,14 @@
 #include <signal.h>
 #include <unistd.h>
 
-// Utility function declarations
-std::string readFileToString(const std::string& filename);
-
-// Utility function implementation
-#include <fstream>
-#include <sstream>
-
-inline std::string readFileToString(const std::string& filename) {
-    std::ifstream file(filename);
-    if (!file) {
-        throw std::runtime_error("Could not open file: " + filename);
-    }
-
-    std::ostringstream buffer;
-    buffer << file.rdbuf();
-    return buffer.str();
-}
-
-#define TIME_OUT_POLL		1000
+#define TIME_OUT_POLL		100
 #define TIME_OUT_REQUEST	5000
-#define TIME_OUT_RESPONSE	500000
-#define MAX_CLIENTS			900
+#define TIME_OUT_RESPONSE	5000
 #define MAX_BUFFER_SIZE		10000000
 #define MAX_BODY_SIZE		10000000
 #define MAX_HEADER_SIZE		8192
 #ifndef MAX_RESPONSE_SIZE
-# define MAX_RESPONSE_SIZE	10000 // Default value for non-test builds
+# define MAX_RESPONSE_SIZE	100000 // Default value for non-test builds
 #endif
-
-#define CLIENT_DISCONNECT			" disconnected.\n"
-#define CLIENT_TIMEOUT				" dropped by the server: Timeout.\n"
-#define CLIENT_CLOSE_CONNECTION		" dropped by the server: Connection closed.\n"
-#define CLIENT_MALFORMED_REQUEST	" dropped by the server: Malformed request.\n"
-#define CLIENT_SEND_ERROR			" dropped by the server: send() failed.\n"
 
 #endif // WEBSERV_HPP

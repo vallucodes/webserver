@@ -11,7 +11,6 @@
 class ConfigExtractor {
 
 	private:
-
 		void		extractPort(Server& serv, const std::string& line);
 		void		extractAddress(Server& serv, const std::string& line);
 		void		extractMaxBodySize(Server& serv, const std::string& line);
@@ -27,12 +26,9 @@ class ConfigExtractor {
 		static void	extractCgiPath(Location& loc, const std::string& line);
 		static void	extractCgiExt(Location& loc, const std::string& line);
 		static void	extractUploadPath(Location& loc, const std::string& line);
-
-		// Ilia added for redirect
 		static void	extractReturn(Location& loc, const std::string& line);
 
 	public:
-
 		void		extractFields(std::vector<Server>& servs, std::ifstream& cfg);
 		void		extractLocationFields(Server& serv, Location& loc, std::ifstream& cfg);
 };

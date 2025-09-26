@@ -2,33 +2,17 @@
 #include "server/Server.hpp"
 #include "server/Cluster.hpp"
 
-void	handle_sigint(int sig) {
-	(void)sig;
-	// close(server.server_fd); // maybe handle later
-	std::cout << RED << "\n" << time_now() << "	Server closed\n" << RESET;
-	exit(0);
-}
-
 int main(int ac, char **av)
 {
-	signal(SIGINT, handle_sigint);
-
-	// if (ac != 2)
-	// 	return 1;
-	(void)ac;
-
-	Cluster cluster;
 	try {
+		if (ac != 2)
+			throw std::runtime_error("Error: Incorrect amount of arguments. Usage: ./webserv <path_to_config>");
+		Cluster cluster;
 		cluster.config(av[1]);
 		cluster.create();
 		cluster.run();
-
 	} catch (std::exception& e) {
 		std::cout << e.what() << std::endl;
 	}
 	return 0;
 }
-
-// connect to server: telnet 127.0.0.1 <port>
-
-// check for fd leaks
