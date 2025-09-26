@@ -33,7 +33,7 @@ void RequestProcessor::processRequest(const Request& req, const Handler* handler
 
   // Validate HTTP method - return 405 Method Not Allowed for unsupported methods
   if (method != http::GET && method != http::POST && method != http::DELETE) {
-    router::utils::HttpResponseBuilder::setErrorResponse(res, http::METHOD_NOT_ALLOWED_405);
+    router::utils::HttpResponseBuilder::setErrorResponse(res, http::METHOD_NOT_ALLOWED_405, req);
     return;
   }
 
@@ -75,10 +75,10 @@ bool RequestProcessor::executeHandler(const Handler* handler,
     (*handler)(req, res, location);
     return true;
   } catch (const std::exception& e) {
-    router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
+    router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req);
     return false;
   } catch (...) {
-    router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500);
+    router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req);
     return false;
   }
 }

@@ -364,7 +364,7 @@ bool handleDirectoryRequest(const std::string& dirPath, const std::string& reque
   // Try autoindex first if enabled
   if (location && location->autoindex) {
     std::string dirListing = generateDirectoryListing(dirPath, requestPath);
-    HttpResponseBuilder::setSuccessResponse(res, dirListing, http::CONTENT_TYPE_HTML);
+    HttpResponseBuilder::setSuccessResponse(res, dirListing, http::CONTENT_TYPE_HTML, req);
     return true;
   }
 

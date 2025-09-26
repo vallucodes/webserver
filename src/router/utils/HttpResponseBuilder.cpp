@@ -16,46 +16,6 @@
 namespace router {
 namespace utils {
 
-
-void HttpResponseBuilder::setErrorResponse(Response& res, int status) {
-  // Set the HTTP status line based on the error code
-  if (status == http::NOT_FOUND_404) {
-    res.setStatus(http::STATUS_NOT_FOUND_404);
-  } else if (status == http::METHOD_NOT_ALLOWED_405) {
-    res.setStatus(http::STATUS_METHOD_NOT_ALLOWED_405);
-  } else if (status == http::BAD_REQUEST_400) {
-    res.setStatus(http::STATUS_BAD_REQUEST_400);
-  } else if (status == http::PAYLOAD_TOO_LARGE_413) {
-    res.setStatus(http::STATUS_PAYLOAD_TOO_LARGE_413);
-  } else if (status == http::FORBIDDEN_403) {
-    res.setStatus(http::STATUS_FORBIDDEN_403);
-  } else if (status == http::INTERNAL_SERVER_ERROR_500) {
-    res.setStatus(http::STATUS_INTERNAL_SERVER_ERROR_500);
-  } else if (status == http::GATEWAY_TIMEOUT_504) {
-    res.setStatus(http::STATUS_GATEWAY_TIMEOUT_504);
-  } else {
-    res.setStatus(http::STATUS_INTERNAL_SERVER_ERROR_500);
-  }
-
-  // Set standard headers for HTML error responses
-  res.setHeaders(http::CONTENT_TYPE, http::CONTENT_TYPE_HTML);
-  res.setHeaders(http::CONTENT_LENGTH, std::to_string(getErrorPageHtml(status).length()));
-  // Default to keep-alive for HTTP/1.1 compatibility
-  res.setHeaders(http::CONNECTION, http::CONNECTION_KEEP_ALIVE);
-
-  // Set the response body with the error page HTML
-  res.setBody(getErrorPageHtml(status));
-}
-
-void HttpResponseBuilder::setSuccessResponse(Response& res, const std::string& content, const std::string& contentType) {
-  res.setStatus(http::STATUS_OK_200);
-  res.setHeaders(http::CONTENT_TYPE, contentType);
-  res.setHeaders(http::CONTENT_LENGTH, std::to_string(content.length()));
-  // Default to keep-alive for HTTP/1.1 compatibility
-  res.setHeaders(http::CONNECTION, http::CONNECTION_KEEP_ALIVE);
-  res.setBody(content);
-}
-
 void HttpResponseBuilder::setErrorResponse(Response& res, int status, const Request& req) {
   // Set the HTTP status line based on the error code
   if (status == http::NOT_FOUND_404) {
@@ -106,15 +66,6 @@ void HttpResponseBuilder::setSuccessResponse(Response& res, const std::string& c
   res.setBody(content);
 }
 
-void HttpResponseBuilder::setCreatedResponse(Response& res, const std::string& content, const std::string& contentType) {
-  res.setStatus(http::STATUS_CREATED_201);
-  res.setHeaders(http::CONTENT_TYPE, contentType);
-  res.setHeaders(http::CONTENT_LENGTH, std::to_string(content.length()));
-  // Default to keep-alive for HTTP/1.1 compatibility
-  res.setHeaders(http::CONNECTION, http::CONNECTION_KEEP_ALIVE);
-  res.setBody(content);
-}
-
 void HttpResponseBuilder::setCreatedResponse(Response& res, const std::string& content, const std::string& contentType, const Request& req) {
   res.setStatus(http::STATUS_CREATED_201);
   res.setHeaders(http::CONTENT_TYPE, contentType);
@@ -128,32 +79,6 @@ void HttpResponseBuilder::setCreatedResponse(Response& res, const std::string& c
   }
 
   res.setBody(content);
-}
-
-void HttpResponseBuilder::setMethodNotAllowedResponse(Response& res, const std::vector<std::string>& allowedMethods) {
-  // Set the HTTP status line
-  res.setStatus(http::STATUS_METHOD_NOT_ALLOWED_405);
-
-  // Set standard headers for HTML error responses
-  res.setHeaders(http::CONTENT_TYPE, http::CONTENT_TYPE_HTML);
-
-  // Build the Allow header from the allowed methods list
-  std::string allowHeader;
-  for (size_t i = 0; i < allowedMethods.size(); ++i) {
-    if (i > 0) {
-      allowHeader += ", ";
-    }
-    allowHeader += allowedMethods[i];
-  }
-  res.setHeaders(http::ALLOW, allowHeader);
-
-  // Set content length and connection header
-  std::string errorHtml = getErrorPageHtml(http::METHOD_NOT_ALLOWED_405);
-  res.setHeaders(http::CONTENT_LENGTH, std::to_string(errorHtml.length()));
-  res.setHeaders(http::CONNECTION, http::CONNECTION_KEEP_ALIVE);
-
-  // Set the response body with the error page HTML
-  res.setBody(errorHtml);
 }
 
 void HttpResponseBuilder::setMethodNotAllowedResponse(Response& res, const std::vector<std::string>& allowedMethods, const Request& req) {
