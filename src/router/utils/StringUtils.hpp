@@ -6,6 +6,10 @@
 #pragma once
 
 #include <string> // for std::string
+#include <string_view> // for std::string_view
+
+// Forward declaration
+struct Location;
 
 namespace router {
 namespace utils {
@@ -24,6 +28,15 @@ public:
 
     /** Normalize path by collapsing multiple consecutive slashes */
     static std::string normalizePath(std::string path);
+
+    /** Determine file path based on request path and location */
+    static std::string determineFilePathCGI(const std::string_view& path, const Location* location, const std::string& server_root);
+
+    /** Determine the basic file path to serve (for regular GET requests) */
+    static std::string determineFilePathBasic(const std::string& requestPath);
+
+    /** Resolve path relative to server root (nginx-style) */
+    static std::string resolvePath(const std::string& path, const std::string& server_root);
 
 private:
     StringUtils() = delete; // Static class

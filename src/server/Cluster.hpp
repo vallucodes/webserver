@@ -76,6 +76,7 @@ class Cluster {
 		void	checkForTimeouts();
 		void	dropClient(size_t& i, const std::string& msg);
 		void	processReceivedData(size_t& i, const char* buffer, int bytes);
+		void	send408Response(size_t i);
 		void	prepareResponse(ClientRequestState& client_state, const Server& conf, Request& req, int i);
 
 	public:

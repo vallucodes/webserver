@@ -6,11 +6,14 @@
 #pragma once
 
 #include <string> // for std::string
+#include <vector> // for std::vector
 
 #include "../../request/Request.hpp"
 #include "../../response/Response.hpp"
-#include "../../router/Router.hpp"
-#include "../HttpConstants.hpp"
+
+// Forward declarations
+struct Location;
+class Server;
 
 /** Core HTTP Request Handler Functions */
 
@@ -31,8 +34,3 @@ void cgi(const Request& req, Response& res, const Location* location = nullptr, 
 
 /** Handle HTTP redirection requests */
 void redirect(const Request& req, Response& res, const Location* location = nullptr);
-
-/** Check if file is CGI script */
-bool isCgiScriptWithLocation(const std::string& filename, const Location* location);
-
-bool shouldKeepAlive(const Request& req);

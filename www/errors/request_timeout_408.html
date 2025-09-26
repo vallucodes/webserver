@@ -1,5 +1,5 @@
 <!--
-    500 Internal Server Error Page - Displayed when server encounters an unexpected error
+    Custom 408 Request Timeout Error Page
     Provides user-friendly error message with navigation back to home
 -->
 <!DOCTYPE html>
@@ -9,20 +9,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="/favicon.ico" type="image/x-icon">
-    <title>500 Internal Server Error</title>
-
+    <title>408 Request Timeout</title>
     <!-- External CSS styles for error page layout -->
     <link rel="stylesheet" href="/errors/error-styles.css">
 </head>
 <body>
-    <!-- 500 error page content -->
-
+    <!-- 408 error page content -->
     <!-- Main container for error message -->
     <div class="container">
         <!-- Error title -->
-        <h1>500 Internal Server Error</h1>
+        <h1>408 Request Timeout</h1>
         <!-- Error description -->
-        <p>Something went wrong on the server.</p>
+        <p>The server timed out waiting for the request to complete.</p>
         <!-- Navigation link back to home page -->
         <a href="/" class="back-link">← Back to Home</a>
     </div>

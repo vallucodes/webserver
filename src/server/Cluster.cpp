@@ -1,4 +1,11 @@
 #include "Cluster.hpp"
+#include "devHelpers.hpp"
+#include "../config/Config.hpp"
+#include "../parser/Parser.hpp"
+#include "../request/Request.hpp"
+#include "../router/Router.hpp"
+#include "../router/utils/HttpResponseBuilder.hpp"
+#include "../response/Response.hpp"
 
 void	Cluster::config(const std::string& config_file) {
 	Config config;
@@ -189,8 +196,10 @@ void	Cluster::checkForTimeouts() {
 		if (_client_buffers[_fds[i].fd].receive_start != std::chrono::high_resolution_clock::time_point{}) {
 			auto elapsed = now - _client_buffers[_fds[i].fd].receive_start;
 			auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count();
-			if (elapsed_ms > TIME_OUT_REQUEST && _client_buffers[_fds[i].fd].buffer.size() > 0)
+			if (elapsed_ms > TIME_OUT_REQUEST && _client_buffers[_fds[i].fd].buffer.size() > 0){
+        send408Response(i);
 				dropClient(i, CLIENT_TIMEOUT);
+			}
 		}
 
 		if (_client_buffers[_fds[i].fd].send_start != std::chrono::high_resolution_clock::time_point{}) {
@@ -201,6 +210,33 @@ void	Cluster::checkForTimeouts() {
 		}
 	}
 }
+
+// ILIA Added this function to send 408 Request Timeout response
+void	Cluster::send408Response(size_t i) {
+	// Create a minimal Request object for the 408 response
+	Request req;
+	req.setHttpVersion("HTTP/1.1");
+	req.setMethod("GET");
+	req.setPath("/");
+	req.setHeaders("host", "localhost");
+
+	// Create Response object
+	Response res;
+
+	// Use HttpResponseBuilder to create 408 response
+	router::utils::HttpResponseBuilder::setErrorResponse(res, http::REQUEST_TIMEOUT_408, req);
+
+	// Convert response to HTTP string format
+	std::string responseStr = responseToString(res);
+
+	// Send the 408 response immediately
+	std::cout << RED << time_now() << "	Sending 408 Request Timeout to client " << _fds[i].fd << RESET << std::endl;
+	ssize_t sent = send(_fds[i].fd, responseStr.c_str(), responseStr.size(), 0);
+	if (sent < 0) {
+		std::cout << "Failed to send 408 response" << std::endl;
+	}
+}
+// end of ILIA Added this function to send 408 Request Timeout response
 
 const Server&	Cluster::findRelevantConfig(int client_fd, const std::string& buffer) {
 	std::smatch		match;
