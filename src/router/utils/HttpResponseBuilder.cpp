@@ -83,6 +83,20 @@ void HttpResponseBuilder::setCreatedResponse(Response& res, const std::string& c
   res.setBody(content);
 }
 
+void HttpResponseBuilder::setNoContentResponse(Response& res, const Request& req) {
+  res.setStatus(http::STATUS_NO_CONTENT_204);
+  res.setHeaders(http::CONTENT_LENGTH, "0");
+
+  // Set connection header based on keep-alive logic
+  if (router::utils::shouldKeepAlive(req)) {
+    res.setHeaders(http::CONNECTION, http::CONNECTION_KEEP_ALIVE);
+  } else {
+    res.setHeaders(http::CONNECTION, http::CONNECTION_CLOSE);
+  }
+
+  res.setBody(""); // Empty body for 204 No Content
+}
+
 void HttpResponseBuilder::setMethodNotAllowedResponse(Response& res, const std::vector<std::string>& allowedMethods, const Request& req) {
   // Set the HTTP status line
   res.setStatus(http::STATUS_METHOD_NOT_ALLOWED_405);

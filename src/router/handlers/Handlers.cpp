@@ -247,9 +247,8 @@ void del(const Request& req, Response& res, const Location* location, const std:
 
      // Attempt deletion
      if (std::filesystem::remove(filePath)) {
-         // Success response - redirect to upload page
-       res.setHeaders(http::LOCATION, "/upload.html");
-       router::utils::HttpResponseBuilder::setSuccessResponse(res, router::utils::createSuccessMessage(filename, "deleted"), http::CONTENT_TYPE_TEXT, req);
+         // Success response - 204 No Content (file deleted successfully)
+       router::utils::HttpResponseBuilder::setNoContentResponse(res, req);
      } else {
        // router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req);
        router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req);
