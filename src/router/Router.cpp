@@ -74,7 +74,7 @@ void Router::setupRouter(const std::vector<Server>& configs) {
         }
 
         // Register the route in the routing table
-        addRoute(server.getName(), method, location_path, handler);
+        addRoute(server.getPort(), method, location_path, handler);
       }
     }
   }
@@ -85,8 +85,8 @@ void Router::setupRouter(const std::vector<Server>& configs) {
 // ========================= ROUTES REGISTRATION =========================
 
 /** Register a new route */
-void Router::addRoute(std::string_view server_name, std::string_view method, std::string_view path, Handler handler) {
-  _routes[std::string(server_name)][std::string(path)][std::string(method)] = std::move(handler);
+void Router::addRoute(int server_port, std::string_view method, std::string_view path, Handler handler) {
+  _routes[std::to_string(server_port)][std::string(path)][std::string(method)] = std::move(handler);
 }
 
 // ========================= REQUEST HANDLING =========================

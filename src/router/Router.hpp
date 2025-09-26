@@ -35,7 +35,7 @@ class Router {
     void listRoutes() const;
 
     /** Register a new route */
-    void addRoute(std::string_view server_name, std::string_view method, std::string_view path, Handler handler);
+    void addRoute(int server_port, std::string_view method, std::string_view path, Handler handler);
 
     /** Process HTTP request and route to handler */
     void handleRequest(const Server& server, const Request& req, Response& res) const;
