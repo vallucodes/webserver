@@ -2,16 +2,16 @@
 #include "HelperFunctions.hpp"
 
 int	Server::create() {
-	int fd = socket(AF_INET, SOCK_STREAM, 0); // create TCP socket that can talk over IPv4.
+	int fd = socket(AF_INET, SOCK_STREAM, 0);
 	if (fd < 0)
 		throw std::runtime_error("Error: Socket creation");
 
 	setSocketToNonBlockingMode(fd);
 
 	struct sockaddr_in addr;
-	addr.sin_family = AF_INET;			// Use internet protocol IPv4
-	addr.sin_port = htons(_port);		// set port to listen to
-	addr.sin_addr.s_addr = _address;	// listen to specified address
+	addr.sin_family = AF_INET;
+	addr.sin_port = htons(_port);
+	addr.sin_addr.s_addr = _address;
 
 	if (bind(fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) < 0) {
 		close (fd);

@@ -8,59 +8,59 @@ void	Cluster::config(const std::string& config_file) {
 
 	config.validate(config_file);
 	_configs = config.parse(config_file);
-	groupConfigs();
+	printAllConfigs(_configs);
+	// groupConfigs();
 
 	_max_clients = getMaxClients();
 	_router.setupRouter(_configs);
 }
 
-void	Cluster::groupConfigs() {
-	if (_configs.size() == 0)
-		throw std::runtime_error("Error: config file doesnt have any server");
-	for (auto& config : _configs) {
-		if (_listener_groups.empty()) {
-			createGroup(config);
-			continue ;
-		}
-		uint32_t IP_conf = config.getAddress();
-		int port_conf = config.getPort();
 
-		bool added = false;
-		for (auto& group : _listener_groups) {
-			uint32_t IP_group =group.default_config->getAddress();
-			int port_group = group.default_config->getPort();
+// void	Cluster::groupConfigs() {
+// 	if (_configs.size() == 0)
+// 		throw std::runtime_error("Error: config file doesnt have any server");
+// 	for (auto& config : _configs) {
+// 		if (_listener_groups.empty()) {
+// 			createGroup(config);
+// 			continue ;
+// 		}
+// 		uint32_t IP_conf = config.getAddress();
+// 		int port_conf = config.getPort();
 
-			if (IP_group == IP_conf && port_group == port_conf) {
-				checkNameRepitition(group.configs, config);
-				group.configs.push_back(config);
-				added = true;
-			}
-		}
-		if (!added)
-			createGroup(config);
-	}
-}
+// 		bool added = false;
+// 		for (auto& group : _listener_groups) {
+// 			uint32_t IP_group =group.default_config->getAddress();
+// 			int port_group = group.default_config->getPort();
 
-void	Cluster::createGroup(const Server& conf) {
-	ListenerGroup new_group;
+// 			if (IP_group == IP_conf && port_group == port_conf) {
+// 				checkNameRepitition(group.configs, config);
+// 				group.configs.push_back(config);
+// 				added = true;
+// 			}
+// 		}
+// 		if (!added)
+// 			createGroup(config);
+// 	}
+// }
 
-	new_group.fd = -1;
-	new_group.configs.push_back(conf);
-	new_group.default_config = &conf;
+// void	Cluster::createGroup(const Server& conf) {
+// 	ListenerGroup new_group;
 
-	_listener_groups.push_back(new_group);
-}
+// 	new_group.fd = -1;
+// 	new_group.configs.push_back(conf);
+// 	new_group.default_config = &conf;
+
+// 	_listener_groups.push_back(new_group);
+// }
 
 void	Cluster::create() {
 	std::cout << CYAN << time_now() << "	Initializing servers...\n" << RESET;
-	for (auto& group : _listener_groups)
+	for (Server& conf : _configs)
 	{
-		Server serv = *group.default_config;
-		int fd = serv.create();
-		group.fd = fd;
+		int fd = conf.create();
 		_fds.push_back({fd, POLLIN | POLLOUT, 0});
 		_server_fds.insert(fd);
-		_servers[fd] = &group;
+		_servers[fd] = &conf;
 	}
 }
 
@@ -165,7 +165,7 @@ void	Cluster::sendPendingData(size_t& i) {
 			client_state.send_start = std::chrono::high_resolution_clock::time_point{};
 			client_state.waiting_response = false;
 		}
-		else if (sent < 0)
+		else if (sent < 0) // maybe check here for -1, check eval sheet
 			dropClient(i, CLIENT_SEND_ERROR);
 		if (client_state.kick_me) {
 			dropClient(i, CLIENT_CLOSE_CONNECTION);
