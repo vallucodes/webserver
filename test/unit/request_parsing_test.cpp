@@ -4,9 +4,9 @@
 #include "../src/message/AMessage.hpp"
 
 // Utility: wrap Parser::parseRequest into something easy to test
-static Request parse(const std::string& raw, bool& kick_me, bool bad_request) {
+static Request parse(const std::string& raw, bool& kick_me) {
     Parser parser;
-    return parser.parseRequest(raw, kick_me, bad_request);
+    return parser.parseRequest(raw, kick_me, false);
 }
 
 // ✅ Test: simple valid GET request
@@ -275,4 +275,89 @@ TEST(ParserTest, PostWithZeroContentLength) {
 
     EXPECT_FALSE(req.getError());
     EXPECT_EQ(req.getBody(), "");
+}
+
+
+// ✅ Test: percent-encoded space should decode
+TEST(ParserTest, PercentEncodedSpaceShouldDecode) {
+    bool kick_me = false;
+    std::string raw =
+        "GET /hello%20world HTTP/1.1\r\n"
+        "Host: example.com\r\n"
+        "\r\n";
+
+    Request req = parse(raw, kick_me);
+
+    EXPECT_FALSE(req.getError());
+    EXPECT_EQ(req.getPath(), "/hello world"); // %20 -> ' '
+}
+
+// ✅ Test: percent-encoded slash should decode
+TEST(ParserTest, PercentEncodedSlashShouldDecode) {
+    bool kick_me = false;
+    std::string raw =
+        "GET /foo%2Fbar HTTP/1.1\r\n"
+        "Host: example.com\r\n"
+        "\r\n";
+
+    Request req = parse(raw, kick_me);
+
+    EXPECT_FALSE(req.getError());
+    EXPECT_EQ(req.getPath(), "/foo/bar"); // %2F -> '/'
+}
+
+// ❌ Test: incomplete percent escape should error
+TEST(ParserTest, IncompletePercentEscapeShouldError) {
+    bool kick_me = false;
+    std::string raw =
+        "GET /foo%2 HTTP/1.1\r\n"
+        "Host: example.com\r\n"
+        "\r\n";
+
+    Request req = parse(raw, kick_me);
+
+    EXPECT_TRUE(req.getError());
+}
+
+// ❌ Test: invalid hex digits in percent escape should error
+TEST(ParserTest, InvalidHexInPercentEscapeShouldError) {
+    bool kick_me = false;
+    std::string raw =
+        "GET /foo%ZZbar HTTP/1.1\r\n"
+        "Host: example.com\r\n"
+        "\r\n";
+
+    Request req = parse(raw, kick_me);
+
+    EXPECT_TRUE(req.getError());
+}
+
+// ✅ Test: multiple percent-encoded characters in path
+TEST(ParserTest, MultiplePercentEncodings) {
+    bool kick_me = false;
+    std::string raw =
+        "GET /%41%42%43 HTTP/1.1\r\n" // ABC
+        "Host: example.com\r\n"
+        "\r\n";
+
+    Request req = parse(raw, kick_me);
+
+    EXPECT_FALSE(req.getError());
+    EXPECT_EQ(req.getPath(), "/ABC");
+}
+
+// ✅ Test: multiple percent-encoded characters in path
+TEST(ParserTest, MultiplePercentEncodedInPath) {
+    bool kick_me = false;
+    std::string raw =
+        // " " (space) encoded as %20 and "!" encoded as %21
+        "GET /search%20%20%20with%20spaces%21 HTTP/1.1\r\n"
+        "Host: example.com\r\n"
+        "\r\n";
+
+    Request req = parse(raw, kick_me);
+
+    EXPECT_FALSE(req.getError()); // should decode cleanly
+    // After decoding: "/search with spaces!"
+    EXPECT_EQ(req.getPath(), "/search   with spaces!");
 }
