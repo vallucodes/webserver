@@ -9,7 +9,7 @@ bool isValidMethod(std::string_view method) {
     return true;
 }
 
-inline int fromHex(char c) {
+int fromHex(char c) {
     if (c >= '0' && c <= '9')  
         return c - '0';
     if (c >= 'A' && c <= 'F')
@@ -19,7 +19,7 @@ inline int fromHex(char c) {
     return -1;
 }
 
-inline bool decodeHexPair(char hi, char lo, unsigned char &out) {
+bool decodeHexPair(char hi, char lo, unsigned char &out) {
     int hiVal = fromHex(hi);
     int loVal = fromHex(lo);
     if (hiVal < 0 || loVal < 0)
@@ -27,6 +27,7 @@ inline bool decodeHexPair(char hi, char lo, unsigned char &out) {
     out = static_cast<unsigned char>((hiVal << 4) | loVal);
     return true;
 }
+
 bool isValidRequestTarget(std::string& path) {
     if (path.empty())
         return false;
@@ -43,6 +44,8 @@ bool isValidRequestTarget(std::string& path) {
             unsigned char decoded;
             if (!decodeHexPair(path[i+1], path[i+2], decoded)) 
                 return false;
+            if (decoded >= 128 || invalid.find(decoded) != std::string_view::npos)
+                return false;
             path.replace(i, 3, 1, decoded);
             ++i;
         } else {
@@ -53,6 +56,7 @@ bool isValidRequestTarget(std::string& path) {
     }
     return true;
 }
+
 bool parseRequestLineFormat(Request& req, const std::string& firstLineStr){
     std::istringstream lineStream(firstLineStr);
     std::string method, path, version;
