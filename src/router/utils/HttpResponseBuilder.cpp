@@ -148,6 +148,7 @@ std::string HttpResponseBuilder::getErrorPageHtml(int status) {
     default:
       // Fallback to generic 500 error for unknown status codes
       return FileUtils::readFileToString(error_page::ERROR_PAGE_INTERNAL_SERVER_ERROR_500);
+      // add error page from config file!
   }
 }
 
