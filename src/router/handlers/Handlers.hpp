@@ -21,16 +21,16 @@ class Server;
 std::string resolvePath(const std::string& path, const std::string& server_root);
 
 /** Handle GET requests for static files and pages */
-void get(const Request& req, Response& res, const Location* location = nullptr);
+void get(const Request& req, Response& res, const Server& server);
 
 /** Handle POST requests for file uploads */
-void post(const Request& req, Response& res, const Location* location = nullptr, const std::string& server_root = "");
+void post(const Request& req, Response& res, const Server& server);
 
 /** Handle DELETE requests for file removal */
-void del(const Request& req, Response& res, const Location* location = nullptr, const std::string& server_root = "");
+void del(const Request& req, Response& res, const Server& server);
 
 /** Handle CGI requests for executable scripts */
-void cgi(const Request& req, Response& res, const Location* location = nullptr, const std::string& server_root = "", const Server* server = nullptr);
+void cgi(const Request& req, Response& res, const Server& server);
 
 /** Handle HTTP redirection requests */
-void redirect(const Request& req, Response& res, const Location* location = nullptr);
+void redirect(const Request& req, Response& res, const Server& server);

@@ -25,8 +25,8 @@ class Router {
     Router();
     ~Router();
 
-    /** Handler function type: (Request, Response, Location*) -> void */
-    using Handler = std::function<void(const Request&, Response&, const Location*)>;
+    /** Handler function type: (Request, Response, Location*, Server) -> void */
+    using Handler = std::function<void(const Request&, Response&, const Server&)>;
 
     /** Initialize router with server configurations */
     void setupRouter(const std::vector<Server>& configs);

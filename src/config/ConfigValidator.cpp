@@ -197,11 +197,15 @@ bool	ConfigValidator::validateErrorPage(const std::string& line) {
 	if (!std::regex_search(line, match, re1))
 		return false;
 	int error_nb = std::stoi(match[1]);
-	int error_nb_file = std::stoi(match[2]);
-	if (error_nb != error_nb_file)
+	std::string file_path = match[2];
+
+	// Validate that the error code is a valid HTTP error code
+	if (error_nb < 400 || error_nb > 599)
 		return false;
+
+	// Validate that the file path ends with .html
 	std::regex	re2(".html$");
-	if (!std::regex_search(line, re2))
+	if (!std::regex_search(file_path, re2))
 		return false;
 	return true;
 }

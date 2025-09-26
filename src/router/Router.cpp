@@ -51,26 +51,30 @@ void Router::setupRouter(const std::vector<Server>& configs) {
         if (!location.return_url.empty()) {
           // Redirect location: return_url is configured
           // Use redirect handler for all HTTP methods
-          handler = redirect;
+          handler = [&server](const Request& req, Response& res, const Server& /* srv */) {
+            redirect(req, res, server);
+          };
         } else if (!location.cgi_path.empty() && !location.cgi_ext.empty()) {
           // CGI location: Both CGI path and extension are configured
           // Use CGI handler for script execution (supports any HTTP method)
-          handler = [server_root, &server](const Request& req, Response& res, const Location* loc) {
-            cgi(req, res, loc, server_root, &server);
+          handler = [&server](const Request& req, Response& res, const Server& /* srv */) {
+            cgi(req, res, server);
           };
         } else if (method == http::POST && !location.upload_path.empty()) {
           // POST request to upload location: Handle file uploads
-          handler = [server_root](const Request& req, Response& res, const Location* loc) {
-            post(req, res, loc, server_root);
+          handler = [&server](const Request& req, Response& res, const Server& /* srv */) {
+            post(req, res, server);
           };
         } else if (method == http::DELETE && !location.upload_path.empty()) {
           // DELETE request from upload location: Handle file deletions
-          handler = [server_root](const Request& req, Response& res, const Location* loc) {
-            del(req, res, loc, server_root);
+          handler = [&server](const Request& req, Response& res, const Server& /* srv */) {
+            del(req, res, server);
           };
         } else {
           // Default handler for other methods or configurations
-          handler = get;
+          handler = [&server](const Request& req, Response& res, const Server& /* srv */) {
+            get(req, res, server);
+          };
         }
 
         // Register the route in the routing table
@@ -202,7 +206,9 @@ const Location* Router::findLocation(const Server& server, const std::string& pa
 void Router::handleRequest(const Server& server, const Request& req, Response& res) const {
   // Check if parser found errors
   if (req.getError()) {
-    router::utils::HttpResponseBuilder::setErrorResponse(res, req);
+    // Parse the status code from the request's status string
+    int statusCode = router::utils::HttpResponseBuilder::parseStatusCodeFromString(std::string(req.getStatus()));
+    router::utils::HttpResponseBuilder::setErrorResponse(res, statusCode, req);
     return;
   }
   // Extract method and path from the request
@@ -218,11 +224,8 @@ void Router::handleRequest(const Server& server, const Request& req, Response& r
   // Find the appropriate handler for this request
   const Handler* handler = findHandler(server.getPort(), method, path);
 
-  // Find the matching location configuration for this request
-  const Location* location = findLocation(server, path);
-
   // Delegate to RequestProcessor for execution and fallback handling
-  _requestProcessor.processRequest(req, handler, res, location);
+  _requestProcessor.processRequest(req, handler, res, server);
 }
 
 // ========================= HELPERS =========================

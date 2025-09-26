@@ -7,11 +7,13 @@
 #include "../HttpConstants.hpp"
 #include "../../response/Response.hpp"
 #include "../../request/Request.hpp"
+#include "../../server/Server.hpp"
 #include "Utils.hpp"
 #include "FileUtils.hpp"
 
 #include <iostream> // for std::cout, std::endl
 #include <algorithm> // for std::transform
+#include <sstream> // for std::ostringstream
 
 namespace router {
 namespace utils {
@@ -49,7 +51,7 @@ void HttpResponseBuilder::setErrorResponse(Response& res, int status, const Requ
     res.setHeaders(http::CONNECTION, http::CONNECTION_CLOSE);
   }
 
-  // Set the response body with the error page HTML
+  // Set the response body with the default error page HTML
   res.setBody(getErrorPageHtml(status));
 }
 
@@ -129,36 +131,63 @@ void HttpResponseBuilder::setMethodNotAllowedResponse(Response& res, const std::
   res.setBody(errorHtml);
 }
 
+std::string HttpResponseBuilder::makeDefaultErrorPage(int code, const std::string& reason) {
+  std::ostringstream oss;
+  oss << "<html>\n<head><title>" << code << " " << reason << "</title></head>\n"
+      << "<body>\n<center><h1>" << code << " " << reason << "</h1></center>\n"
+      << "</body>\n</html>\n";
+  return oss.str();
+}
+
 std::string HttpResponseBuilder::getErrorPageHtml(int status) {
   switch (status) {
-    case http::NOT_FOUND_404:
-      return FileUtils::readFileToString(error_page::ERROR_PAGE_NOT_FOUND_404);
-    case http::METHOD_NOT_ALLOWED_405:
-      return FileUtils::readFileToString(error_page::ERROR_PAGE_METHOD_NOT_ALLOWED_405);
     case http::BAD_REQUEST_400:
-      return FileUtils::readFileToString(error_page::ERROR_PAGE_BAD_REQUEST_400);
+      return makeDefaultErrorPage(400, "Bad Request");
+    case http::FORBIDDEN_403:
+      return makeDefaultErrorPage(403, "Forbidden");
+    case http::NOT_FOUND_404:
+      return makeDefaultErrorPage(404, "Not Found");
+    case http::METHOD_NOT_ALLOWED_405:
+      return makeDefaultErrorPage(405, "Method Not Allowed");
     case http::PAYLOAD_TOO_LARGE_413:
-      return FileUtils::readFileToString(error_page::ERROR_PAGE_PAYLOAD_TOO_LARGE_413);
+      return makeDefaultErrorPage(413, "Payload Too Large");
     case http::INTERNAL_SERVER_ERROR_500:
-      return FileUtils::readFileToString(error_page::ERROR_PAGE_INTERNAL_SERVER_ERROR_500);
+      return makeDefaultErrorPage(500, "Internal Server Error");
     case http::GATEWAY_TIMEOUT_504:
-      return FileUtils::readFileToString(error_page::ERROR_PAGE_GATEWAY_TIMEOUT_504);
+      return makeDefaultErrorPage(504, "Gateway Timeout");
     case http::REQUEST_TIMEOUT_408:
-      return FileUtils::readFileToString(error_page::ERROR_PAGE_REQUEST_TIMEOUT_408);
+      return makeDefaultErrorPage(408, "Request Timeout");
     default:
-    // if error_page exists in config file, return it else return generic 500 error
       // Fallback to generic 500 error for unknown status codes
-      return FileUtils::readFileToString(error_page::ERROR_PAGE_INTERNAL_SERVER_ERROR_500);
-      // add error page from config file!
+      return makeDefaultErrorPage(500, "Internal Server Error");
   }
 }
 
-void HttpResponseBuilder::setErrorResponse(Response& res, const Request& req) {
-  // Parse the status code from the request's status string
-  int statusCode = parseStatusCodeFromString(std::string(req.getStatus()));
+std::string HttpResponseBuilder::getErrorPageHtml(int status, const Server& server) {
+  // Check if server has custom error page for this status
+  const std::map<int, std::string>& errorPages = server.getErrorPages();
+  auto it = errorPages.find(status);
 
-  // Use the existing method with keep-alive support
-  setErrorResponse(res, statusCode, req);
+  if (it != errorPages.end()) {
+    // Server has custom error page configured
+    std::string customErrorPath = it->second;
+
+    // Build full path using server root
+    std::string fullPath = server.getRoot() + "/" + customErrorPath;
+
+    // Try to read the custom error page file
+    try {
+      std::string customErrorContent = FileUtils::readFileToString(fullPath);
+      if (!customErrorContent.empty()) {
+        return customErrorContent;
+      }
+    } catch (const std::exception&) {
+      // File doesn't exist or can't be read, fall back to default
+    }
+  }
+
+  // No custom error page or file doesn't exist, use default
+  return getErrorPageHtml(status);
 }
 
 int HttpResponseBuilder::parseStatusCodeFromString(const std::string& statusString) {

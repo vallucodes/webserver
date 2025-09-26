@@ -224,7 +224,7 @@ void	Cluster::send408Response(size_t i) {
 	Response res;
 
 	// Use HttpResponseBuilder to create 408 response
-	router::utils::HttpResponseBuilder::setErrorResponse(res, http::REQUEST_TIMEOUT_408, req);
+        router::utils::HttpResponseBuilder::setErrorResponse(res, http::REQUEST_TIMEOUT_408, req);
 
 	// Convert response to HTTP string format
 	std::string responseStr = responseToString(res);

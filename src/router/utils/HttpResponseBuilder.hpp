@@ -11,6 +11,7 @@
 // Forward declarations
 class Response;
 class Request;
+class Server;
 
 namespace router {
 namespace utils {
@@ -18,7 +19,7 @@ namespace utils {
 /** Utility class for building error and success responses */
 class HttpResponseBuilder {
     public:
-        /** Set a complete error response with appropriate status, headers, and body (with keep-alive support) */
+        /** Set a complete error response with default error pages only */
         static void setErrorResponse(Response& res, int status, const class Request& req);
 
         /** Set a 405 Method Not Allowed response with Allow header listing allowed methods (with keep-alive support) */
@@ -36,12 +37,16 @@ class HttpResponseBuilder {
         /** Get HTML content for default error pages */
         static std::string getErrorPageHtml(int status);
 
-        /** Set error response using status from request object */
-        static void setErrorResponse(Response& res, const class Request& req);
+        /** Get HTML content for error pages with server configuration support */
+        static std::string getErrorPageHtml(int status, const class Server& server);
 
-    private:
+        /** Generate a default error page HTML */
+        static std::string makeDefaultErrorPage(int code, const std::string& reason);
+
         /** Convert string status to integer status code */
         static int parseStatusCodeFromString(const std::string& statusString);
+
+    private:
 
         HttpResponseBuilder() = delete; // Static class
 };
