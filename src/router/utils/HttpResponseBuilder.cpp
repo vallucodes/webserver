@@ -106,6 +106,30 @@ void HttpResponseBuilder::setSuccessResponse(Response& res, const std::string& c
   res.setBody(content);
 }
 
+void HttpResponseBuilder::setCreatedResponse(Response& res, const std::string& content, const std::string& contentType) {
+  res.setStatus(http::STATUS_CREATED_201);
+  res.setHeaders(http::CONTENT_TYPE, contentType);
+  res.setHeaders(http::CONTENT_LENGTH, std::to_string(content.length()));
+  // Default to keep-alive for HTTP/1.1 compatibility
+  res.setHeaders(http::CONNECTION, http::CONNECTION_KEEP_ALIVE);
+  res.setBody(content);
+}
+
+void HttpResponseBuilder::setCreatedResponse(Response& res, const std::string& content, const std::string& contentType, const Request& req) {
+  res.setStatus(http::STATUS_CREATED_201);
+  res.setHeaders(http::CONTENT_TYPE, contentType);
+  res.setHeaders(http::CONTENT_LENGTH, std::to_string(content.length()));
+
+  // Set connection header based on keep-alive logic
+  if (router::utils::shouldKeepAlive(req)) {
+    res.setHeaders(http::CONNECTION, http::CONNECTION_KEEP_ALIVE);
+  } else {
+    res.setHeaders(http::CONNECTION, http::CONNECTION_CLOSE);
+  }
+
+  res.setBody(content);
+}
+
 void HttpResponseBuilder::setMethodNotAllowedResponse(Response& res, const std::vector<std::string>& allowedMethods) {
   // Set the HTTP status line
   res.setStatus(http::STATUS_METHOD_NOT_ALLOWED_405);

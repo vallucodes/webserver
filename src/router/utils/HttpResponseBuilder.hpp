@@ -36,6 +36,12 @@ class HttpResponseBuilder {
         /** Set a success response with content and content type (with keep-alive support) */
         static void setSuccessResponse(Response& res, const std::string& content, const std::string& contentType, const class Request& req);
 
+        /** Set a 201 Created response with content and content type */
+        static void setCreatedResponse(Response& res, const std::string& content, const std::string& contentType);
+
+        /** Set a 201 Created response with content and content type (with keep-alive support) */
+        static void setCreatedResponse(Response& res, const std::string& content, const std::string& contentType, const class Request& req);
+
         /** Get HTML content for default error pages */
         static std::string getErrorPageHtml(int status);
 

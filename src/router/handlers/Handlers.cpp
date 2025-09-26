@@ -192,7 +192,7 @@ void post(const Request& req, Response& res, const Location* location, const std
 
      // Success response - redirect to upload page
      res.setHeaders(http::LOCATION, "/upload.html");
-     router::utils::HttpResponseBuilder::setSuccessResponse(res, router::utils::createSuccessMessage(filename, "uploaded"), http::CONTENT_TYPE_TEXT, req);
+     router::utils::HttpResponseBuilder::setCreatedResponse(res, router::utils::createSuccessMessage(filename, "uploaded"), http::CONTENT_TYPE_TEXT, req);
 
   } catch (const std::exception&) {
      // router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req);
