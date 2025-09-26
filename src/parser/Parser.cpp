@@ -79,8 +79,6 @@ bool isValidProtocol(std::string_view protocol){
 bool isBadRequest(const Request& req){
     if ( !isValidMethod(req.getMethod()) )
         return true;
-    // if ( !isValidRequestTarget(req.getPath()))
-    //     return true;
     if ( !isValidProtocol(req.getHttpVersion()))
         return true;
     return false;
@@ -170,6 +168,9 @@ bool isBadMethod(Request& req){
             // For now, we'll be more lenient and allow POST without Content-Length
             // The actual body validation will be handled by the handlers
             // return true;
+            const auto& bodySize = req.getBody();
+            if (!bodySize.empty())
+                return true;
         }
     }
     if (req.getMethod() == "GET"){
@@ -187,29 +188,7 @@ bool isChunked(Request& req){
     return findChunk;
 }
 
-// std::string decodeChunkedBody(std::string body){
-//     std::string result;
-//     size_t pos = 0;
 
-//     while (pos < body.size()) {
-//         size_t lineEnd = body.find("\r\n", pos);
-//         if (lineEnd == std::string::npos) break;
-
-//         std::string sizeLine = body.substr(pos, lineEnd - pos);
-//         size_t chunkSize = 0;
-//         std::istringstream(sizeLine) >> std::hex >> chunkSize;
-//         pos = lineEnd + 2;
-
-//         if (chunkSize == 0) break;
-
-//         if (pos + chunkSize > body.size()) break;
-
-//         result.append(body.substr(pos, chunkSize));
-//         pos += chunkSize + 2;
-//     }
-
-//     return result;
-// }
 
 void findKeepAlive(const std::vector<std::string>& headers, bool& kick_me) {
     if (headers.empty()) {
@@ -229,12 +208,6 @@ void findKeepAlive(const std::vector<std::string>& headers, bool& kick_me) {
 Request Parser::parseRequest(const std::string& httpString, bool& kick_me, bool bad_request) {
     Request req;
     std::string_view sv(httpString);
-
-    // std::cout << "\noriginal string is:" << httpString << std::endl;
-    // std::cout << "end of string" <<  std::endl;
-
-    //Parse request line
-    // std::cout << "\n--------- incoming string ----------\n" << httpString << "\n---------- END ----------\n" << std::endl;
     if (bad_request)
     {
         req.setError(true);
@@ -259,8 +232,6 @@ Request Parser::parseRequest(const std::string& httpString, bool& kick_me, bool 
         req.setStatus("400 Bad Request");
         return req;
     }
-
-    //Parse headers
     size_t posEndHeader = sv.find("\r\n\r\n");
     std::string_view headerLines = sv.substr(pos + 2, (posEndHeader + 2) - (pos + 2));
     if (!parseHeader(req, headerLines))
@@ -271,21 +242,13 @@ Request Parser::parseRequest(const std::string& httpString, bool& kick_me, bool 
         return req;
     };
     findKeepAlive(req.getHeaders("connection"), kick_me);
-    req.setError(isBadMethod(req));
-    if (req.getError()) {
-        return req;
-    };
-    //parse body
     std::string_view body = sv.substr(posEndHeader + 4);
     auto contentValues = req.getHeaders("content-length");
     req.setBody(std::string(body.substr(0)));
-
-    // if (!contentValues.empty()) {
-    //     size_t contentLength = std::stoul(contentValues.front());
-    //     req.setBody(std::string(body.substr(0, contentLength)));
-    // }
-    // else if (isChunked(req))
-    //     req.setBody(decodeChunkedBody(std::string(body)));
+    req.setError(isBadMethod(req));
+    // if (req.getError()) {
+    //     return req;
+    // };
 
     // ELSE IF content-type chunked parse the body
     // else
