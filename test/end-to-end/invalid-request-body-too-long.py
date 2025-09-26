@@ -1,3 +1,6 @@
+# set max body size in confign to 100, then test this with "1" and without.
+# remember to change Content-Length field
+
 import socket
 
 HOST = '127.0.0.1'
@@ -7,7 +10,7 @@ request = (
 	"POST /uploads HTTP/1.1\r\n"
 	f"Host: {HOST}:{PORT}\r\n"
 	"Content-Type: text/plain\r\n"
-	"Content-Length: 101\r\n"  # length of "12345"
+	"Content-Length: 101\r\n"
 	"\r\n"
 	"1234567890"
 	"1234567890"

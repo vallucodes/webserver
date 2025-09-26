@@ -1,5 +1,12 @@
 #include "HelperFunctions.hpp"
 
+volatile sig_atomic_t	signal_to_terminate = false;
+
+void	handleSigTerminate(int sig) {
+	signal_to_terminate = sig;
+	std::cout << RED << "\n" << time_now() << "	Server closed\n" << RESET;
+}
+
 bool	isServerSocket(int fd, const std::set<int>& server_fds) {
 	std::set<int>::iterator it = server_fds.find(fd);
 	if (it != server_fds.end())
@@ -47,7 +54,7 @@ void	checkNameRepitition(const std::vector<Server> configs, const Server config)
 uint64_t	getMaxClients() {
 	struct rlimit rl;
 	if (getrlimit(RLIMIT_NOFILE, &rl) != 0)
-		throw std::runtime_error("Error: getrlimit");
+		throw std::runtime_error("Error: getrlimit()");
 
 	uint64_t reserved_fds = 100;
 	int max_clients = rl.rlim_cur - reserved_fds;
@@ -56,18 +63,38 @@ uint64_t	getMaxClients() {
 	return max_clients;
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+std::string	headersToString(const std::unordered_map<std::string, std::vector<std::string>>& headers) {
+	std::string result;
+	for (const auto& pair : headers) {
+		const std::string& key = pair.first;
+		const std::vector<std::string>& values = pair.second;
+		for (const auto& value : values)
+			result += key + ": " + value + "\r\n";
+	}
+	return result;
+}
+
+std::string	responseToString(const Response& res) {
+	std::string responseStr = "HTTP/1.1 " + std::string(res.getStatus()) + "\r\n";
+	responseStr += headersToString(res.getAllHeaders());
+		responseStr += "\r\n";
+	responseStr += std::string(res.getBody());
+	return responseStr;
+}
+
+void	setTimer(ClientRequestState& client_state) {
+	if (client_state.buffer.empty())
+		client_state.receive_start = {};
+	else
+		client_state.receive_start = std::chrono::high_resolution_clock::now();
+}
 
 void	setMaxBodySize(ClientRequestState& client_state, Cluster* cluster, int fd) {
-	Server conf = cluster->Cluster::findRelevantConfig(fd, client_state.buffer);
+	const Server& conf = cluster->Cluster::findRelevantConfig(fd, client_state.buffer);
 	client_state.max_body_size = conf.getMaxBodySize();
 }
 
 bool	requestComplete(ClientRequestState& client_state, int fd, Cluster* cluster) {
-	// std::cout << "Buffer to be parsed currently: " << std::endl;
-	// std::cout << buffer << std::endl;
-	// buffer = client_state.buffer;
-
 	if (client_state.buffer.size() > MAX_BUFFER_SIZE) {
 		client_state.data_validity = false;
 		return false;
@@ -80,18 +107,13 @@ bool	requestComplete(ClientRequestState& client_state, int fd, Cluster* cluster)
 		client_state.data_validity = false;
 		return false;
 	}
-	// at this point non cleaned buffer has full header
-
-	// std::cout << "header end detected: " << pos2 << std::endl;
 
 	setMaxBodySize(client_state, cluster, fd);
-	// std::cout << "max body size for the request: " << client_state.max_body_size << std::endl;
 
 	int status = -1;
 	status = isChunkedBodyComplete(client_state, header_end);
 	if (status != -1)
 		return status;
-
 	status = isRequestBodyComplete(client_state, header_end);
 	return status;
 }
@@ -117,7 +139,6 @@ bool	decodeChunkedBody(ClientRequestState& client_state) {
 		if (chunkSize == 0) {
 			size_t trailersEnd = body.find("\r\n\r\n", pos);
 			if (trailersEnd == std::string::npos) {
-				// std::cout << "header not found" << std::endl;
 				client_state.data_validity = false;
 				endReq = false;
 				break;
@@ -130,7 +151,6 @@ bool	decodeChunkedBody(ClientRequestState& client_state) {
 
 		pos = lineEnd + 2;
 		if (pos + chunkSize + 2 > body.size()) {
-			// std::cout << "no carriage found at the end" << std::endl;
 			client_state.data_validity = false;
 			endReq = false;
 			break;
@@ -142,9 +162,7 @@ bool	decodeChunkedBody(ClientRequestState& client_state) {
 
 	client_state.clean_buffer = headers + result;
 	size_t body_size = client_state.clean_buffer.substr(header_end).size();
-	// std::cout << "body size now: " << body_size << std::endl;
 	if (body_size > client_state.max_body_size) {
-		// std::cout << "body is longer than allowed limit" << std::endl;
 		client_state.data_validity = false;
 		endReq = false;
 		return endReq;
@@ -164,26 +182,22 @@ bool	isRequestBodyComplete(ClientRequestState& client_state, size_t header_end) 
 	client_state.clean_buffer = client_state.buffer;
 	size_t remainder = client_state.clean_buffer.size() - header_end;
 	std::smatch match;
-	if (std::regex_search(client_state.clean_buffer, match, std::regex(R"(Content-Length:\s*(\d+)\r?\n)"))) {
+	if (std::regex_search(client_state.clean_buffer, match, std::regex(R"(Content-Length:\s*(\d+)\s*\r?\n)"))) {
 		size_t body_expected_len = std::stoul(match[1].str());
 		if (body_expected_len > client_state.max_body_size) {
-			// std::cout << "body is expected to be longer than allowed limit" << std::endl;
 			client_state.data_validity = false;
 			return false;
 		}
 		if (remainder >= body_expected_len) {
-			// std::cout << "body received and there might another request starting after" << std::endl;
 			client_state.request_size = header_end + body_expected_len;
 			client_state.buffer = client_state.clean_buffer.substr(client_state.request_size);
 			return true;
 		}
 		else {
-			// std::cout << "body not fully received" << std::endl;
 			return false;
 		}
 	}
 	else {
-		// std::cout << "only header received, possibly some bytes in body that are part of next request" << std::endl;
 		client_state.request_size = header_end;
 		client_state.buffer = client_state.clean_buffer.substr(client_state.request_size);
 		return true;
@@ -194,7 +208,6 @@ std::string	popResponseChunk(ClientRequestState& client_state) {
 	std::string response;
 	if (client_state.response.size() > MAX_RESPONSE_SIZE) {
 		response = client_state.response.substr(0, MAX_RESPONSE_SIZE);
-		// std::cout << "request: \n" << client_state.request << std::endl;
 		client_state.response = client_state.response.substr(MAX_RESPONSE_SIZE);
 	}
 	else {
@@ -202,8 +215,4 @@ std::string	popResponseChunk(ClientRequestState& client_state) {
 		client_state.response.erase();
 	}
 	return response;
-}
-
-void	buildRequest(ClientRequestState& client_state) {
-	client_state.request = client_state.clean_buffer.substr(0, client_state.request_size);
 }

@@ -130,12 +130,6 @@ std::vector<std::string> ConfigValidator:: _methods = {
 	"GET",
 	"POST",
 	"DELETE"
-	// "HEAD"
-	// "PUT",
-	// "PATCH",
-	// "OPTIONS",
-	// "CONNECT",
-	// "TRACE"
 };
 
 std::vector<std::string> ConfigValidator::_cgi_extensions = {
@@ -220,13 +214,11 @@ bool	ConfigValidator::validateLocation(const std::string& line, LocationType& ty
 			return false;
 		for (auto& d : _location_directives) {
 			if (d.name == "location" && match[1].str()[0] == '/') {
-				// std::cout << "Curr match: " << match[1] << ", setting type DIRECOTRY\n";
 				d.location_type = DIRECTORY;
 				type = d.location_type;
 				location_present = true;
 			}
 			else if (d.name == "location" && match[1].str()[0] == '.') {
-				// std::cout << "Curr match: " << match[1] << ", setting type FILE_EXTENSION\n";
 				d.location_type = FILE_EXTENSION;
 				type = d.location_type;
 			}
@@ -315,7 +307,6 @@ void	ConfigValidator::resetDirectivesFlags(const std::string& blocktype) {
 void	ConfigValidator::verifyMandatoryDirectives(const std::string& blocktype, LocationType loctype) {
 	if (blocktype == "server") {
 		for (auto& d : _server_directives) {
-			// std::cout << "Checking: " << d.name << ", value: " << d.isSet << std::endl;
 			if (_mandatory_server_directives.count(d.name) && !d.isSet)
 				throw std::runtime_error("Error: Config: Missing mandatory server directory: " + d.name);
 		}
@@ -325,7 +316,6 @@ void	ConfigValidator::verifyMandatoryDirectives(const std::string& blocktype, Lo
 		(loctype == DIRECTORY) ? _mandatory_location_directives_directory
 								: _mandatory_location_directives_cgi;
 		for (auto& d : _location_directives) {
-				// std::cout << "Checking: " << d.name << ", type: " << d.location_type << std::endl;
 			if (mandatory_list.count(d.name) && !d.isSet)
 				throw std::runtime_error("Error: Config: Missing mandatory location directory: " + d.name);
 		}

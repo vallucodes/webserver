@@ -13,11 +13,11 @@ int	Server::create() {
 	addr.sin_port = htons(_port);		// set port to listen to
 	addr.sin_addr.s_addr = _address;	// listen to specified address
 
-	if (bind(fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) < 0) {	// bind IP address to an existing socket
+	if (bind(fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) < 0) {
 		close (fd);
 		throw std::runtime_error("Error: bind");
 	}
-	if (listen(fd, SOMAXCONN) < 0)		//give socket ability to receive connections
+	if (listen(fd, SOMAXCONN) < 0)
 		throw std::runtime_error("Error: listen");
 
 	struct in_addr inaddr;
