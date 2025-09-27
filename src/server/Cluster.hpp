@@ -62,7 +62,6 @@ class Cluster {
 		std::vector<Server>				_configs;			// parsed configs
 		// std::vector<ListenerGroup>	_listener_groups;	// groups of configs with same IP+port
 		std::map<int, Server*>			_servers;			// fd of server and related ListenerGroup. Reason to have is to find quickly related ListeningGroup to key
-		std::map<int, Server*>			_clients;			// fd of client and related config
 		Router							_router;			// HTTP router for handling requests
 
 		std::map<int, ClientRequestState>	_client_buffers;	// storing client related information
@@ -76,7 +75,7 @@ class Cluster {
 		void	checkForTimeouts();
 		void	dropClient(size_t& i, const std::string& msg);
 		void	processReceivedData(size_t& i, const char* buffer, int bytes);
-		void	prepareResponse(ClientRequestState& client_state, const Server& conf, Request& req, int i);
+		void	prepareResponse(ClientRequestState& client_state, Request& req, int i);
 
 	public:
 		~Cluster();
@@ -85,7 +84,7 @@ class Cluster {
 		void	create();
 		void	run();
 
-		const Server&	findRelevantConfig(int client_fd, const std::string& buffer);
+		// const Server&	findRelevantConfig(int client_fd, const std::string& buffer);
 
 		const std::set<int>&	getServerFds() const;
 };

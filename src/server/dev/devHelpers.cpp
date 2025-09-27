@@ -6,61 +6,61 @@
 #define YELLOW "\033[1;33m"
 #define RESET "\033[0m"
 
-void printAllConfigGroups(std::vector<ListenerGroup>& groups) {
-	for (size_t i = 0; i < groups.size(); ++i) {
-		const ListenerGroup& group = groups[i];
+// void printAllConfigGroups(std::vector<ListenerGroup>& groups) {
+// 	for (size_t i = 0; i < groups.size(); ++i) {
+// 		const ListenerGroup& group = groups[i];
 
-		std::cout << std::endl << GREEN << "Listener Group #" << i << RESET << std::endl;
+// 		std::cout << std::endl << GREEN << "Listener Group #" << i << RESET << std::endl;
 
-		// Print associated IP+Port for this group
-		if (!group.configs.empty()) {
-			uint32_t ip = group.configs[0].getAddress();
-			int port = group.configs[0].getPort();
-			struct in_addr addr;
-			addr.s_addr = ip;
-			std::cout << "IP: " << inet_ntoa(addr) << " | Port: " << port << std::endl;
-		} else {
-			std::cout << "No configs in this group!" << std::endl;
-		}
+// 		// Print associated IP+Port for this group
+// 		if (!group.configs.empty()) {
+// 			uint32_t ip = group.configs[0].getAddress();
+// 			int port = group.configs[0].getPort();
+// 			struct in_addr addr;
+// 			addr.s_addr = ip;
+// 			std::cout << "IP: " << inet_ntoa(addr) << " | Port: " << port << std::endl;
+// 		} else {
+// 			std::cout << "No configs in this group!" << std::endl;
+// 		}
 
-		// Print default server if exists
-		if (group.default_config)
-			std::cout << "Default server: " << group.default_config->getName() << std::endl;
-		else
-			std::cout << "Default server: (none)" << std::endl;
+// 		// Print default server if exists
+// 		if (group.default_config)
+// 			std::cout << "Default server: " << group.default_config->getName() << std::endl;
+// 		else
+// 			std::cout << "Default server: (none)" << std::endl;
 
-		// Iterate through all server configs
-		for (size_t j = 0; j < group.configs.size(); ++j) {
-			const Server& srv = group.configs[j];
-			std::cout << YELLOW << "\n  Server #" << j << " - " << srv.getName() << RESET << std::endl;
-			std::cout << "    Root: " << srv.getRoot() << std::endl;
-			std::cout << "    Index: " << srv.getIndex() << std::endl;
-			std::cout << "    Max Body Size: " << srv.getMaxBodySize() << std::endl;
+// 		// Iterate through all server configs
+// 		for (size_t j = 0; j < group.configs.size(); ++j) {
+// 			const Server& srv = group.configs[j];
+// 			std::cout << YELLOW << "\n  Server #" << j << " - " << srv.getName() << RESET << std::endl;
+// 			std::cout << "    Root: " << srv.getRoot() << std::endl;
+// 			std::cout << "    Index: " << srv.getIndex() << std::endl;
+// 			std::cout << "    Max Body Size: " << srv.getMaxBodySize() << std::endl;
 
-			// Error pages
-			for (const auto& e : srv.getErrorPages())
-				std::cout << "    Error page: " << e.first << " -> " << e.second << std::endl;
+// 			// Error pages
+// 			for (const auto& e : srv.getErrorPages())
+// 				std::cout << "    Error page: " << e.first << " -> " << e.second << std::endl;
 
-			// Locations
-			for (const auto& loc : srv.getLocations()) {
-				std::cout << CYAN << "    Location: " << loc.location << RESET << std::endl;
-				std::cout << "      Allowed methods: ";
-				for (const auto& m : loc.allowed_methods)
-					std::cout << m << " ";
-				std::cout << std::endl;
-				std::cout << "      Index: " << loc.index << std::endl;
-				std::cout << "      Autoindex: " << loc.autoindex << std::endl;
-				std::cout << "      CGI Path: " << loc.cgi_path << std::endl;
-				std::cout << "      CGI Ext: ";
-				for (const auto& ext : loc.cgi_ext)
-					std::cout << ext << " ";
-				std::cout << std::endl;
-				std::cout << "      Upload Path: " << loc.upload_path << std::endl;
-			}
-		}
-	}
-	std::cout << std::endl;
-}
+// 			// Locations
+// 			for (const auto& loc : srv.getLocations()) {
+// 				std::cout << CYAN << "    Location: " << loc.location << RESET << std::endl;
+// 				std::cout << "      Allowed methods: ";
+// 				for (const auto& m : loc.allowed_methods)
+// 					std::cout << m << " ";
+// 				std::cout << std::endl;
+// 				std::cout << "      Index: " << loc.index << std::endl;
+// 				std::cout << "      Autoindex: " << loc.autoindex << std::endl;
+// 				std::cout << "      CGI Path: " << loc.cgi_path << std::endl;
+// 				std::cout << "      CGI Ext: ";
+// 				for (const auto& ext : loc.cgi_ext)
+// 					std::cout << ext << " ";
+// 				std::cout << std::endl;
+// 				std::cout << "      Upload Path: " << loc.upload_path << std::endl;
+// 			}
+// 		}
+// 	}
+// 	std::cout << std::endl;
+// }
 
 void	printAllConfigs(std::vector<Server> cfg) {
 	for (size_t i = 0; i < cfg.size(); ++i)

@@ -95,7 +95,7 @@ void	Cluster::handleNewClient(size_t i) {
 	socklen_t addrlen = sizeof(client_addr);
 	int client_fd = accept(_fds[i].fd, (sockaddr*)&client_addr, &addrlen);
 	if (client_fd < 0)
-		throw std::runtime_error("Error: accept");
+		throw std::runtime_error("Error: accept()");
 
 	setSocketToNonBlockingMode(client_fd);
 
@@ -107,7 +107,8 @@ void	Cluster::handleNewClient(size_t i) {
 			<< RESET;
 
 	_fds.push_back({client_fd, POLLIN, 0});
-	_clients[client_fd] = _servers[_fds[i].fd];
+	_client_buffers[client_fd].config = _servers[_fds[i].fd];
+	_client_buffers[client_fd].max_body_size = _servers[_fds[i].fd]->getMaxBodySize();
 }
 
 void	Cluster::handleClientInData(size_t& i) {
@@ -119,9 +120,9 @@ void	Cluster::handleClientInData(size_t& i) {
 		processReceivedData(i, buffer, bytes);
 }
 
-void	Cluster::prepareResponse(ClientRequestState& client_state, const Server& conf, Request& req, int i) {
+void	Cluster::prepareResponse(ClientRequestState& client_state, Request& req, int i) {
 	Response res;
-	_router.handleRequest(conf, req, res);
+	_router.handleRequest(*client_state.config, req, res);
 	client_state.response = responseToString(res);
 	_fds[i].events |= POLLOUT;
 	client_state.send_start = std::chrono::high_resolution_clock::now();
@@ -133,20 +134,20 @@ void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 	client_state.buffer.append(buffer, bytes);
 	client_state.receive_start = std::chrono::high_resolution_clock::now();
 
-	while (requestComplete(client_state, _fds[i].fd, this)) {
+	while (requestComplete(client_state)) {
 		client_state.request = client_state.clean_buffer.substr(0, client_state.request_size);
-		const Server& conf = findRelevantConfig(_fds[i].fd, client_state.clean_buffer);
+		// const Server& conf = findRelevantConfig(_fds[i].fd, client_state.clean_buffer);
 		Parser parse;
 		Request req = parse.parseRequest(client_state.request, client_state.kick_me, false);
-		prepareResponse(client_state, conf, req, i);
+		prepareResponse(client_state, req, i);
 		setTimer(client_state);
 	}
 
 	if (client_state.data_validity == false) {
-		const Server& conf = findRelevantConfig(_fds[i].fd, client_state.clean_buffer);
+		// const Server& conf = findRelevantConfig(_fds[i].fd, client_state.clean_buffer);
 		Parser parse;
 		Request req = parse.parseRequest("400 Bad Request", client_state.kick_me, false);
-		prepareResponse(client_state, conf, req, i);
+		prepareResponse(client_state, req, i);
 		client_state.kick_me = true;
 	}
 }
@@ -202,23 +203,23 @@ void	Cluster::checkForTimeouts() {
 	}
 }
 
-const Server&	Cluster::findRelevantConfig(int client_fd, const std::string& buffer) {
-	std::smatch		match;
-	ListenerGroup*	conf = _clients[client_fd];
-	size_t			header_end = findHeader(buffer);
-	std::string		header = buffer.substr(0, header_end);
+// const Server&	Cluster::findRelevantConfig(int client_fd, const std::string& buffer) {
+// 	std::smatch		match;
+// 	ListenerGroup*	conf = _clients[client_fd];
+// 	size_t			header_end = findHeader(buffer);
+// 	std::string		header = buffer.substr(0, header_end);
 
-	std::regex	re("Host:\\s*([^:\\s]+)");
-	if (!std::regex_search(header, match, re))
-		return *conf->default_config;
+// 	std::regex	re("Host:\\s*([^:\\s]+)");
+// 	if (!std::regex_search(header, match, re))
+// 		return *conf->default_config;
 
-	std::string host = match[1];
-	for (auto& conf : conf->configs) {
-		if (conf.getName() == host)
-			return conf;
-	}
-	return *conf->default_config;
-}
+// 	std::string host = match[1];
+// 	for (auto& conf : conf->configs) {
+// 		if (conf.getName() == host)
+// 			return conf;
+// 	}
+// 	return *conf->default_config;
+// }
 
 const std::set<int>&	Cluster::getServerFds() const {
 	return _server_fds;

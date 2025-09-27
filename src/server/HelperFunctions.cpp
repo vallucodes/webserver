@@ -88,12 +88,12 @@ void	setTimer(ClientRequestState& client_state) {
 		client_state.receive_start = std::chrono::high_resolution_clock::now();
 }
 
-void	setMaxBodySize(ClientRequestState& client_state, Cluster* cluster, int fd) {
-	const Server& conf = cluster->Cluster::findRelevantConfig(fd, client_state.buffer);
-	client_state.max_body_size = conf.getMaxBodySize();
-}
+// void	setMaxBodySize(ClientRequestState& client_state, Cluster* cluster, int fd) {
+// 	const Server& conf = cluster->Cluster::findRelevantConfig(fd, client_state.buffer);
+// 	client_state.max_body_size = conf.getMaxBodySize();
+// }
 
-bool	requestComplete(ClientRequestState& client_state, int fd, Cluster* cluster) {
+bool	requestComplete(ClientRequestState& client_state) {
 	if (client_state.buffer.size() > MAX_BUFFER_SIZE) {
 		client_state.data_validity = false;
 		return false;
@@ -106,8 +106,6 @@ bool	requestComplete(ClientRequestState& client_state, int fd, Cluster* cluster)
 		client_state.data_validity = false;
 		return false;
 	}
-
-	setMaxBodySize(client_state, cluster, fd);
 
 	int status = -1;
 	status = isChunkedBodyComplete(client_state, header_end);
