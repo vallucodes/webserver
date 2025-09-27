@@ -84,11 +84,15 @@ void	Cluster::run() {
 			if (_fds[i].revents & POLLIN) {
 				if (isServerSocket(_fds[i].fd, getServerFds()))
 					handleNewClient(i);
-				else
+				else {
 					handleClientInData(i);
+					break ; // TODO test this logic with gdb
+				}
 			}
-			if (_fds[i].revents & POLLOUT)
+			else if (_fds[i].revents & POLLOUT) {
 				sendPendingData(i);
+				break ; // TODO test this logic with gdb
+			}
 		}
 		checkForTimeouts();
 	}
@@ -129,7 +133,7 @@ void	Cluster::handleClientInData(size_t& i) {
 void	Cluster::prepareResponse(ClientRequestState& client_state, const Server& conf, Request& req, int i) {
 	Response res;
 	_router.handleRequest(conf, req, res);
-	client_state.response = responseToString(res);
+	client_state.response.append(responseToString(res));
 	_fds[i].events |= POLLOUT;
 	client_state.send_start = std::chrono::high_resolution_clock::now();
 	client_state.waiting_response = true;
@@ -167,12 +171,12 @@ void	Cluster::sendPendingData(size_t& i) {
 		std::string response = popResponseChunk(client_state);
 		std::cout << RED << time_now() << "	Sending response to client " << _fds[i].fd << RESET << std::endl;
 		ssize_t sent = send(_fds[i].fd, response.c_str(), response.size(), 0);
-		if (sent >= 0 && client_state.response.empty()) {
+		if (sent > 0 && client_state.response.empty()) {
 			_fds[i].events &= ~POLLOUT;
 			client_state.send_start = std::chrono::high_resolution_clock::time_point{};
 			client_state.waiting_response = false;
 		}
-		else if (sent < 0)
+		else
 			dropClient(i, CLIENT_SEND_ERROR);
 		if (client_state.kick_me) {
 			dropClient(i, CLIENT_CLOSE_CONNECTION);

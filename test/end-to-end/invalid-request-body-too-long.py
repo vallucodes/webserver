@@ -4,7 +4,7 @@
 import socket
 
 HOST = '127.0.0.1'
-PORT = 8082
+PORT = 8081
 
 request = (
 	"POST /uploads HTTP/1.1\r\n"
