@@ -47,7 +47,8 @@ size_t	findHeader(const std::string& buffer) {
 void	checkNameRepitition(const std::vector<Server> configs, const Server config) {
 	for (auto& conf : configs) {
 		if (conf.getName() == config.getName())
-			throw std::runtime_error("Error: Config: Ambiguous server name");
+			throw std::runtime_error("Error: Config: Duplicate server_name, " \
+					"each virtual host (IP+port+server_name) must be unique");
 	}
 }
 
