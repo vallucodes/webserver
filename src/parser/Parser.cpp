@@ -1,34 +1,72 @@
 #include "Parser.hpp"
 
-bool parseRequestLineFormat(Request& req, const std::string& firstLineStr){
-    std::istringstream lineStream(firstLineStr);
-    std::string method, path, version;
-    if (!(lineStream >> method >> path >> version))
-        return false;
-    req.setMethod(method);
-    req.setPath(path);
-    req.setHttpVersion(version);
-    return true;
-}
-
-
 bool isValidMethod(std::string_view method) {
     static const std::unordered_set<std::string_view> validMethods = {
-        "GET", "POST", "DELETE", "PUT", "HEAD", "OPTIONS", "PATCH"
+        "GET", "POST", "DELETE"
     };
     if (validMethods.find(method) == validMethods.end())
         return false;
     return true;
 }
 
-bool isValidRequestTarget(std::string_view path){
+int fromHex(char c) {
+    if (c >= '0' && c <= '9')  
+        return c - '0';
+    if (c >= 'A' && c <= 'F')
+        return c - 'A' + 10;
+    if (c >= 'a' && c <= 'f')
+        return c - 'a' + 10;
+    return -1;
+}
+
+bool decodeHexPair(char hi, char lo, unsigned char &out) {
+    int hiVal = fromHex(hi);
+    int loVal = fromHex(lo);
+    if (hiVal < 0 || loVal < 0)
+        return false;
+    out = static_cast<unsigned char>((hiVal << 4) | loVal);
+    return true;
+}
+
+bool isValidRequestTarget(std::string& path) {
     if (path.empty())
         return false;
-    for (char c : path) {
-        if (c <= 0x1F || c == 0x7F || c == ' ') {
-            return false;
+    const std::string_view invalid = 
+        "\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0A\x0B\x0C\x0D\x0E\x0F"
+        "\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1A\x1B\x1C\x1D\x1E\x1F"
+        "\x7F \"<>\\^`{}|";
+
+    for (std::size_t i = 0; i < path.size();) {
+        unsigned char c = path[i];
+       if (c == '%') {
+            if (i + 2 >= path.size())
+                return false;
+            unsigned char decoded;
+            if (!decodeHexPair(path[i+1], path[i+2], decoded)) 
+                return false;
+            if (decoded >= 128 || invalid.find(decoded) != std::string_view::npos)
+                return false;
+            path.replace(i, 3, 1, decoded);
+            ++i;
+        } else {
+            if (c >= 128 || invalid.find(c) != std::string_view::npos)
+                return false;
+            ++i;
         }
     }
+    return true;
+}
+
+bool parseRequestLineFormat(Request& req, const std::string& firstLineStr){
+    std::istringstream lineStream(firstLineStr);
+    std::string method, path, version;
+    if (!(lineStream >> method >> path >> version))
+        return false;
+    req.setMethod(method);
+    if (!isValidRequestTarget(path))
+        return false;
+    req.setPath(path);
+    req.setHttpVersion(version);
     return true;
 }
 
@@ -41,8 +79,8 @@ bool isValidProtocol(std::string_view protocol){
 bool isBadRequest(const Request& req){
     if ( !isValidMethod(req.getMethod()) )
         return true;
-    if ( !isValidRequestTarget(req.getPath()))
-        return true;
+    // if ( !isValidRequestTarget(req.getPath()))
+    //     return true;
     if ( !isValidProtocol(req.getHttpVersion()))
         return true;
     return false;

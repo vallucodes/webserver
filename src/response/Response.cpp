@@ -48,7 +48,7 @@ void Response::print() const {
         }
     }
 
-    std::cout << "Body: Uncommented for debugging in Response.cpp\n" << std::endl;
-    // std::cout << "Body:" << _body << std::endl;
+    // std::cout << "Body: Uncommented for debugging in Response.cpp\n" << std::endl;
+    std::cout << "Body:" << _body << std::endl;
     std::cout << "===================\n" << std::endl;
 }
