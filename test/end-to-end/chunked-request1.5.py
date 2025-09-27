@@ -5,10 +5,9 @@ import time
 HOST = '127.0.0.1'
 PORT = 8081
 
-# Define tricky chunks
 chunks = [
-	"H",                       # 1-byte chunk
-	"ello, world!\n",          # normal chunk with newline inside
+	"H",
+	"ello, world!\n",
 ]
 
 # Build the raw HTTP request headers
@@ -33,7 +32,7 @@ with socket.create_connection((HOST, PORT)) as sock:
 	# Final zero-length chunk to indicate end of body
 	sock.sendall(b"0\r\n\r\n")
 
-	# Send some extra junk (half of another request)
+	# Send some extra junk
 	sock.sendall(b"GET /incomplete HTTP/1.2\r\nHost: test\r\n")
 
 	# Read and print the response from the server

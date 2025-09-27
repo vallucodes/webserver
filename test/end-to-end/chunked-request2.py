@@ -3,18 +3,17 @@ import time
 
 # Server configuration
 HOST = '127.0.0.1'
-PORT = 8081
+PORT = 8082
 
 # Define tricky chunks
 chunks = [
-	"H",                                # 1-byte chunk
-	"ello, world!\n",                   # normal chunk with newline inside
-	"fgfgfg",                       # non-ASCII characters
-	"1234567890",                    # a long chunk (100 bytes)
-	"Between-CLRF",             # chunk containing CRLF inside body
+	"H",
+	"ello, world!\n",
+	"fgfgfg",
+	"1234567890",
+	"Between-CLRF",
 ]
 
-# Build the raw HTTP request headers
 request_headers = (
 	"GET /uploads HTTP/1.1\r\n"
 	"Host: localhost\r\n"
@@ -27,9 +26,10 @@ with socket.create_connection((HOST, PORT)) as sock:
 	# Send headers first
 	sock.sendall(request_headers.encode())
 
-	for i, chunk in enumerate(chunks):
-		chunk_bytes = chunk.encode('utf-8')         # encode first
-		size = f"{len(chunk_bytes):X}"              # chunk size in bytes
+	# Send chunks (might be invalid because sent in parts)
+	for chunk in chunks:
+		chunk_bytes = chunk.encode('utf-8')
+		size = f"{len(chunk_bytes):X}"
 		sock.sendall(f"{size}\r\n".encode())
 		sock.sendall(chunk_bytes)
 		sock.sendall(b"\r\n")
