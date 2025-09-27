@@ -43,13 +43,6 @@ size_t	findHeader(const std::string& buffer) {
 	return pos + 4;
 }
 
-void	checkNameRepitition(const std::vector<Server> configs, const Server config) {
-	for (auto& conf : configs) {
-		if (conf.getName() == config.getName())
-			throw std::runtime_error("Error: Config: Ambiguous server name");
-	}
-}
-
 uint64_t	getMaxClients() {
 	struct rlimit rl;
 	if (getrlimit(RLIMIT_NOFILE, &rl) != 0)
@@ -87,11 +80,6 @@ void	setTimer(ClientRequestState& client_state) {
 	else
 		client_state.receive_start = std::chrono::high_resolution_clock::now();
 }
-
-// void	setMaxBodySize(ClientRequestState& client_state, Cluster* cluster, int fd) {
-// 	const Server& conf = cluster->Cluster::findRelevantConfig(fd, client_state.buffer);
-// 	client_state.max_body_size = conf.getMaxBodySize();
-// }
 
 bool	requestComplete(ClientRequestState& client_state) {
 	if (client_state.buffer.size() > MAX_BUFFER_SIZE) {

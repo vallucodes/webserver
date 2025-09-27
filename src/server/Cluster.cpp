@@ -16,49 +16,20 @@ void	Cluster::config(const std::string& config_file) {
 	config.validate(config_file);
 	_configs = config.parse(config_file);
 	printAllConfigs(_configs);
-	// groupConfigs();
+	validateConfigs();
 
 	_max_clients = getMaxClients();
 	_router.setupRouter(_configs);
 }
 
-
-// void	Cluster::groupConfigs() {
-// 	if (_configs.size() == 0)
-// 		throw std::runtime_error("Error: config file doesnt have any server");
-// 	for (auto& config : _configs) {
-// 		if (_listener_groups.empty()) {
-// 			createGroup(config);
-// 			continue ;
-// 		}
-// 		uint32_t IP_conf = config.getAddress();
-// 		int port_conf = config.getPort();
-
-// 		bool added = false;
-// 		for (auto& group : _listener_groups) {
-// 			uint32_t IP_group =group.default_config->getAddress();
-// 			int port_group = group.default_config->getPort();
-
-// 			if (IP_group == IP_conf && port_group == port_conf) {
-// 				checkNameRepitition(group.configs, config);
-// 				group.configs.push_back(config);
-// 				added = true;
-// 			}
-// 		}
-// 		if (!added)
-// 			createGroup(config);
-// 	}
-// }
-
-// void	Cluster::createGroup(const Server& conf) {
-// 	ListenerGroup new_group;
-
-// 	new_group.fd = -1;
-// 	new_group.configs.push_back(conf);
-// 	new_group.default_config = &conf;
-
-// 	_listener_groups.push_back(new_group);
-// }
+void	Cluster::validateConfigs() {
+	if (_configs.size() == 0)
+		throw std::runtime_error("Error: Config: no server in config file");
+	std::set<int> ports;
+	for (auto& config : _configs)
+		if (!ports.insert(config.getPort()).second)
+			throw std::runtime_error("Error: Config: repeated ports");
+}
 
 void	Cluster::create() {
 	std::cout << CYAN << time_now() << "	Initializing servers...\n" << RESET;
@@ -238,24 +209,6 @@ void	Cluster::send408Response(size_t i) {
 	}
 }
 // end of ILIA Added this function to send 408 Request Timeout response
-
-// const Server&	Cluster::findRelevantConfig(int client_fd, const std::string& buffer) {
-// 	std::smatch		match;
-// 	ListenerGroup*	conf = _clients[client_fd];
-// 	size_t			header_end = findHeader(buffer);
-// 	std::string		header = buffer.substr(0, header_end);
-
-// 	std::regex	re("Host:\\s*([^:\\s]+)");
-// 	if (!std::regex_search(header, match, re))
-// 		return *conf->default_config;
-
-// 	std::string host = match[1];
-// 	for (auto& conf : conf->configs) {
-// 		if (conf.getName() == host)
-// 			return conf;
-// 	}
-// 	return *conf->default_config;
-// }
 
 const std::set<int>&	Cluster::getServerFds() const {
 	return _server_fds;

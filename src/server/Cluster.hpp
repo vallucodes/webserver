@@ -32,12 +32,6 @@
 
 extern volatile sig_atomic_t signal_to_terminate;
 
-// struct ListenerGroup {
-// 	int	fd;
-// 	std::vector<Server>	configs;
-// 	const Server*		default_config;
-// };
-
 struct ClientRequestState {
 	std::chrono::time_point<std::chrono::high_resolution_clock>	receive_start {};
 	std::chrono::time_point<std::chrono::high_resolution_clock>	send_start {};
@@ -60,14 +54,12 @@ class Cluster {
 		std::vector<pollfd>				_fds;				// servers and clients fds list for poll()
 		std::set<int>					_server_fds;		// only servers fds
 		std::vector<Server>				_configs;			// parsed configs
-		// std::vector<ListenerGroup>	_listener_groups;	// groups of configs with same IP+port
 		std::map<int, Server*>			_servers;			// fd of server and related ListenerGroup. Reason to have is to find quickly related ListeningGroup to key
 		Router							_router;			// HTTP router for handling requests
 
 		std::map<int, ClientRequestState>	_client_buffers;	// storing client related information
 
-		// void	groupConfigs();
-		// void	createGroup(const Server& conf);
+		void	validateConfigs();
 
 		void	handleNewClient(size_t i);
 		void	handleClientInData(size_t& i);
@@ -84,8 +76,6 @@ class Cluster {
 		void	config(const std::string& config);
 		void	create();
 		void	run();
-
-		// const Server&	findRelevantConfig(int client_fd, const std::string& buffer);
 
 		const std::set<int>&	getServerFds() const;
 };

@@ -17,7 +17,6 @@ void		handleSigTerminate(int sig);
 
 bool		isServerSocket(int fd, const std::set<int>& server_fds);
 void		setSocketToNonBlockingMode(int fd);
-void		checkNameRepitition(const std::vector<Server> configs, const Server config);
 uint64_t	getMaxClients();
 size_t		findHeader(const std::string& buffer);
 std::string	responseToString(const Response& res);
@@ -25,7 +24,6 @@ std::string	headersToString(const std::unordered_map<std::string, std::vector<st
 void		setTimer(ClientRequestState& client_state);
 
 bool		requestComplete(ClientRequestState& client_state);
-// void		setMaxBodySize(ClientRequestState& client_state, Cluster* cluster, int fd);
 bool		decodeChunkedBody(ClientRequestState& client_state);
 int			isChunkedBodyComplete(ClientRequestState& client_state, size_t header_end);
 bool		isRequestBodyComplete(ClientRequestState& client_state, size_t header_end);
