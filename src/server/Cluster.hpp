@@ -24,11 +24,13 @@
 #define YELLOW "\033[1;33m"
 #define RESET "\033[0m"
 
-#define CLIENT_DISCONNECT			" disconnected.\n"
-#define CLIENT_TIMEOUT				" dropped by the server: Timeout.\n"
-#define CLIENT_CLOSE_CONNECTION		" dropped by the server: Connection closed.\n"
-#define CLIENT_MALFORMED_REQUEST	" dropped by the server: Malformed request.\n"
-#define CLIENT_SEND_ERROR			" dropped by the server: send() failed.\n"
+#define CLIENT_DISCONNECT			" disconnected\n"
+#define CLIENT_TIMEOUT				" dropped by the server: Timeout\n"
+#define CLIENT_CLOSE_CONNECTION		" dropped by the server: Connection closed\n"
+#define CLIENT_MALFORMED_REQUEST	" dropped by the server: Malformed request\n"
+#define CLIENT_ERROR				" dropped by the server: Client dropped\n"
+#define SOCKET_ERROR				" dropped by the server: Socket error\n"
+#define INVALID_FD					" dropped by the server: Invalid file descriptor\n"
 
 extern volatile sig_atomic_t signal_to_terminate;
 
@@ -70,6 +72,7 @@ class Cluster {
 		void	groupConfigs();
 		void	createGroup(const Server& conf);
 
+		void	handlePollError(size_t& i, short int event);
 		void	handleNewClient(size_t i);
 		void	handleClientInData(size_t& i);
 		void	sendPendingData(size_t& i);
