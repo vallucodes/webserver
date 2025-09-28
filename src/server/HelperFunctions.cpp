@@ -44,6 +44,8 @@ size_t	findHeader(const std::string& buffer) {
 }
 
 void	checkNameRepitition(const std::vector<Server> configs, const Server config) {
+	if (config.getName().empty())
+		throw std::runtime_error("Error: Config: server_name is mandatory for non-first virtual host");
 	for (auto& conf : configs) {
 		if (conf.getName() == config.getName())
 			throw std::runtime_error("Error: Config: Duplicate server_name, " \
