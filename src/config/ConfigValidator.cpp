@@ -88,7 +88,6 @@ void	ConfigValidator::handleKeyword(std::stack<std::string>&	blockstack, const s
 ConfigValidator::ConfigValidator() {
 	_mandatory_server_directives = {
 		"listen",
-		"server_name",
 		"host",
 		"root"
 	};
