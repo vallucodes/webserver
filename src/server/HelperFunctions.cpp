@@ -18,12 +18,11 @@ void	setSocketToNonBlockingMode(int sock) {
 	int flags = fcntl(sock, F_GETFL, 0);
 	if (flags == -1) {
 		close(sock);
-		// maybe more cleaning needed here
-		throw std::runtime_error("Error: fcntl get flags");
+		throw std::runtime_error("Error: fcntl() get flags");
 	}
 	if (fcntl(sock, F_SETFL, flags | O_NONBLOCK) == -1) {
 		close(sock);
-		throw std::runtime_error("Error: fcntl set non-blocking");
+		throw std::runtime_error("Error: fcntl() set non-blocking");
 	}
 }
 

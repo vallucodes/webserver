@@ -34,7 +34,7 @@ void	Cluster::groupConfigs() {
 
 		bool added = false;
 		for (auto& group : _listener_groups) {
-			uint32_t IP_group =group.default_config->getAddress();
+			uint32_t IP_group = group.default_config->getAddress();
 			int port_group = group.default_config->getPort();
 
 			if (IP_group == IP_conf && port_group == port_conf) {
@@ -81,21 +81,32 @@ void	Cluster::run() {
 		}
 
 		for (size_t i = 0; i < _fds.size(); ++i) {
+			if (_fds[i].revents & (POLLERR | POLLHUP | POLLNVAL))
+				handlePollError(i, _fds[i].revents);
 			if (_fds[i].revents & POLLIN) {
 				if (isServerSocket(_fds[i].fd, getServerFds()))
 					handleNewClient(i);
 				else {
 					handleClientInData(i);
-					break ; // TODO test this logic with gdb
+					break ;
 				}
 			}
 			else if (_fds[i].revents & POLLOUT) {
 				sendPendingData(i);
-				break ; // TODO test this logic with gdb
+				break ;
 			}
 		}
 		checkForTimeouts();
 	}
+}
+
+void	Cluster::handlePollError(size_t& i, short int event) {
+	if (event & POLLERR)
+		dropClient(i, SOCKET_ERROR);
+	else if (event & POLLHUP)
+		dropClient(i, CLIENT_CLOSE_CONNECTION);
+	else if (event & POLLNVAL)
+		dropClient(i, INVALID_FD);
 }
 
 void	Cluster::handleNewClient(size_t i) {
@@ -124,8 +135,10 @@ void	Cluster::handleNewClient(size_t i) {
 void	Cluster::handleClientInData(size_t& i) {
 	char buffer[4096];
 	int bytes = recv(_fds[i].fd, buffer, sizeof(buffer), 0);
-	if (bytes <= 0)
+	if (bytes == 0)
 		dropClient(i, CLIENT_DISCONNECT);
+	else if (bytes == -1)
+		dropClient(i, CLIENT_ERROR);
 	else
 		processReceivedData(i, buffer, bytes);
 }
@@ -171,14 +184,14 @@ void	Cluster::sendPendingData(size_t& i) {
 		std::string response = popResponseChunk(client_state);
 		std::cout << RED << time_now() << "	Sending response to client " << _fds[i].fd << RESET << std::endl;
 		ssize_t sent = send(_fds[i].fd, response.c_str(), response.size(), 0);
-		if (sent > 0 && client_state.response.empty()) {
+		if (sent <= 0)
+			dropClient(i, CLIENT_ERROR);
+		else if (sent > 0 && client_state.response.empty()) {
 			_fds[i].events &= ~POLLOUT;
 			client_state.send_start = std::chrono::high_resolution_clock::time_point{};
 			client_state.waiting_response = false;
 		}
-		else
-			dropClient(i, CLIENT_SEND_ERROR);
-		if (client_state.kick_me) {
+		if (client_state.kick_me && client_state.response.empty()) {
 			dropClient(i, CLIENT_CLOSE_CONNECTION);
 		}
 	}
@@ -200,8 +213,8 @@ void	Cluster::checkForTimeouts() {
 		if (_client_buffers[_fds[i].fd].receive_start != std::chrono::high_resolution_clock::time_point{}) {
 			auto elapsed = now - _client_buffers[_fds[i].fd].receive_start;
 			auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count();
-			if (elapsed_ms > TIME_OUT_REQUEST && _client_buffers[_fds[i].fd].buffer.size() > 0){
-        send408Response(i);
+			if (elapsed_ms > TIME_OUT_REQUEST && _client_buffers[_fds[i].fd].buffer.size() > 0) {
+				send408Response(i);
 				dropClient(i, CLIENT_TIMEOUT);
 			}
 		}
