@@ -267,8 +267,8 @@ std::vector<std::string> setupCgiEnvironment(const Request& req, const std::stri
 
 /** Generate HTML directory listing */
 std::string generateDirectoryListing(const std::string& dirPath, const std::string& requestPath) {
-  // Load template file
-  std::string templatePath = page::WWW + "/autoindex_template.html";
+  // Load template file - use the directory's parent to find templates
+  std::string templatePath = dirPath + "/../autoindex_template.html";
   std::string html;
 
   try {
@@ -276,7 +276,7 @@ std::string generateDirectoryListing(const std::string& dirPath, const std::stri
   } catch (const std::exception& e) {
     // Fallback to fallback template file if main template fails
     std::cout << "Warning: Could not load autoindex template: " << e.what() << std::endl;
-    std::string fallbackPath = page::WWW + "/autoindex_fallback.html";
+    std::string fallbackPath = dirPath + "/../autoindex_fallback.html";
     try {
       html = FileUtils::readFileToString(fallbackPath);
     } catch (const std::exception& e2) {
