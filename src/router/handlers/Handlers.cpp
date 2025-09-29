@@ -40,7 +40,13 @@ void get(const Request& req, Response& res, const Server& server) {
   }
 
   std::string requestPath = std::string(filePathView);
-  std::string filePath = router::utils::StringUtils::determineFilePathBasic(requestPath);
+  // Use server's configured root directory instead of hardcoded www/
+  std::string filePath;
+  if (requestPath == "/" || requestPath == "/index.html") {
+    filePath = server.getRoot() + "/index.html";
+  } else {
+    filePath = server.getRoot() + requestPath;
+  }
 
   // Handle directory requests
   if (std::filesystem::is_directory(filePath)) {
@@ -200,9 +206,9 @@ void post(const Request& req, Response& res, const Server& server) {
      outFile.write(fileContent.c_str(), fileContent.length());
      outFile.close();
 
-     // Success response - redirect to upload page
-     res.setHeaders(http::LOCATION, "/upload.html");
-     router::utils::HttpResponseBuilder::setCreatedResponse(res, router::utils::createSuccessMessage(filename, "uploaded"), http::CONTENT_TYPE_TEXT, req);
+     // Success response - use setCreatedResponse
+     std::string successMessage = "File '" + filename + "' uploaded successfully!";
+     router::utils::HttpResponseBuilder::setCreatedResponse(res, successMessage, http::CONTENT_TYPE_TEXT, req);
 
   } catch (const std::exception&) {
      router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req);
@@ -299,7 +305,7 @@ void cgi(const Request& req, Response& res, const Server& server) {
      }
 
      // 1. Server and config Validation Phase
-    if (!router::utils::isValidLocationServer(res, location, server, req)) {
+    if (!router::utils::isValidLocationServer(res, location, &server, req)) {
          return;
      }
 
@@ -314,7 +320,7 @@ void cgi(const Request& req, Response& res, const Server& server) {
      std::string filePath = router::utils::StringUtils::determineFilePathCGI(filePathView, location, server_root);
      if (!router::utils::isFileExistsAndExecutable(filePath, res, req)) {
          return;
-     }  
+     }
 
      // 4. File Validation Phase
      if (!router::utils::isCgiScriptWithLocation(filePath, location)) {

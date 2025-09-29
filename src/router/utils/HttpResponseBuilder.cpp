@@ -139,6 +139,17 @@ std::string HttpResponseBuilder::makeDefaultErrorPage(int code, const std::strin
   return oss.str();
 }
 
+std::string HttpResponseBuilder::makeDefaultSuccessPage(const std::string& message) {
+  std::ostringstream oss;
+  oss << "<html>\n<head><title>Upload Successful</title></head>\n"
+      << "<body>\n<center><h1>Upload Successful!</h1>\n"
+      << "<p>" << message << "</p>\n"
+      << "<a href=\"/upload.html\">Upload Another File</a> | "
+      << "<a href=\"/\">Back to Home</a>\n"
+      << "</center></body>\n</html>\n";
+  return oss.str();
+}
+
 std::string HttpResponseBuilder::getErrorPageHtml(int status) {
   switch (status) {
     case http::BAD_REQUEST_400:

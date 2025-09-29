@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload File</title>
+</head>
+<body>
+    <h1>Upload File</h1>
+    <p>Max size: 1 MB</p>
+
+    <form id="uploadForm" action="/uploads" method="POST" enctype="multipart/form-data">
+        <div>
+            <label for="file">Select File:</label>
+            <input type="file" id="file" name="file" required>
+        </div>
+        <div>
+            <button type="submit" id="uploadBtn">Upload</button>
+        </div>
+    </form>
+
+    <div id="message" style="margin-top: 20px; font-weight: bold;"></div>
+
+    <div style="margin-top: 20px;">
+        <a href="/">Return to Main Page</a>
+    </div>
+
+    <script>
+        const form = document.getElementById('uploadForm');
+        const message = document.getElementById('message');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const fileInput = document.getElementById('file');
+        const MAX_SIZE = 1024 * 1024; // 1 MB
+
+        // Check file size when file is selected
+        fileInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file && file.size > MAX_SIZE) {
+                message.textContent = 'File is too large. Maximum size is 1 MB.';
+                message.style.color = 'red';
+                uploadBtn.disabled = true;
+            } else {
+                message.textContent = '';
+                uploadBtn.disabled = false;
+            }
+        });
+
+        // Handle form submission
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const file = fileInput.files[0];
+            if (!file) {
+                message.textContent = 'Please select a file.';
+                message.style.color = 'red';
+                return;
+            }
+
+            if (file.size > MAX_SIZE) {
+                message.textContent = 'File is too large. Maximum size is 1 MB.';
+                message.style.color = 'red';
+                return;
+            }
+
+            uploadBtn.disabled = true;
+            uploadBtn.textContent = 'Uploading...';
+            message.textContent = '';
+
+            // Simple form submission without AJAX
+            const formData = new FormData();
+            formData.append('file', file);
+
+            fetch('/uploads', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (response.ok) {
+                    message.textContent = 'Upload Success!';
+                    message.style.color = 'green';
+                    form.reset();
+                } else {
+                    message.textContent = 'Upload Failed!';
+                    message.style.color = 'red';
+                }
+            })
+            .catch(error => {
+                console.error('Upload error:', error);
+                message.textContent = 'Upload Failed!';
+                message.style.color = 'red';
+            })
+            .finally(() => {
+                uploadBtn.disabled = false;
+                uploadBtn.textContent = 'Upload';
+            });
+        });
+    </script>
+</body>
+</html>

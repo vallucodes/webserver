@@ -43,6 +43,9 @@ class HttpResponseBuilder {
         /** Generate a default error page HTML */
         static std::string makeDefaultErrorPage(int code, const std::string& reason);
 
+        /** Generate a default success page HTML */
+        static std::string makeDefaultSuccessPage(const std::string& message);
+
         /** Convert string status to integer status code */
         static int parseStatusCodeFromString(const std::string& statusString);
 
