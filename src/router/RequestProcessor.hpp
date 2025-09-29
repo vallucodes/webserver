@@ -28,11 +28,6 @@ class RequestProcessor {
     void processRequest(const Request& req, const Handler* handler,
                         Response& res, const Server& server) const;
 
-    /** Validate request path for security issues */
-    // bool validatePath(const std::string& path) const;
-
-    /** Normalize request path for processing */
-    // void normalizePath(std::string& path) const;
 
   private:
     /** Execute handler with error handling */
@@ -46,6 +41,9 @@ class RequestProcessor {
 
     /** Check if path exists but method is not allowed */
     bool isPathExistsButMethodNotAllowed(const Request& req, const Server& server) const;
+
+    /** Check if path matches any configured location */
+    bool isPathConfigured(const Request& req, const Server& server) const;
 
     /** Find matching location configuration for a path */
     const Location* findLocationForPath(const Server& server, const std::string& path) const;

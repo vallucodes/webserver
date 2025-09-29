@@ -76,6 +76,8 @@ create_test_files() {
 cleanup_test_files() {
     echo "Cleaning up test files..."
     rm -f test.txt test2.txt test3.txt delete_test.txt workflow_test.txt large_file.txt small_file.txt large_test.txt
+    rm -f ./www/webserv_project/uploads/*
+
 }
 
 # Main execution
@@ -104,6 +106,7 @@ main() {
     print_test "Server 1 (Port 8080) - Directory listings"
     run_test "Uploads directory" "curl -v http://127.0.0.1:8080/uploads/" "200"
     run_test "Images directory" "curl -v http://127.0.0.1:8080/imgs/" "200"
+    run_test "Nested directory" "curl -v http://127.0.0.1:8080/nested/" "200"
 
     print_test "Server 1 (Port 8080) - CGI scripts"
     run_test "Python CGI" "curl -v http://127.0.0.1:8080/cgi-bin/hello.py" "200"
@@ -124,6 +127,28 @@ main() {
     run_test "Server 3" "curl -v http://127.0.0.1:8082/" "200"
     run_test "Server 4" "curl -v http://127.0.0.1:8083/" "200"
     run_test "Server 5" "curl -v http://127.0.0.1:8084/" "200"
+
+    # 1.5. NESTED AUTOINDEX TESTS
+    print_section "1.5. NESTED AUTOINDEX TESTS"
+
+    print_test "Server 1 (Port 8080) - Nested Directory Structure"
+    run_test "Root nested directory" "curl -v http://127.0.0.1:8080/nested/" "200"
+    run_test "Nested directory without slash" "curl -v http://127.0.0.1:8080/nested" "200"
+    run_test "Deep nested directory" "curl -v http://127.0.0.1:8080/nested/deep/" "200"
+    run_test "Deep nested directory without slash" "curl -v http://127.0.0.1:8080/nested/deep" "200"
+    run_test "Deepest nested directory" "curl -v http://127.0.0.1:8080/nested/deep/folder/" "200"
+    run_test "Deepest nested directory without slash" "curl -v http://127.0.0.1:8080/nested/deep/folder" "200"
+
+    print_test "Server 1 (Port 8080) - Nested Directory Files"
+    run_test "Nested HTML file" "curl -v http://127.0.0.1:8080/nested/nested.html" "200"
+    run_test "Deep nested HTML file" "curl -v http://127.0.0.1:8080/nested/deep/folder/nested.html" "200"
+
+    print_test "Server 1 (Port 8080) - Nested Directory Error Cases"
+    run_test "Non-existent nested file" "curl -v http://127.0.0.1:8080/nested/nonexistent.html" "404"
+    run_test "Non-existent deep nested file" "curl -v http://127.0.0.1:8080/nested/deep/nonexistent.html" "404"
+    run_test "Non-existent deepest nested file" "curl -v http://127.0.0.1:8080/nested/deep/folder/nonexistent.html" "404"
+    run_test "Non-existent nested directory" "curl -v http://127.0.0.1:8080/nested/nonexistent/" "404"
+    run_test "Non-existent deep nested directory" "curl -v http://127.0.0.1:8080/nested/deep/nonexistent/" "404"
 
     # 2. POST/UPLOAD TESTS
     print_section "2. POST/UPLOAD TESTS"
@@ -202,6 +227,9 @@ main() {
     run_test "Favicon status" "curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/favicon.ico" "200"
     run_test "Uploads status" "curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/uploads/" "200"
     run_test "CGI status" "curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/cgi-bin/hello.py" "200"
+    run_test "Nested directory status" "curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/nested/" "200"
+    run_test "Deep nested directory status" "curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/nested/deep/" "200"
+    run_test "Deepest nested directory status" "curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/nested/deep/folder/" "200"
 
     run_test "Redirect status" "curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/old" "302"
     run_test "Not found status" "curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/nonexistent.html" "404"
@@ -237,6 +265,13 @@ main() {
     run_test "CGI GET" "curl -v http://127.0.0.1:8080/cgi-bin/hello.py" "200"
     run_test "CGI POST form" "curl -v -X POST -d 'test=data' http://127.0.0.1:8080/cgi-bin/hello.py" "200"
     run_test "CGI POST JSON" "curl -v -X POST -H 'Content-Type: application/json' -d '{\"test\":\"json\"}' http://127.0.0.1:8080/cgi-bin/hello.py" "200"
+
+    print_test "Nested Autoindex Navigation Test"
+    run_test "Navigate to nested root" "curl -v http://127.0.0.1:8080/nested/" "200"
+    run_test "Navigate to deep nested" "curl -v http://127.0.0.1:8080/nested/deep/" "200"
+    run_test "Navigate to deepest nested" "curl -v http://127.0.0.1:8080/nested/deep/folder/" "200"
+    run_test "Access nested HTML file" "curl -v http://127.0.0.1:8080/nested/nested.html" "200"
+    run_test "Access deep nested HTML file" "curl -v http://127.0.0.1:8080/nested/deep/folder/nested.html" "200"
 
     # Cleanup
     cleanup_test_files

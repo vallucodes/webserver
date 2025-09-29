@@ -34,10 +34,21 @@ std::string StringUtils::determineFilePathCGI(const std::string_view& path, cons
     if (requestPath.length() > locationPrefix.length() &&
         requestPath.substr(0, locationPrefix.length()) == locationPrefix) {
       requestPath = requestPath.substr(locationPrefix.length());
+
+      // Remove leading slash if present after stripping prefix
+      if (!requestPath.empty() && requestPath[0] == '/') {
+        requestPath = requestPath.substr(1);
+      }
     }
 
     // Resolve CGI path (nginx-style)
     std::string cgiPath = StringUtils::resolvePath(location->cgi_path, server_root);
+
+    // Ensure cgiPath ends with slash for proper concatenation
+    if (!cgiPath.empty() && cgiPath.back() != '/') {
+      cgiPath += '/';
+    }
+
     return cgiPath + requestPath;
   }
 }
@@ -59,6 +70,7 @@ std::string StringUtils::replacePlaceholder(std::string html, const std::string&
   return html;
 }
 
+// read: https://nginx.org/en/docs/http/ngx_http_core_module.html?utm_source=chatgpt.com#merge_slashes
 std::string StringUtils::normalizePath(std::string path) {
   // collapse multiple slashes
   size_t i = 0, j = 0;

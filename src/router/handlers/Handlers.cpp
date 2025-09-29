@@ -319,13 +319,13 @@ void cgi(const Request& req, Response& res, const Server& server) {
      // 2. Path Resolution Phase
      // Extract and validate file path
      std::string_view filePathView = req.getPath();
-     if (!router::utils::isValidPath(filePathView, res, req)) {
+     if (!router::utils::isValidPath(filePathView, res, req, server)) {
          return;
      }
 
      // 3. File Existence and Executability Phase
      std::string filePath = router::utils::StringUtils::determineFilePathCGI(filePathView, location, server_root);
-     if (!router::utils::isFileExistsAndExecutable(filePath, res, req)) {
+     if (!router::utils::isFileExistsAndExecutable(filePath, res, req, server)) {
          return;
      }
 
