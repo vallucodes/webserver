@@ -1,8 +1,0 @@
-{
-  "message": "API endpoint test",
-  "status": "success",
-  "data": {
-    "users": ["user1", "user2", "user3"],
-    "count": 3
-  }
-}

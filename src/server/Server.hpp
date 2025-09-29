@@ -20,6 +20,7 @@ struct Location
 class Server {
 
 	private:
+		int							_id;
 		uint32_t					_address;
 		int							_port;
 		std::string					_name;
@@ -35,6 +36,7 @@ class Server {
 
 		int		create();
 
+		void	setId(int id);
 		void	setAddress(uint32_t address);
 		void	setPort(int port);
 		void	setMaxBodySize(int max_body_size);
@@ -44,6 +46,7 @@ class Server {
 		void	setErrorPage(int error_index, const std::string& page);
 		void	setLocation(Location loc);
 
+		int									getId() const;
 		uint32_t							getAddress() const;
 		int									getPort() const;
 		int									getMaxBodySize() const;

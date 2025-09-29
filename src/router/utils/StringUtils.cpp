@@ -43,7 +43,7 @@ std::string StringUtils::determineFilePathCGI(const std::string_view& path, cons
 }
 
 std::string StringUtils::determineFilePathBasic(const std::string& requestPath) {
-  if (requestPath == "/" || requestPath == "/index.html") {
+  if (requestPath == page::ROOT_HTML || requestPath == page::INDEX_HTML_PATH) {
     return page::INDEX_HTML;
   }
 
