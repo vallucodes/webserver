@@ -110,10 +110,20 @@ void HttpResponseBuilder::setSuccessResponse(Response& res, const std::string& c
   res.setBody(content);
 }
 
-void HttpResponseBuilder::setCreatedResponse(Response& res, const std::string& content, const std::string& contentType, const Request& req) {
-  res.setStatus(http::STATUS_CREATED_201);
-  res.setHeaders(http::CONTENT_TYPE, contentType);
-  res.setHeaders(http::CONTENT_LENGTH, std::to_string(content.length()));
+
+void HttpResponseBuilder::setSuccessResponseWithDefaultPage(Response& res, int status, const Request& req) {
+  // Set the HTTP status line based on the success code
+  if (status == http::OK_200) {
+    res.setStatus(http::STATUS_OK_200);
+  } else if (status == http::CREATED_201) {
+    res.setStatus(http::STATUS_CREATED_201);
+  } else {
+    res.setStatus(http::STATUS_OK_200); // Default to 200 OK
+  }
+
+  // Set standard headers for HTML success responses
+  res.setHeaders(http::CONTENT_TYPE, http::CONTENT_TYPE_HTML);
+  res.setHeaders(http::CONTENT_LENGTH, std::to_string(getSuccessPageHtml(status).length()));
 
   // Set connection header based on keep-alive logic
   if (router::utils::shouldKeepAlive(req)) {
@@ -122,22 +132,10 @@ void HttpResponseBuilder::setCreatedResponse(Response& res, const std::string& c
     res.setHeaders(http::CONNECTION, http::CONNECTION_CLOSE);
   }
 
-  res.setBody(content);
+  // Set the response body with the default success page HTML
+  res.setBody(getSuccessPageHtml(status));
 }
 
-void HttpResponseBuilder::setNoContentResponse(Response& res, const Request& req) {
-  res.setStatus(http::STATUS_NO_CONTENT_204);
-  res.setHeaders(http::CONTENT_LENGTH, "0");
-
-  // Set connection header based on keep-alive logic
-  if (router::utils::shouldKeepAlive(req)) {
-    res.setHeaders(http::CONNECTION, http::CONNECTION_KEEP_ALIVE);
-  } else {
-    res.setHeaders(http::CONNECTION, http::CONNECTION_CLOSE);
-  }
-
-  res.setBody(""); // Empty body for 204 No Content
-}
 
 void HttpResponseBuilder::setMethodNotAllowedResponse(Response& res, const std::vector<std::string>& allowedMethods, const Request& req) {
   // Set the HTTP status line
@@ -175,6 +173,17 @@ std::string HttpResponseBuilder::makeDefaultErrorPage(int code, const std::strin
   std::ostringstream oss;
   oss << "<html>\n<head><title>" << code << " " << reason << "</title></head>\n"
       << "<body>\n<center><h1>" << code << " " << reason << "</h1></center>\n"
+      << "<center><a href=\"/\">Return to Main Page</a></center>\n"
+      << "</body>\n</html>\n";
+  return oss.str();
+}
+
+std::string HttpResponseBuilder::makeDefaultSuccessPage(int code, const std::string& reason) {
+  std::ostringstream oss;
+  oss << "<html>\n<head><title>" << code << " " << reason << "</title></head>\n"
+      << "<body>\n<center><h1>" << code << " " << reason << "</h1></center>\n"
+      << "<center><p>Your request has been processed successfully.</p></center>\n"
+      << "<center><a href=\"/\">Return to Main Page</a></center>\n"
       << "</body>\n</html>\n";
   return oss.str();
 }
@@ -200,6 +209,18 @@ std::string HttpResponseBuilder::getErrorPageHtml(int status) {
     default:
       // Fallback to generic 500 error for unknown status codes
       return makeDefaultErrorPage(500, "Internal Server Error");
+  }
+}
+
+std::string HttpResponseBuilder::getSuccessPageHtml(int status) {
+  switch (status) {
+    case http::OK_200:
+      return makeDefaultSuccessPage(200, "OK");
+    case http::CREATED_201:
+      return makeDefaultSuccessPage(201, "Created");
+    default:
+      // Fallback to generic 200 OK for unknown success codes
+      return makeDefaultSuccessPage(200, "OK");
   }
 }
 
