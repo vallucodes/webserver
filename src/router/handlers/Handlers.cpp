@@ -344,11 +344,11 @@ void cgi(const Request& req, Response& res, const Server& server) {
   auto env = router::utils::setupCgiEnvironment(req, filePath, scriptName, server);
 
   // DEBUG: Print all environment variables
-  std::cout << "=== CGI Environment Variables ===" << std::endl;
-  for (const auto& envVar : env) {
-  std::cout << envVar << std::endl;
-  }
-  std::cout << "=================================" << std::endl;
+  // std::cout << "=== CGI Environment Variables ===" << std::endl;
+  // for (const auto& envVar : env) {
+  // std::cout << envVar << std::endl;
+  // }
+  // std::cout << "=================================" << std::endl;
   // END DEBUG
 
   // 5.2. Get and process request body for CGI input
