@@ -253,7 +253,6 @@ Request Parser::parseRequest(const std::string& httpString, bool& kick_me, bool 
     // ELSE IF content-type chunked parse the body
     // else
     //     req.setBody("");
-
     // req.print();
     return req;
 }
