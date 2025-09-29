@@ -35,6 +35,10 @@ int	Server::create() {
 	return fd;
 }
 
+void	Server::setId(int id) {
+	_id = id;
+}
+
 void	Server::setAddress(uint32_t address) {
 	_address = address;
 }
@@ -65,6 +69,10 @@ void	Server::setErrorPage(int error_index, const std::string& page) {
 
 void	Server::setLocation(Location loc) {
 	_locations.push_back(loc);
+}
+
+int	Server::getId() const {
+	return _id;
 }
 
 uint32_t	Server::getAddress() const {

@@ -19,15 +19,15 @@ index index.html
 */
 bool isValidLocationServer(Response& res, const Location* location, const Server* server, const Request& req) {
   if (!location) {
-    router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404, req);
+    router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404, req, *server);
     return false;
   }
   if (location->cgi_path.empty()) {
-    router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req);
+    router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req, *server);
     return false;
   }
   if (location->cgi_ext.empty()) {
-    router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req);
+    router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req, *server);
     return false;
   }
   if (!server) {
@@ -35,7 +35,7 @@ bool isValidLocationServer(Response& res, const Location* location, const Server
     return false;
   }
   if (server->getRoot().empty()) {
-    router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req);
+    router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req, *server);
     return false;
   }
   return true;

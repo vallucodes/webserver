@@ -248,27 +248,24 @@ std::vector<std::string> setupCgiEnvironment(const Request& req, const std::stri
   }
 
   // Server information - using dynamic values from server config
-  env.push_back("SERVER_SOFTWARE=webserv/1.0");
+  env.push_back("SERVER_SOFTWARE=" + network::SERVER_SOFTWARE);
   env.push_back("SERVER_NAME=" + server.getName());
   env.push_back("SERVER_PORT=" + std::to_string(server.getPort()));
 
-  // Remote client info (simplified)
-  // env.push_back("REMOTE_ADDR=127.0.0.1");
-  env.push_back("REMOTE_ADDR=127.0.0.1");
-
-  // env.push_back("REMOTE_HOST=localhost");
-  env.push_back("REMOTE_HOST=localhost");
+  // Remote client info (using constants)
+  env.push_back("REMOTE_ADDR=" + network::DEFAULT_REMOTE_ADDR);
+  env.push_back("REMOTE_HOST=" + network::DEFAULT_REMOTE_HOST);
 
   // Add PATH for finding executables
-  env.push_back("PATH=/usr/bin:/bin:/usr/local/bin");
+  env.push_back("PATH=" + network::SYSTEM_PATH);
 
   return env;
 }
 
 /** Generate HTML directory listing */
 std::string generateDirectoryListing(const std::string& dirPath, const std::string& requestPath) {
-  // Load template file
-  std::string templatePath = page::WWW + "/autoindex_template.html";
+  // Load template file - use the directory's parent to find templates
+  std::string templatePath = dirPath + "/../" + page::AUTOINDEX_TEMPLATE;
   std::string html;
 
   try {
@@ -276,7 +273,7 @@ std::string generateDirectoryListing(const std::string& dirPath, const std::stri
   } catch (const std::exception& e) {
     // Fallback to fallback template file if main template fails
     std::cout << "Warning: Could not load autoindex template: " << e.what() << std::endl;
-    std::string fallbackPath = page::WWW + "/autoindex_fallback.html";
+    std::string fallbackPath = dirPath + "/../" + page::AUTOINDEX_FALLBACK;
     try {
       html = FileUtils::readFileToString(fallbackPath);
     } catch (const std::exception& e2) {

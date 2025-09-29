@@ -13,7 +13,7 @@
 #include "HttpConstants.hpp"
 
 struct Location;
-using Handler = std::function<void(const Request&, Response&, const Location*)>;
+using Handler = std::function<void(const Request&, Response&, const Server&)>;
 
 /**
  * @class RequestProcessor
@@ -26,7 +26,7 @@ class RequestProcessor {
 
     /** Process HTTP request with routing information */
     void processRequest(const Request& req, const Handler* handler,
-                        Response& res, const Location* location) const;
+                        Response& res, const Server& server) const;
 
     /** Validate request path for security issues */
     // bool validatePath(const std::string& path) const;
@@ -38,13 +38,16 @@ class RequestProcessor {
     /** Execute handler with error handling */
     bool executeHandler(const Handler* handler,
                           const Request& req, Response& res,
-                          const Location* location) const;
+                          const Server& server) const;
 
     /** Try to serve request as static file */
     bool tryServeAsStaticFile(const Request& req, Response& res,
-                               const std::string& method) const;
+                               const std::string& method, const Server& server) const;
 
-    /** Generate error response */
-    void generateErrorResponse(Response& res, int status,
-                                 const std::string& message = "") const;
+    /** Check if path exists but method is not allowed */
+    bool isPathExistsButMethodNotAllowed(const Request& req, const Server& server) const;
+
+    /** Find matching location configuration for a path */
+    const Location* findLocationForPath(const Server& server, const std::string& path) const;
+
 };

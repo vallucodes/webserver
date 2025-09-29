@@ -6,6 +6,8 @@
 #include "RequestProcessor.hpp"
 #include "utils/HttpResponseBuilder.hpp"
 #include "handlers/Handlers.hpp"
+#include "Router.hpp"
+#include "utils/StringUtils.hpp"
 #include <iostream> // for std::cout, std::endl
 #include <algorithm> // for std::find
 
@@ -23,7 +25,7 @@ RequestProcessor::~RequestProcessor() {
 
 /** Process HTTP request */
 void RequestProcessor::processRequest(const Request& req, const Handler* handler,
-                                      Response& res, const Location* location) const {
+                                      Response& res, const Server& server) const {
   // Extract and validate request components
   std::string_view method_view = req.getMethod();
   std::string_view path_view = req.getPath();
@@ -33,59 +35,55 @@ void RequestProcessor::processRequest(const Request& req, const Handler* handler
 
   // Validate HTTP method - return 405 Method Not Allowed for unsupported methods
   if (method != http::GET && method != http::POST && method != http::DELETE) {
-    router::utils::HttpResponseBuilder::setErrorResponse(res, http::METHOD_NOT_ALLOWED_405, req);
+    router::utils::HttpResponseBuilder::setErrorResponse(res, http::METHOD_NOT_ALLOWED_405, req, server);
     return;
   }
 
   // Execute handler if available
   if (handler) {
-    if (executeHandler(handler, req, res, location)) {
+    if (executeHandler(handler, req, res, server)) {
       return;
     }
   }
 
-  // Check if method is allowed for this location
-  if (location) {
-    const auto& allowedMethods = location->allowed_methods;
-    bool methodAllowed = std::find(allowedMethods.begin(), allowedMethods.end(), method) != allowedMethods.end();
-    if (!methodAllowed) {
-      router::utils::HttpResponseBuilder::setErrorResponse(res, http::METHOD_NOT_ALLOWED_405, req);
-      return;
-    }
+  // Check if path exists but method is not allowed (405 Method Not Allowed)
+  if (isPathExistsButMethodNotAllowed(req, server)) {
+    router::utils::HttpResponseBuilder::setErrorResponse(res, http::METHOD_NOT_ALLOWED_405, req, server);
+    return;
   }
 
   // Fallback: try to serve as static file
-  if (tryServeAsStaticFile(req, res, method)) {
+  if (tryServeAsStaticFile(req, res, method, server)) {
     return;
   }
 
   // All attempts failed - return 404
-  router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404, req);
+  router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404, req, server);
 }
 
 /** Execute handler */
 bool RequestProcessor::executeHandler(const Handler* handler,
                                       const Request& req, Response& res,
-                                      const Location* location) const {
+                                      const Server& server) const {
   if (!handler) {
     return false;
   }
   try {
-    // Execute the handler with the passed location
-    (*handler)(req, res, location);
+    // Execute the handler with the server
+    (*handler)(req, res, server);
     return true;
   } catch (const std::exception& e) {
-    router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req);
+    router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req, server);
     return false;
   } catch (...) {
-    router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req);
+    router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req, server);
     return false;
   }
 }
 
 /** Serve static file */
 bool RequestProcessor::tryServeAsStaticFile(const Request& req, Response& res,
-                                            const std::string& method) const {
+                                            const std::string& method, const Server& server) const {
   // Only handle GET requests for static files
   if (method != http::GET) {
     return false;
@@ -93,7 +91,7 @@ bool RequestProcessor::tryServeAsStaticFile(const Request& req, Response& res,
 
   try {
     // Attempt to serve using the GET handler
-    get(req, res, nullptr);
+    get(req, res, server);
     return true;
   } catch (...) {
     // Static file serving failed
@@ -101,40 +99,71 @@ bool RequestProcessor::tryServeAsStaticFile(const Request& req, Response& res,
   }
 }
 
-/** Generate error response */
-void RequestProcessor::generateErrorResponse(Response& res, int status,
-                                             const std::string& message) const {
-  // Set appropriate status based on error code
-  switch (status) {
-    case http::BAD_REQUEST_400:
-      res.setStatus(http::STATUS_BAD_REQUEST_400);
-      break;
-    case http::NOT_FOUND_404:
-      res.setStatus(http::STATUS_NOT_FOUND_404);
-      break;
-    case http::METHOD_NOT_ALLOWED_405:
-      res.setStatus(http::STATUS_METHOD_NOT_ALLOWED_405);
-      break;
-    case http::INTERNAL_SERVER_ERROR_500:
-    default:
-      res.setStatus(http::STATUS_INTERNAL_SERVER_ERROR_500);
-      break;
+/** Check if path exists but method is not allowed */
+bool RequestProcessor::isPathExistsButMethodNotAllowed(const Request& req, const Server& server) const {
+  std::string_view path_view = req.getPath();
+  std::string_view method_view = req.getMethod();
+
+  std::string path(path_view);
+  std::string method(method_view);
+
+  // Normalize path by collapsing multiple consecutive slashes
+  path = router::utils::StringUtils::normalizePath(path);
+
+  // Find matching location for this path
+  const Location* location = findLocationForPath(server, path);
+  if (!location) {
+    return false; // No location found, so path doesn't exist
   }
 
-  // Set common headers
-  res.setHeaders(http::CONTENT_TYPE, http::CONTENT_TYPE_HTML);
-  // Default to keep-alive for HTTP/1.1 compatibility
-  res.setHeaders(http::CONNECTION, http::CONNECTION_KEEP_ALIVE);
-
-  // For now, set a simple error message
-  // In a real implementation, this would load custom error pages
-  std::string errorBody = "<html><body><h1>Error " +
-                          std::to_string(status) + "</h1>";
-  if (!message.empty()) {
-    errorBody += "<p>" + message + "</p>";
-  }
-  errorBody += "</body></html>";
-
-  res.setHeaders(http::CONTENT_LENGTH, std::to_string(errorBody.length()));
-  res.setBody(errorBody);
+  // Check if the method is in the allowed methods for this location
+  const auto& allowed_methods = location->allowed_methods;
+  return std::find(allowed_methods.begin(), allowed_methods.end(), method) == allowed_methods.end();
 }
+
+/** Find matching location configuration for a path */
+const Location* RequestProcessor::findLocationForPath(const Server& server, const std::string& path) const {
+  const auto& locations = server.getLocations();
+  const Location* best_match = nullptr;
+  size_t best_match_length = 0;
+
+  for (const auto& location : locations) {
+    const std::string& location_path = location.location;
+
+    // Priority 1: Exact match - highest specificity
+    if (location_path == path) {
+      return &location; // Return immediately for exact match
+    }
+
+    // Priority 2: Prefix match - find longest matching prefix
+    // Example: location "/admin" matches path "/admin/page"
+    if (path.length() > location_path.length() &&
+        path.substr(0, location_path.length()) == location_path) {
+
+      // Additional validation for prefix matching
+      bool is_valid_prefix_match = false;
+
+      // Case 1: Path continues after location_path with a slash
+      if (path[location_path.length()] == '/') {
+        is_valid_prefix_match = true;
+      }
+      // Case 2: Special case for root "/" - should not match subdirectories
+      else if (location_path == "/" && path.length() > 1) {
+        // Root should only match if the next character after "/" is not another "/"
+        // This prevents "/" from matching "/noupload/" but allows "/" to match "/index.html"
+        is_valid_prefix_match = false; // Root should not match subdirectories
+      }
+
+      if (is_valid_prefix_match) {
+        // Keep track of the longest (most specific) prefix match
+        if (location_path.length() > best_match_length) {
+          best_match = &location;
+          best_match_length = location_path.length();
+        }
+      }
+    }
+  }
+
+  return best_match;
+}
+

@@ -16,7 +16,6 @@
 #include "../config/Config.hpp"
 #include "../parser/Parser.hpp"
 #include "../request/Request.hpp"
-#include "../router/Router.hpp"
 
 #define RED "\033[1;31m"
 #define GREEN "\033[1;32m"
