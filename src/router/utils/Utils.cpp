@@ -268,22 +268,22 @@ std::string generateDirectoryListing(const std::string& dirPath, const std::stri
   std::vector<std::string> searchPaths;
 
   // 1. Current directory
-  searchPaths.push_back(dirPath + "/" + page::AUTOINDEX_TEMPLATE);
-  searchPaths.push_back(dirPath + "/" + page::AUTOINDEX_FALLBACK);
+  searchPaths.push_back(StringUtils::normalizePath(dirPath + "/" + page::AUTOINDEX_TEMPLATE));
+  searchPaths.push_back(StringUtils::normalizePath(dirPath + "/" + page::AUTOINDEX_FALLBACK));
 
   // 2. Parent directories (walking up the tree)
   std::string currentPath = dirPath;
   while (currentPath != serverRoot && currentPath.length() > serverRoot.length()) {
     currentPath = currentPath.substr(0, currentPath.find_last_of('/'));
     if (currentPath.length() >= serverRoot.length()) {
-      searchPaths.push_back(currentPath + "/" + page::AUTOINDEX_TEMPLATE);
-      searchPaths.push_back(currentPath + "/" + page::AUTOINDEX_FALLBACK);
+      searchPaths.push_back(StringUtils::normalizePath(currentPath + "/" + page::AUTOINDEX_TEMPLATE));
+      searchPaths.push_back(StringUtils::normalizePath(currentPath + "/" + page::AUTOINDEX_FALLBACK));
     }
   }
 
   // 3. Server root as final fallback
-  searchPaths.push_back(serverRoot + "/" + page::AUTOINDEX_TEMPLATE);
-  searchPaths.push_back(serverRoot + "/" + page::AUTOINDEX_FALLBACK);
+  searchPaths.push_back(StringUtils::normalizePath(serverRoot + "/" + page::AUTOINDEX_TEMPLATE));
+  searchPaths.push_back(StringUtils::normalizePath(serverRoot + "/" + page::AUTOINDEX_FALLBACK));
 
   std::string html;
   bool templateFound = false;
