@@ -6,6 +6,7 @@
     <title>Upload File</title>
 </head>
 <body>
+  <center>
     <h1>Upload File</h1>
     <p>Max size: 1 MB</p>
 
@@ -22,7 +23,7 @@
     <div id="message" style="margin-top: 20px; font-weight: bold;"></div>
 
     <div style="margin-top: 20px;">
-        <a href="/">Return to Main Page</a>
+        <a href="/" id="returnLink">Return to Main Page</a>
     </div>
 
     <script>
@@ -30,6 +31,7 @@
         const message = document.getElementById('message');
         const uploadBtn = document.getElementById('uploadBtn');
         const fileInput = document.getElementById('file');
+        const returnLink = document.getElementById('returnLink');
         const MAX_SIZE = 1024 * 1024; // 1 MB
 
         // Check file size when file is selected
@@ -95,5 +97,6 @@
             });
         });
     </script>
+    </center>
 </body>
 </html>

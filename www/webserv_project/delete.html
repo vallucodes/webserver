@@ -6,6 +6,7 @@
     <title>Delete File</title>
 </head>
 <body>
+    <center>
     <h1>Delete File</h1>
     <p>Enter the filename to delete from uploads directory</p>
 
@@ -22,7 +23,7 @@
     <div id="message" style="margin-top: 20px; font-weight: bold;"></div>
 
     <div style="margin-top: 20px;">
-        <a href="/">Return to Main Page</a>
+        <a href="/" id="returnLink">Return to Main Page</a>
     </div>
 
     <script>
@@ -30,6 +31,7 @@
         const message = document.getElementById('message');
         const deleteBtn = document.getElementById('deleteBtn');
         const filenameInput = document.getElementById('filename');
+        const returnLink = document.getElementById('returnLink');
 
         // Handle form submission
         form.addEventListener('submit', function(e) {
@@ -71,5 +73,6 @@
             });
         });
     </script>
+    </center>
 </body>
 </html>
