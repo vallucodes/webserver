@@ -18,6 +18,12 @@ void	Cluster::config(const std::string& config_file) {
 	groupConfigs();
 
 	_max_clients = getMaxClients();
+
+	// Assign sequential IDs to server configurations
+	for (size_t i = 0; i < _configs.size(); ++i) {
+		_configs[i].setId(static_cast<int>(i));
+	}
+
 	_router.setupRouter(_configs);
 }
 

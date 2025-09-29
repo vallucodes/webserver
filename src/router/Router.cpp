@@ -27,7 +27,9 @@ void Router::setupRouter(const std::vector<Server>& configs) {
   _routes.clear();
 
   // Iterate through each server configuration
-  for (const auto& server : configs) {
+  for (size_t i = 0; i < configs.size(); ++i) {
+    const Server& server = configs[i];
+
     // Get server root directory for resolving relative paths
     std::string server_root = server.getRoot();
 
@@ -77,8 +79,8 @@ void Router::setupRouter(const std::vector<Server>& configs) {
           };
         }
 
-        // Register the route in the routing table
-        addRoute(server.getPort(), method, location_path, handler);
+        // Register the route in the routing table using server ID instead of port
+        addRoute(server.getId(), method, location_path, handler);
       }
     }
   }
@@ -89,16 +91,16 @@ void Router::setupRouter(const std::vector<Server>& configs) {
 // ========================= ROUTES REGISTRATION =========================
 
 /** Register a new route */
-void Router::addRoute(int server_port, std::string_view method, std::string_view path, Handler handler) {
-  _routes[server_port][std::string(path)][std::string(method)] = std::move(handler);
+void Router::addRoute(int server_id, std::string_view method, std::string_view path, Handler handler) {
+  _routes[server_id][std::string(path)][std::string(method)] = std::move(handler);
 }
 
 // ========================= REQUEST HANDLING =========================
 
 /** Find handler for server/method/path */
-const Router::Handler* Router::findHandler(int server_port, const std::string& method, const std::string& path) const {
+const Router::Handler* Router::findHandler(int server_id, const std::string& method, const std::string& path) const {
   // Step 1: Find the server in our routing table
-  auto server_it = _routes.find(server_port);
+  auto server_it = _routes.find(server_id);
   if (server_it == _routes.end()) {
     return nullptr; // Server not found in routing table
   }
@@ -222,7 +224,7 @@ void Router::handleRequest(const Server& server, const Request& req, Response& r
   path = router::utils::StringUtils::normalizePath(path);
 
   // Find the appropriate handler for this request
-  const Handler* handler = findHandler(server.getPort(), method, path);
+  const Handler* handler = findHandler(server.getId(), method, path);
 
   // Delegate to RequestProcessor for execution and fallback handling
   _requestProcessor.processRequest(req, handler, res, server);
@@ -235,8 +237,8 @@ void Router::listRoutes() const {
 
   std::cout << "=== Available routes: ===" << std::endl;
   for (const auto& server_pair : _routes) {
-    int server_port = server_pair.first;
-    std::cout << "Server Port: " << server_port << std::endl;
+    int server_id = server_pair.first;
+    std::cout << "Server ID: " << server_id << std::endl;
 
     for (const auto& path_pair : server_pair.second) {
       const std::string& path = path_pair.first;
