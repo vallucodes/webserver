@@ -136,7 +136,7 @@ void post(const Request& req, Response& res, const Server& server) {
        return;
   }
 
-  const std::string boundary = "--" + contentType.substr(boundaryPos S+ 9);
+  const std::string boundary = "--" + contentType.substr(boundaryPos + 9);
   const std::string bodyStr(processedBody);
 
      // Find file boundaries
