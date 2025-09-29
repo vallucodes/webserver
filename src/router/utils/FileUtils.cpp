@@ -4,6 +4,7 @@
  */
 
 #include "FileUtils.hpp"
+#include "../HttpConstants.hpp"
 #include <fstream> // for std::ifstream, std::ios
 #include <stdexcept> // for std::runtime_error
 #include <filesystem> // for std::filesystem::path, std::filesystem::path::extension
@@ -29,17 +30,17 @@ std::string FileUtils::getContentType(const std::string& filePath) {
   // Convert to lowercase
   std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
 
-  if (extension == ".html" || extension == ".htm") return "text/html";
-  if (extension == ".css") return "text/css";
-  if (extension == ".js") return "application/javascript";
+  if (extension == file_extensions::HTML || extension == file_extensions::HTM) return content_types::HTML;
+  if (extension == file_extensions::CSS) return content_types::CSS;
+  if (extension == file_extensions::JS) return content_types::JAVASCRIPT;
   if (extension == ".json") return "application/json";
   if (extension == ".xml") return "application/xml";
-  if (extension == ".txt") return "text/plain";
-  if (extension == ".jpg" || extension == ".jpeg") return "image/jpeg";
-  if (extension == ".png") return "image/png";
-  if (extension == ".gif") return "image/gif";
+  if (extension == ".txt") return content_types::PLAIN_TEXT;
+  if (extension == file_extensions::JPG || extension == file_extensions::JPEG) return content_types::JPG;
+  if (extension == file_extensions::PNG) return content_types::PNG;
+  if (extension == file_extensions::GIF) return content_types::GIF;
   if (extension == ".svg") return "image/svg+xml";
-  if (extension == ".ico") return "image/x-icon";
+  if (extension == file_extensions::ICO) return content_types::ICO;
   if (extension == ".pdf") return "application/pdf";
   if (extension == ".zip") return "application/zip";
   if (extension == ".mp4") return "video/mp4";

@@ -42,8 +42,8 @@ void get(const Request& req, Response& res, const Server& server) {
   std::string requestPath = std::string(filePathView);
   // Use server's configured root directory instead of hardcoded www/
   std::string filePath;
-  if (requestPath == "/" || requestPath == "/index.html") {
-    filePath = server.getRoot() + "/index.html";
+  if (requestPath == page::ROOT_HTML || requestPath == page::INDEX_HTML_PATH) {
+    filePath = server.getRoot() + page::INDEX_HTML_PATH;
   } else {
     filePath = server.getRoot() + requestPath;
   }
