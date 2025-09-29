@@ -28,11 +28,6 @@ class RequestProcessor {
     void processRequest(const Request& req, const Handler* handler,
                         Response& res, const Server& server) const;
 
-    /** Validate request path for security issues */
-    // bool validatePath(const std::string& path) const;
-
-    /** Normalize request path for processing */
-    // void normalizePath(std::string& path) const;
 
   private:
     /** Execute handler with error handling */

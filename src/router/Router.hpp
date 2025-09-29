@@ -1,14 +1,14 @@
 /**
  * @file Router.hpp
- * @brief HTTP Router for route mappings
+ * @brief Simplified HTTP Router for route mappings
  */
 
 #pragma once
 
-#include <map> // for std::map
-#include <string> // for std::string
-#include <string_view> // for std::string_view
-#include <functional> // for std::function
+#include <map>
+#include <string>
+#include <string_view>
+#include <functional>
 
 #include "../request/Request.hpp"
 #include "../response/Response.hpp"
@@ -18,41 +18,38 @@
 
 /**
  * @class Router
- * @brief Manages HTTP route mappings
+ * @brief Manages HTTP route mappings with simplified logic
  */
 class Router {
-  public:
-    Router();
-    ~Router();
+public:
+  Router();
+  ~Router();
 
-    /** Handler function type: (Request, Response, Location*, Server) -> void */
-    using Handler = std::function<void(const Request&, Response&, const Server&)>;
+  /** Handler function type: (Request, Response, Server) -> void */
+  using Handler = std::function<void(const Request&, Response&, const Server&)>;
 
-    /** Initialize router with server configurations */
-    void setupRouter(const std::vector<Server>& configs);
+  /** Initialize router with server configurations */
+  void setupRouter(const std::vector<Server>& configs);
 
-    /** Debug: list all registered routes */
-    void listRoutes() const;
+  /** Process HTTP request and route to handler */
+  void handleRequest(const Server& server, const Request& req, Response& res) const;
 
-    /** Register a new route */
-    void addRoute(int server_id, std::string_view method, std::string_view path, Handler handler);
+  /** Debug: list all registered routes */
+  void listRoutes() const;
 
-    /** Process HTTP request and route to handler */
-    void handleRequest(const Server& server, const Request& req, Response& res) const;
+private:
+  /** Register a new route */
+  void addRoute(int server_id, std::string_view method, std::string_view path, Handler handler);
 
-    /** Handle request timeout (408) */
-    void requestTimeOut();
+  /** Find handler for server/method/path */
+  const Handler* findHandler(int server_id, const std::string& method, const std::string& path) const;
 
-  private:
-    /** Find handler for server/method/path */
-    const Handler* findHandler(int server_id, const std::string& method, const std::string& path) const;
+  /** Find matching location configuration */
+  const Location* findLocation(const Server& server, const std::string& path) const;
 
-    /** Find matching location configuration */
-    const Location* findLocation(const Server& server, const std::string& path) const;
+  /** Route storage: server id → path → HTTP method → Handler */
+  std::map<int, std::map<std::string, std::map<std::string, Handler>>> _routes;
 
-    /** Route storage: server id → path → HTTP method → Handler */
-    std::map<int, std::map<std::string, std::map<std::string, Handler>>> _routes;
-
-    /** Request processor for complex request logic */
-    RequestProcessor _requestProcessor;
+  /** Request processor for handling requests */
+  RequestProcessor _requestProcessor;
 };
