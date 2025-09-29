@@ -263,24 +263,49 @@ std::vector<std::string> setupCgiEnvironment(const Request& req, const std::stri
 }
 
 /** Generate HTML directory listing */
-std::string generateDirectoryListing(const std::string& dirPath, const std::string& requestPath) {
-  // Load template file - use the directory's parent to find templates
-  std::string templatePath = dirPath + "/../" + page::AUTOINDEX_TEMPLATE;
-  std::string html;
+std::string generateDirectoryListing(const std::string& dirPath, const std::string& requestPath, const std::string& serverRoot) {
+  // Search for template files in multiple locations
+  std::vector<std::string> searchPaths;
 
-  try {
-    html = FileUtils::readFileToString(templatePath);
-  } catch (const std::exception& e) {
-    // Fallback to fallback template file if main template fails
-    std::cout << "Warning: Could not load autoindex template: " << e.what() << std::endl;
-    std::string fallbackPath = dirPath + "/../" + page::AUTOINDEX_FALLBACK;
-    try {
-      html = FileUtils::readFileToString(fallbackPath);
-    } catch (const std::exception& e2) {
-      // If both templates fail, return a simple error message
-      std::cout << "Error: Could not load fallback template: " << e2.what() << std::endl;
-      return "<html><body><h1>Error</h1><p>Could not load directory listing template.</p></body></html>";
+  // 1. Current directory
+  searchPaths.push_back(dirPath + "/" + page::AUTOINDEX_TEMPLATE);
+  searchPaths.push_back(dirPath + "/" + page::AUTOINDEX_FALLBACK);
+
+  // 2. Parent directories (walking up the tree)
+  std::string currentPath = dirPath;
+  while (currentPath != serverRoot && currentPath.length() > serverRoot.length()) {
+    currentPath = currentPath.substr(0, currentPath.find_last_of('/'));
+    if (currentPath.length() >= serverRoot.length()) {
+      searchPaths.push_back(currentPath + "/" + page::AUTOINDEX_TEMPLATE);
+      searchPaths.push_back(currentPath + "/" + page::AUTOINDEX_FALLBACK);
     }
+  }
+
+  // 3. Server root as final fallback
+  searchPaths.push_back(serverRoot + "/" + page::AUTOINDEX_TEMPLATE);
+  searchPaths.push_back(serverRoot + "/" + page::AUTOINDEX_FALLBACK);
+
+  std::string html;
+  bool templateFound = false;
+
+  // Try to find and load template
+  for (const auto& templatePath : searchPaths) {
+    try {
+      if (std::filesystem::exists(templatePath)) {
+        html = FileUtils::readFileToString(templatePath);
+        templateFound = true;
+        break;
+      }
+    } catch (const std::exception& e) {
+      // Continue to next path
+      continue;
+    }
+  }
+
+  if (!templateFound) {
+    // If no template found anywhere, throw an exception
+    std::cout << "Error: Could not find autoindex template in any location" << std::endl;
+    throw std::runtime_error("Could not load directory listing template");
   }
 
   // Replace placeholders
@@ -357,12 +382,18 @@ std::string generateDirectoryListing(const std::string& dirPath, const std::stri
 }
 
 bool handleDirectoryRequest(const std::string& dirPath, const std::string& requestPath,
-                            const Location* location, Response& res, const Request& req) {
+                            const Location* location, Response& res, const Request& req, const std::string& serverRoot) {
   // Try autoindex first if enabled
   if (location && location->autoindex) {
-    std::string dirListing = generateDirectoryListing(dirPath, requestPath);
-    HttpResponseBuilder::setSuccessResponse(res, dirListing, http::CONTENT_TYPE_HTML, req);
-    return true;
+    try {
+      std::string dirListing = generateDirectoryListing(dirPath, requestPath, serverRoot);
+      HttpResponseBuilder::setSuccessResponse(res, dirListing, http::CONTENT_TYPE_HTML, req);
+      return true;
+    } catch (const std::exception& e) {
+      // Template loading failed, return 500 error
+      std::cout << "Error generating directory listing: " << e.what() << std::endl;
+      return false; // This will cause the caller to return 500
+    }
   }
 
   // Combine location-specific, global, and default index files

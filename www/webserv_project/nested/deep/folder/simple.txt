@@ -1,3 +1,0 @@
-NESTED TEST SUCCESS!
-This file is in /nested/deep/folder/simple.txt
-If you can read this, the nested directory structure works!

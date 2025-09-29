@@ -51,19 +51,26 @@ void get(const Request& req, Response& res, const Server& server) {
 
   // Handle directory requests
   if (std::filesystem::is_directory(filePath)) {
-       // Find matching location for autoindex configuration
+       // Find matching location for autoindex configuration (most specific match)
        const Location* location = nullptr;
+       size_t bestMatchLength = 0;
        for (const auto& loc : server.getLocations()) {
-         if (requestPath.find(loc.location) == 0) {
+         if (requestPath.find(loc.location) == 0 && loc.location.length() > bestMatchLength) {
            location = &loc;
-           break;
+           bestMatchLength = loc.location.length();
          }
        }
-       if (router::utils::handleDirectoryRequest(filePath, requestPath, location, res, req)) {
+       if (router::utils::handleDirectoryRequest(filePath, requestPath, location, res, req, server.getRoot())) {
        return;
      }
-     // No index file found and autoindex disabled
-     router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404, req, server);
+     // No index file found and autoindex disabled, or autoindex template loading failed
+     if (location && location->autoindex) {
+       // Autoindex was enabled but template loading failed
+       router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req, server);
+     } else {
+       // No index file found and autoindex disabled
+       router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404, req, server);
+     }
      return;
   }
 
