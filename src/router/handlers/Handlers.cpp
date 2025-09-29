@@ -12,6 +12,7 @@
 #include "../utils/Utils.hpp"
 #include "../HttpConstants.hpp"
 #include "../../server/Server.hpp"
+#include <sstream>
 
 #include <fstream> // for std::ifstream, std::ofstream
 #include <filesystem> // for std::filesystem::directory_iterator, std::filesystem::path, std::filesystem::exists, std::filesystem::is_directory, std::filesystem::is_regular_file, std::filesystem::create_directories, std::filesystem::remove, std::filesystem::file_size, std::filesystem::last_write_time
@@ -206,9 +207,8 @@ void post(const Request& req, Response& res, const Server& server) {
      outFile.write(fileContent.c_str(), fileContent.length());
      outFile.close();
 
-     // Success response - use setCreatedResponse
-     std::string successMessage = "File '" + filename + "' uploaded successfully!";
-     router::utils::HttpResponseBuilder::setCreatedResponse(res, successMessage, http::CONTENT_TYPE_TEXT, req);
+     // Success response - use default success page
+     router::utils::HttpResponseBuilder::setSuccessResponseWithDefaultPage(res, http::CREATED_201, req);
 
   } catch (const std::exception&) {
      router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req, server);
@@ -271,8 +271,8 @@ void del(const Request& req, Response& res, const Server& server) {
 
      // Attempt deletion
      if (std::filesystem::remove(filePath)) {
-         // Success response - 204 No Content (file deleted successfully)
-       router::utils::HttpResponseBuilder::setNoContentResponse(res, req);
+         // Success response - use default success page
+         router::utils::HttpResponseBuilder::setSuccessResponseWithDefaultPage(res, http::OK_200, req);
      } else {
        router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req, server);
      }

@@ -118,10 +118,10 @@ namespace network {
   // Default client addresses for CGI environment
   const std::string DEFAULT_REMOTE_ADDR = "127.0.0.1";
   const std::string DEFAULT_REMOTE_HOST = "localhost";
-  
+
   // System paths
   const std::string SYSTEM_PATH = "/usr/bin:/bin:/usr/local/bin";
-  
+
   // Server software info
   const std::string SERVER_SOFTWARE = "webserv/1.0";
 }

@@ -20,18 +20,14 @@
         </div>
     </form>
 
-    <div id="message" style="margin-top: 20px; font-weight: bold;"></div>
-
     <div style="margin-top: 20px;">
-        <a href="/" id="returnLink">Return to Main Page</a>
+        <a href="/">Return to Main Page</a>
     </div>
 
     <script>
         const form = document.getElementById('deleteForm');
-        const message = document.getElementById('message');
         const deleteBtn = document.getElementById('deleteBtn');
         const filenameInput = document.getElementById('filename');
-        const returnLink = document.getElementById('returnLink');
 
         // Handle form submission
         form.addEventListener('submit', function(e) {
@@ -39,33 +35,25 @@
 
             const filename = filenameInput.value.trim();
             if (!filename) {
-                message.textContent = 'Please enter a filename.';
-                message.style.color = 'red';
                 return;
             }
 
             deleteBtn.disabled = true;
             deleteBtn.textContent = 'Deleting...';
-            message.textContent = '';
 
-            // Send DELETE request
+            // Send DELETE request - let server handle response
             fetch('/uploads/' + encodeURIComponent(filename), {
                 method: 'DELETE'
             })
             .then(response => {
-                if (response.ok) {
-                    message.textContent = 'File deleted successfully!';
-                    message.style.color = 'green';
-                    form.reset();
-                } else {
-                    message.textContent = 'Delete Failed!';
-                    message.style.color = 'red';
-                }
+                // Get the response text (success or error page HTML)
+                return response.text();
             })
-            .catch(error => {
-                console.error('Delete error:', error);
-                message.textContent = 'Delete Failed!';
-                message.style.color = 'red';
+            .then(html => {
+                // Replace the current page content with the server response
+                document.open();
+                document.write(html);
+                document.close();
             })
             .finally(() => {
                 deleteBtn.disabled = false;

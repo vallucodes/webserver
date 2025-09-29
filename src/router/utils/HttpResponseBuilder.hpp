@@ -31,9 +31,6 @@ class HttpResponseBuilder {
         /** Set a success response with content and content type (with keep-alive support) */
         static void setSuccessResponse(Response& res, const std::string& content, const std::string& contentType, const class Request& req);
 
-        /** Set a 201 Created response with content and content type (with keep-alive support) */
-        static void setCreatedResponse(Response& res, const std::string& content, const std::string& contentType, const class Request& req);
-
         /** Set a 204 No Content response with empty body (with keep-alive support) */
         static void setNoContentResponse(Response& res, const class Request& req);
 
@@ -46,6 +43,14 @@ class HttpResponseBuilder {
         /** Generate a default error page HTML */
         static std::string makeDefaultErrorPage(int code, const std::string& reason);
 
+        /** Generate a default success page HTML */
+        static std::string makeDefaultSuccessPage(int code, const std::string& reason);
+
+        /** Set a success response with default success page */
+        static void setSuccessResponseWithDefaultPage(Response& res, int status, const class Request& req);
+
+        /** Get HTML content for default success pages */
+        static std::string getSuccessPageHtml(int status);
 
         /** Convert string status to integer status code */
         static int parseStatusCodeFromString(const std::string& statusString);
