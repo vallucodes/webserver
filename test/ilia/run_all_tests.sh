@@ -148,7 +148,7 @@ main() {
 
     print_test "Server 1 (Port 8080) - DELETE allowed"
     run_test "Upload file for deletion" "curl -v -X POST -F 'file=@delete_test.txt' http://127.0.0.1:8080/uploads/" "201"
-    run_test "Delete file" "curl -v -X DELETE http://127.0.0.1:8080/uploads/delete_test.txt" "204"
+    run_test "Delete file" "curl -v -X DELETE http://127.0.0.1:8080/uploads/delete_test.txt" "200"
     run_test "Delete non-existent file" "curl -v -X DELETE http://127.0.0.1:8080/uploads/nonexistent.txt" "404"
 
     print_test "Server 2 (Port 8081) - DELETE allowed"
@@ -188,7 +188,7 @@ main() {
     echo "Creating small file (5KB)..."
     dd if=/dev/zero of=small_file.txt bs=1K count=5 2>/dev/null
     run_test "Small file upload" "curl -v -X POST -F 'file=@small_file.txt' http://127.0.0.1:8080/uploads/" "201"
-    run_test "Delete small file" "curl -v -X DELETE http://127.0.0.1:8080/uploads/small_file.txt" "204"
+    run_test "Delete small file" "curl -v -X DELETE http://127.0.0.1:8080/uploads/small_file.txt" "200"
 
     print_test "500 Server Error (CGI timeout)"
     run_test "CGI timeout" "curl -v http://127.0.0.1:8080/cgi-bin/inf.py" "504"
@@ -230,7 +230,7 @@ main() {
     run_test "Upload workflow file" "curl -v -X POST -F 'file=@workflow_test.txt' http://127.0.0.1:8080/uploads/" "201"
     run_test "Verify workflow file" "curl -v http://127.0.0.1:8080/uploads/workflow_test.txt" "200"
     run_test "Check directory listing" "curl -v http://127.0.0.1:8080/uploads/" "200"
-    run_test "Delete workflow file" "curl -v -X DELETE http://127.0.0.1:8080/uploads/workflow_test.txt" "204"
+    run_test "Delete workflow file" "curl -v -X DELETE http://127.0.0.1:8080/uploads/workflow_test.txt" "200"
     run_test "Verify file deleted" "curl -v http://127.0.0.1:8080/uploads/workflow_test.txt" "404"
 
     print_test "CGI Environment Test"

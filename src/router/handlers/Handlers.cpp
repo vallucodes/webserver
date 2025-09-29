@@ -271,7 +271,7 @@ void del(const Request& req, Response& res, const Server& server) {
 
      // Attempt deletion
      if (std::filesystem::remove(filePath)) {
-         // Success response - use default success page
+         // Success response - 200 OK with default success page
          router::utils::HttpResponseBuilder::setSuccessResponseWithDefaultPage(res, http::OK_200, req);
      } else {
        router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req, server);

@@ -117,8 +117,6 @@ void HttpResponseBuilder::setSuccessResponseWithDefaultPage(Response& res, int s
     res.setStatus(http::STATUS_OK_200);
   } else if (status == http::CREATED_201) {
     res.setStatus(http::STATUS_CREATED_201);
-  } else if (status == http::NO_CONTENT_204) {
-    res.setStatus(http::STATUS_NO_CONTENT_204);
   } else {
     res.setStatus(http::STATUS_OK_200); // Default to 200 OK
   }
@@ -138,19 +136,6 @@ void HttpResponseBuilder::setSuccessResponseWithDefaultPage(Response& res, int s
   res.setBody(getSuccessPageHtml(status));
 }
 
-void HttpResponseBuilder::setNoContentResponse(Response& res, const Request& req) {
-  res.setStatus(http::STATUS_NO_CONTENT_204);
-  res.setHeaders(http::CONTENT_LENGTH, "0");
-
-  // Set connection header based on keep-alive logic
-  if (router::utils::shouldKeepAlive(req)) {
-    res.setHeaders(http::CONNECTION, http::CONNECTION_KEEP_ALIVE);
-  } else {
-    res.setHeaders(http::CONNECTION, http::CONNECTION_CLOSE);
-  }
-
-  res.setBody(""); // Empty body for 204 No Content
-}
 
 void HttpResponseBuilder::setMethodNotAllowedResponse(Response& res, const std::vector<std::string>& allowedMethods, const Request& req) {
   // Set the HTTP status line
@@ -188,6 +173,7 @@ std::string HttpResponseBuilder::makeDefaultErrorPage(int code, const std::strin
   std::ostringstream oss;
   oss << "<html>\n<head><title>" << code << " " << reason << "</title></head>\n"
       << "<body>\n<center><h1>" << code << " " << reason << "</h1></center>\n"
+      << "<center><a href=\"/\">Return to Main Page</a></center>\n"
       << "</body>\n</html>\n";
   return oss.str();
 }
@@ -232,8 +218,6 @@ std::string HttpResponseBuilder::getSuccessPageHtml(int status) {
       return makeDefaultSuccessPage(200, "OK");
     case http::CREATED_201:
       return makeDefaultSuccessPage(201, "Created");
-    case http::NO_CONTENT_204:
-      return makeDefaultSuccessPage(204, "No Content");
     default:
       // Fallback to generic 200 OK for unknown success codes
       return makeDefaultSuccessPage(200, "OK");

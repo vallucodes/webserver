@@ -16,7 +16,6 @@ namespace http {
   // HTTP Status Messages (Complete Status Lines)
   const std::string STATUS_OK_200 = "200 OK";
   const std::string STATUS_CREATED_201 = "201 Created";
-  const std::string STATUS_NO_CONTENT_204 = "204 No Content";
   const std::string STATUS_FOUND_302 = "302 Found";
   const std::string STATUS_NOT_FOUND_404 = "404 Not Found";
   const std::string STATUS_FORBIDDEN_403 = "403 Forbidden";
@@ -30,7 +29,6 @@ namespace http {
   // HTTP Status Codes (Numeric Values)
   const int OK_200 = 200;
   const int CREATED_201 = 201;
-  const int NO_CONTENT_204 = 204;
   const int FOUND_302 = 302;
   const int NOT_FOUND_404 = 404;
   const int FORBIDDEN_403 = 403;
