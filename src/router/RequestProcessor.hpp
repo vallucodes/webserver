@@ -42,6 +42,9 @@ class RequestProcessor {
     /** Check if path exists but method is not allowed */
     bool isPathExistsButMethodNotAllowed(const Request& req, const Server& server) const;
 
+    /** Check if path matches any configured location */
+    bool isPathConfigured(const Request& req, const Server& server) const;
+
     /** Find matching location configuration for a path */
     const Location* findLocationForPath(const Server& server, const std::string& path) const;
 

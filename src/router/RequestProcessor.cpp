@@ -52,7 +52,13 @@ void RequestProcessor::processRequest(const Request& req, const Handler* handler
     return;
   }
 
-  // Fallback: try to serve as static file
+  // Check if path matches any configured location before fallback
+  if (!isPathConfigured(req, server)) {
+    router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404, req, server);
+    return;
+  }
+
+  // Fallback: try to serve as static file (only for configured paths)
   if (tryServeAsStaticFile(req, res, method, server)) {
     return;
   }
@@ -121,6 +127,19 @@ bool RequestProcessor::isPathExistsButMethodNotAllowed(const Request& req, const
   return std::find(allowed_methods.begin(), allowed_methods.end(), method) == allowed_methods.end();
 }
 
+/** Check if path matches any configured location */
+bool RequestProcessor::isPathConfigured(const Request& req, const Server& server) const {
+  std::string_view path_view = req.getPath();
+  std::string path(path_view);
+
+  // Normalize path by collapsing multiple consecutive slashes
+  path = router::utils::StringUtils::normalizePath(path);
+
+  // Check if path matches any configured location
+  const Location* location = findLocationForPath(server, path);
+  return location != nullptr;
+}
+
 /** Find matching location configuration for a path */
 const Location* RequestProcessor::findLocationForPath(const Server& server, const std::string& path) const {
   const auto& locations = server.getLocations();
@@ -147,11 +166,14 @@ const Location* RequestProcessor::findLocationForPath(const Server& server, cons
       if (path[location_path.length()] == '/') {
         is_valid_prefix_match = true;
       }
-      // Case 2: Special case for root "/" - should not match subdirectories
+      // Case 2: Special case for root "/" - match files in root directory
       else if (location_path == "/" && path.length() > 1) {
-        // Root should only match if the next character after "/" is not another "/"
-        // This prevents "/" from matching "/noupload/" but allows "/" to match "/index.html"
-        is_valid_prefix_match = false; // Root should not match subdirectories
+        // Root should match files in root directory like "/index.html", "/favicon.ico"
+        // but not subdirectories like "/uploads/file.txt"
+        std::string remaining = path.substr(1); // Remove leading "/"
+        if (remaining.find('/') == std::string::npos) {
+          is_valid_prefix_match = true; // File in root directory
+        }
       }
 
       if (is_valid_prefix_match) {
@@ -162,8 +184,18 @@ const Location* RequestProcessor::findLocationForPath(const Server& server, cons
         }
       }
     }
+    // Priority 3: Extension-based matching
+    // Example: location ".py" matches path "/script.py"
+    else if (!location_path.empty() && location_path[0] == '.' && path.length() > location_path.length()) {
+      if (path.substr(path.length() - location_path.length()) == location_path) {
+        // Extension matches have higher priority than prefix matches
+        if (location_path.length() > best_match_length) {
+          best_match = &location;
+          best_match_length = location_path.length();
+        }
+      }
+    }
   }
 
-  return best_match;
+  return best_match; // Return best match or nullptr
 }
-
