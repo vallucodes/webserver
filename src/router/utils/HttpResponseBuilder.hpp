@@ -22,6 +22,9 @@ class HttpResponseBuilder {
         /** Set a complete error response with default error pages only */
         static void setErrorResponse(Response& res, int status, const class Request& req);
 
+        /** Set a complete error response with server-level error pages */
+        static void setErrorResponse(Response& res, int status, const class Request& req, const class Server& server);
+
         /** Set a 405 Method Not Allowed response with Allow header listing allowed methods (with keep-alive support) */
         static void setMethodNotAllowedResponse(Response& res, const std::vector<std::string>& allowedMethods, const class Request& req);
 

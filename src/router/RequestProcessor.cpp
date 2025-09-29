@@ -35,7 +35,7 @@ void RequestProcessor::processRequest(const Request& req, const Handler* handler
 
   // Validate HTTP method - return 405 Method Not Allowed for unsupported methods
   if (method != http::GET && method != http::POST && method != http::DELETE) {
-    router::utils::HttpResponseBuilder::setErrorResponse(res, http::METHOD_NOT_ALLOWED_405, req);
+    router::utils::HttpResponseBuilder::setErrorResponse(res, http::METHOD_NOT_ALLOWED_405, req, server);
     return;
   }
 
@@ -48,7 +48,7 @@ void RequestProcessor::processRequest(const Request& req, const Handler* handler
 
   // Check if path exists but method is not allowed (405 Method Not Allowed)
   if (isPathExistsButMethodNotAllowed(req, server)) {
-    router::utils::HttpResponseBuilder::setErrorResponse(res, http::METHOD_NOT_ALLOWED_405, req);
+    router::utils::HttpResponseBuilder::setErrorResponse(res, http::METHOD_NOT_ALLOWED_405, req, server);
     return;
   }
 
@@ -58,7 +58,7 @@ void RequestProcessor::processRequest(const Request& req, const Handler* handler
   }
 
   // All attempts failed - return 404
-  router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404, req);
+  router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404, req, server);
 }
 
 /** Execute handler */
@@ -73,10 +73,10 @@ bool RequestProcessor::executeHandler(const Handler* handler,
     (*handler)(req, res, server);
     return true;
   } catch (const std::exception& e) {
-    router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req);
+    router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req, server);
     return false;
   } catch (...) {
-    router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req);
+    router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req, server);
     return false;
   }
 }
@@ -138,12 +138,28 @@ const Location* RequestProcessor::findLocationForPath(const Server& server, cons
     // Priority 2: Prefix match - find longest matching prefix
     // Example: location "/admin" matches path "/admin/page"
     if (path.length() > location_path.length() &&
-        path.substr(0, location_path.length()) == location_path &&
-        (location_path.back() == '/' || path[location_path.length()] == '/')) {
-      // Keep track of the longest (most specific) prefix match
-      if (location_path.length() > best_match_length) {
-        best_match = &location;
-        best_match_length = location_path.length();
+        path.substr(0, location_path.length()) == location_path) {
+
+      // Additional validation for prefix matching
+      bool is_valid_prefix_match = false;
+
+      // Case 1: Path continues after location_path with a slash
+      if (path[location_path.length()] == '/') {
+        is_valid_prefix_match = true;
+      }
+      // Case 2: Special case for root "/" - should not match subdirectories
+      else if (location_path == "/" && path.length() > 1) {
+        // Root should only match if the next character after "/" is not another "/"
+        // This prevents "/" from matching "/noupload/" but allows "/" to match "/index.html"
+        is_valid_prefix_match = false; // Root should not match subdirectories
+      }
+
+      if (is_valid_prefix_match) {
+        // Keep track of the longest (most specific) prefix match
+        if (location_path.length() > best_match_length) {
+          best_match = &location;
+          best_match_length = location_path.length();
+        }
       }
     }
   }

@@ -118,11 +118,38 @@ curl -v http://127.0.0.1:8080/uploads/nonexistent.txt
 
 ### 405 Method Not Allowed
 ```bash
-# These should return 405 or 400 (unsupported methods)
+# These should return 405
 curl -v -X PUT http://127.0.0.1:8080/
 curl -v -X PATCH http://127.0.0.1:8080/uploads/
 curl -v -X OPTIONS http://127.0.0.1:8080/
 curl -v -X HEAD http://127.0.0.1:8080/
+```
+
+### 403 Forbidden / 404 Not Found / 405 Method Not Allowed
+```bash
+# Test 404 Not Found - POST to non-existent location (should be 404)
+curl -v -X POST -F "file=@test.txt" http://127.0.0.1:8080/noupload/
+curl -v -X POST -F "file=@test.txt" http://127.0.0.1:8080/nonexistent/
+
+# Test 404 Not Found - DELETE from non-existent location (should be 404)
+curl -v -X DELETE http://127.0.0.1:8080/noupload/test.txt
+curl -v -X DELETE http://127.0.0.1:8080/nonexistent/test.tx
+```
+
+### 413 Payload Too Large
+```bash
+# Create a large file (>client_max_body_size) to test size limit
+# Creates 20KB file (exceeds 10KB limit)
+dd if=/dev/zero of=large_file.txt bs=1K count=2000
+curl -v -X POST -F "file=@large_file.txt" http://127.0.0.1:8080/uploads/
+rm -f large_file.txt
+
+# Test with file within client_max_body_size (should work)
+dd if=/dev/zero of=small_file.txt bs=1K count=5  # Creates 5KB file
+curl -v -X POST -F "file=@small_file.txt" http://127.0.0.1:8080/uploads/
+curl -v -X DELETE http://127.0.0.1:8080/uploads/small_file.txt
+rm -f small_file.txt
+
 ```
 
 ### 500 Server Error (CGI timeout)
@@ -153,6 +180,17 @@ curl -s -o /dev/null -w "Not Found: %{http_code}\n" http://127.0.0.1:8080/nonexi
 # Method not allowed (405/400)
 curl -s -o /dev/null -w "PUT: %{http_code}\n" -X PUT http://127.0.0.1:8080/
 curl -s -o /dev/null -w "PATCH: %{http_code}\n" -X PATCH http://127.0.0.1:8080/uploads/
+
+# Not Found (404) - non-existent paths
+curl -s -o /dev/null -w "POST to noupload: %{http_code}\n" -X POST -F "file=@test.txt" http://127.0.0.1:8080/noupload/
+
+# Method Not Allowed (405) - existing path but wrong method
+curl -s -o /dev/null -w "POST to cgi-bin: %{http_code}\n" -X POST -F "file=@test.txt" http://127.0.0.1:8080/cgi-bin/
+
+# Payload too large (413) / Bad Request (400) - create large file first
+dd if=/dev/zero of=large_test.txt bs=1K count=20 2>/dev/null
+curl -s -o /dev/null -w "Large file upload: %{http_code}\n" -X POST -F "file=@large_test.txt" http://127.0.0.1:8080/uploads/
+rm -f large_test.txt
 
 # Multi-server status check
 curl -s -o /dev/null -w "Server 1: %{http_code}\n" http://127.0.0.1:8080/
@@ -195,78 +233,4 @@ curl -v http://127.0.0.1:8080/cgi-bin/hello.py
 curl -v -X POST -d "test=data" http://127.0.0.1:8080/cgi-bin/hello.py
 curl -v -X POST -H "Content-Type: application/json" -d '{"test":"json"}' http://127.0.0.1:8080/cgi-bin/hello.py
 ```
-
 ---
-
-## 7. STRESS/CONCURRENT TESTS
-
-### Multiple Concurrent Requests
-```bash
-# Run multiple requests simultaneously
-for i in {1..5}; do
-    curl -s -o /dev/null -w "Request $i: %{http_code}\n" http://127.0.0.1:8080/ &
-done
-wait
-```
-
-### Mixed Method Testing
-```bash
-# Test different methods on same server
-curl -s -o /dev/null -w "GET: %{http_code}\n" http://127.0.0.1:8080/uploads/
-curl -s -o /dev/null -w "POST: %{http_code}\n" -X POST -F "file=@test.txt" http://127.0.0.1:8080/uploads/
-curl -s -o /dev/null -w "DELETE: %{http_code}\n" -X DELETE http://127.0.0.1:8080/uploads/test.txt
-```
-
----
-
-## 8. EXPECTED RESULTS SUMMARY
-
-| Test | Server 1 (8080) | Server 2 (8081) | Server 3 (8082) | Server 4 (8083) | Server 5 (8084) |
-|------|----------------|----------------|----------------|----------------|----------------|
-| GET / | PASS 200 | PASS 200 | PASS 200 | PASS 200 | PASS 200 |
-| POST /uploads/ | PASS 201 | FAIL 404/405 | PASS 201 | N/A | N/A |
-| DELETE /uploads/ | PASS 204 | PASS 204 | FAIL 404/405 | N/A | N/A |
-| CGI scripts | PASS 200 | N/A | N/A | N/A | N/A |
-| Redirect /old | PASS 302 | N/A | N/A | N/A | N/A |
-
----
-
-## TROUBLESHOOTING
-
-### Common Issues
-1. **Server not responding**: Check if webserver is running with `ps aux | grep webserv`
-2. **Permission denied**: Ensure test files are readable and upload directory exists
-3. **CGI scripts not working**: Check if Python/Node.js are installed and scripts are executable
-4. **Unexpected status codes**: Verify configuration file syntax and server logs
-
-### Debug Commands
-```bash
-# Check server processes
-ps aux | grep webserv
-
-# Check server logs (if available)
-tail -f webserver.log
-
-# Test connectivity
-telnet 127.0.0.1 8080
-telnet 127.0.0.1 8081
-telnet 127.0.0.1 8082
-telnet 127.0.0.1 8083
-telnet 127.0.0.1 8084
-
-# Check file permissions
-ls -la www/
-ls -la www/uploads/
-ls -la www/cgi-bin/
-```
-
----
-
-## CLEANUP
-```bash
-# Remove test files
-rm -f test.txt test2.txt test3.txt delete_test.txt workflow_test.txt large_test.txt upload_test.txt
-
-# Stop webserver (if running in foreground)
-# Press Ctrl+C or kill the process
-```

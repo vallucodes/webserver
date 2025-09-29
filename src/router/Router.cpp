@@ -146,12 +146,32 @@ const Router::Handler* Router::findHandler(int server_id, const std::string& met
     // Example: Route "/uploads" should match "/uploads/file.txt"
     else if (!route_path.empty() &&
              path.length() >= route_path.length() &&
-             path.substr(0, route_path.length()) == route_path &&
-             (route_path.back() == '/' || path.length() == route_path.length() || path[route_path.length()] == '/')) {
-      // For prefix matches, prefer longer routes (more specific)
-      if (!is_extension_match && route_path.length() > best_match_length) {
-        best_handler = &method_it->second;
-        best_match_length = route_path.length();
+             path.substr(0, route_path.length()) == route_path) {
+
+      // Additional validation for prefix matching
+      bool is_valid_prefix_match = false;
+
+      // Case 1: Exact match
+      if (path.length() == route_path.length()) {
+        is_valid_prefix_match = true;
+      }
+      // Case 2: Path continues after route_path with a slash
+      else if (path[route_path.length()] == '/') {
+        is_valid_prefix_match = true;
+      }
+      // Case 3: Special case for root "/" - only match if path is exactly "/" or starts with "/" followed by a valid path segment
+      else if (route_path == "/" && path.length() > 1) {
+        // Root should only match if the next character after "/" is not another "/"
+        // This prevents "/" from matching "/noupload/" but allows "/" to match "/index.html"
+        is_valid_prefix_match = false; // Root should not match subdirectories
+      }
+
+      if (is_valid_prefix_match) {
+        // For prefix matches, prefer longer routes (more specific)
+        if (!is_extension_match && route_path.length() > best_match_length) {
+          best_handler = &method_it->second;
+          best_match_length = route_path.length();
+        }
       }
     }
   }
@@ -210,7 +230,7 @@ void Router::handleRequest(const Server& server, const Request& req, Response& r
   if (req.getError()) {
     // Parse the status code from the request's status string
     int statusCode = router::utils::HttpResponseBuilder::parseStatusCodeFromString(std::string(req.getStatus()));
-    router::utils::HttpResponseBuilder::setErrorResponse(res, statusCode, req);
+    router::utils::HttpResponseBuilder::setErrorResponse(res, statusCode, req, server);
     return;
   }
   // Extract method and path from the request
