@@ -11,9 +11,9 @@ namespace router {
 namespace utils {
 
 bool isValidLocationServer(Response& res, const Location* location, const Server* server, const Request& req);
-bool isValidPath(const std::string_view& path, Response& res, const Request& req);
+// bool isValidPath(const std::string_view& path, Response& res, const Request& req);
 bool isValidPath(const std::string_view& path, Response& res, const Request& req, const Server& server);
-bool isFileExistsAndExecutable(const std::string& filePath, Response& res, const Request& req);
+// bool isFileExistsAndExecutable(const std::string& filePath, Response& res, const Request& req);
 bool isFileExistsAndExecutable(const std::string& filePath, Response& res, const Request& req, const Server& server);
 
 } // namespace utils

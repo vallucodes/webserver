@@ -421,11 +421,6 @@ bool handleDirectoryRequest(const std::string& dirPath, const std::string& reque
   return false;
 }
 
-/** Create simple success message */
-std::string createSuccessMessage(const std::string& filename, const std::string& action) {
-  return "File '" + filename + "' " + action + " successfully!";
-}
-
 /**
  * @brief Serve a static file
  * @param filePath Path to the file to serve
