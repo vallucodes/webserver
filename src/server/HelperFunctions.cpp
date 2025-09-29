@@ -18,12 +18,11 @@ void	setSocketToNonBlockingMode(int sock) {
 	int flags = fcntl(sock, F_GETFL, 0);
 	if (flags == -1) {
 		close(sock);
-		// maybe more cleaning needed here
-		throw std::runtime_error("Error: fcntl get flags");
+		throw std::runtime_error("Error: fcntl() get flags");
 	}
 	if (fcntl(sock, F_SETFL, flags | O_NONBLOCK) == -1) {
 		close(sock);
-		throw std::runtime_error("Error: fcntl set non-blocking");
+		throw std::runtime_error("Error: fcntl() set non-blocking");
 	}
 }
 
@@ -45,9 +44,12 @@ size_t	findHeader(const std::string& buffer) {
 }
 
 void	checkNameRepitition(const std::vector<Server> configs, const Server config) {
+	if (config.getName().empty())
+		throw std::runtime_error("Error: Config: server_name is mandatory for non-first virtual host");
 	for (auto& conf : configs) {
 		if (conf.getName() == config.getName())
-			throw std::runtime_error("Error: Config: Ambiguous server name");
+			throw std::runtime_error("Error: Config: Duplicate server_name, " \
+					"each virtual host (IP+port+server_name) must be unique");
 	}
 }
 

@@ -5,12 +5,10 @@ import time
 HOST = '127.0.0.1'
 PORT = 8081
 
-# Define tricky chunks
 chunks = [
-	"\r\n123456789RLFAA",             # chunk containing CRLF inside body
+	"\r\n123456789RLFAA",
 ]
 
-# Build the raw HTTP request headers
 request_headers = (
 	"GET /uploads HTTP/1.1\r\n"
 	f"Host: {HOST}:{PORT}\r\n"
@@ -24,9 +22,10 @@ with socket.create_connection((HOST, PORT)) as sock:
 	# Send headers first
 	sock.sendall(request_headers.encode())
 
+	# Send chunks (might be invalid because sent in parts)
 	for i, chunk in enumerate(chunks):
-		chunk_bytes = chunk.encode('utf-8')         # encode first
-		size = f"{len(chunk_bytes):X}"              # chunk size in bytes
+		chunk_bytes = chunk.encode('utf-8')
+		size = f"{len(chunk_bytes):X}"
 		sock.sendall(f"{size}\r\n".encode())
 		sock.sendall(chunk_bytes)
 		sock.sendall(b"\r\n")

@@ -88,7 +88,6 @@ void	ConfigValidator::handleKeyword(std::stack<std::string>&	blockstack, const s
 ConfigValidator::ConfigValidator() {
 	_mandatory_server_directives = {
 		"listen",
-		"server_name",
 		"host",
 		"root"
 	};
@@ -282,7 +281,7 @@ void	ConfigValidator::validateKeyword(const std::string& line, const std::string
 	for (auto &d : directives) {
 		if (std::regex_match(line, d.pattern)) {
 			match = true;
-			if (d.isSet)
+			if (d.isSet && d.name != "error_page")
 				throw std::runtime_error("Error: Config: Repeated directive: " + line);
 			if (d.valueChecker && !d.valueChecker(line))
 				throw std::runtime_error("Error: Config: Invalid value for directive: " + d.name);
