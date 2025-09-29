@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delete File</title>
+</head>
+<body>
+    <center>
+    <h1>Delete File</h1>
+    <p>Enter the filename to delete from uploads directory</p>
+
+    <form id="deleteForm">
+        <div>
+            <label for="filename">Filename:</label>
+            <input type="text" id="filename" name="filename" required placeholder="e.g., photo.jpg">
+        </div>
+        <div>
+            <button type="submit" id="deleteBtn">Delete File</button>
+        </div>
+    </form>
+
+    <div id="message" style="margin-top: 20px; font-weight: bold;"></div>
+
+    <div style="margin-top: 20px;">
+        <a href="/" id="returnLink">Return to Main Page</a>
+    </div>
+
+    <script>
+        const form = document.getElementById('deleteForm');
+        const message = document.getElementById('message');
+        const deleteBtn = document.getElementById('deleteBtn');
+        const filenameInput = document.getElementById('filename');
+        const returnLink = document.getElementById('returnLink');
+
+        // Handle form submission
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const filename = filenameInput.value.trim();
+            if (!filename) {
+                message.textContent = 'Please enter a filename.';
+                message.style.color = 'red';
+                return;
+            }
+
+            deleteBtn.disabled = true;
+            deleteBtn.textContent = 'Deleting...';
+            message.textContent = '';
+
+            // Send DELETE request
+            fetch('/uploads/' + encodeURIComponent(filename), {
+                method: 'DELETE'
+            })
+            .then(response => {
+                if (response.ok) {
+                    message.textContent = 'File deleted successfully!';
+                    message.style.color = 'green';
+                    form.reset();
+                } else {
+                    message.textContent = 'Delete Failed!';
+                    message.style.color = 'red';
+                }
+            })
+            .catch(error => {
+                console.error('Delete error:', error);
+                message.textContent = 'Delete Failed!';
+                message.style.color = 'red';
+            })
+            .finally(() => {
+                deleteBtn.disabled = false;
+                deleteBtn.textContent = 'Delete File';
+            });
+        });
+    </script>
+    </center>
+</body>
+</html>

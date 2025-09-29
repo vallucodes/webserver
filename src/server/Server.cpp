@@ -8,6 +8,8 @@ int	Server::create() {
 
 	setSocketToNonBlockingMode(fd);
 
+	setReuseAddress(fd); // REMOVE BEFORE EVAL, this allows now to bind same IP+port combos
+
 	struct sockaddr_in addr;
 	addr.sin_family = AF_INET;			// Use internet protocol IPv4
 	addr.sin_port = htons(_port);		// set port to listen to
@@ -31,6 +33,10 @@ int	Server::create() {
 				<< _port << "]\n"
 				<< RESET;
 	return fd;
+}
+
+void	Server::setId(int id) {
+	_id = id;
 }
 
 void	Server::setAddress(uint32_t address) {
@@ -63,6 +69,10 @@ void	Server::setErrorPage(int error_index, const std::string& page) {
 
 void	Server::setLocation(Location loc) {
 	_locations.push_back(loc);
+}
+
+int	Server::getId() const {
+	return _id;
 }
 
 uint32_t	Server::getAddress() const {

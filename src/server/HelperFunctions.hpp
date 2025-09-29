@@ -17,6 +17,7 @@ void		handleSigTerminate(int sig);
 
 bool		isServerSocket(int fd, const std::set<int>& server_fds);
 void		setSocketToNonBlockingMode(int fd);
+void		setReuseAddress(int sock);
 void		checkNameRepitition(const std::vector<Server> configs, const Server config);
 uint64_t	getMaxClients();
 size_t		findHeader(const std::string& buffer);

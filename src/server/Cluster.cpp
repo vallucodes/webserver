@@ -18,6 +18,12 @@ void	Cluster::config(const std::string& config_file) {
 	groupConfigs();
 
 	_max_clients = getMaxClients();
+
+	// Assign sequential IDs to server configurations
+	for (size_t i = 0; i < _configs.size(); ++i) {
+		_configs[i].setId(static_cast<int>(i));
+	}
+
 	_router.setupRouter(_configs);
 }
 
@@ -241,7 +247,7 @@ void	Cluster::send408Response(size_t i) {
 	Response res;
 
 	// Use HttpResponseBuilder to create 408 response
-	router::utils::HttpResponseBuilder::setErrorResponse(res, http::REQUEST_TIMEOUT_408, req);
+        router::utils::HttpResponseBuilder::setErrorResponse(res, http::REQUEST_TIMEOUT_408, req);
 
 	// Convert response to HTTP string format
 	std::string responseStr = responseToString(res);

@@ -97,9 +97,63 @@ namespace page {
 
   // Upload-related Pages
   const std::string UPLOAD_HTML = "www/upload.html";
+  const std::string UPLOAD_HTML_PATH = "/upload.html";
+  const std::string DELETE_HTML_PATH = "/delete.html";
+
+  // Template Files
+  const std::string AUTOINDEX_TEMPLATE = "autoindex_template.html";
+  const std::string AUTOINDEX_FALLBACK = "autoindex_fallback.html";
 
   // Default Files
   const std::vector<std::string> DEFAULT_INDEX_FILES = {
     "index.html"
   };
+}
+
+/**
+ * @namespace network
+ * @brief Network and CGI environment constants
+ */
+namespace network {
+  // Default client addresses for CGI environment
+  const std::string DEFAULT_REMOTE_ADDR = "127.0.0.1";
+  const std::string DEFAULT_REMOTE_HOST = "localhost";
+  
+  // System paths
+  const std::string SYSTEM_PATH = "/usr/bin:/bin:/usr/local/bin";
+  
+  // Server software info
+  const std::string SERVER_SOFTWARE = "webserv/1.0";
+}
+
+/**
+ * @namespace file_extensions
+ * @brief File extension constants
+ */
+namespace file_extensions {
+  const std::string HTML = ".html";
+  const std::string HTM = ".htm";
+  const std::string CSS = ".css";
+  const std::string JS = ".js";
+  const std::string PY = ".py";
+  const std::string PNG = ".png";
+  const std::string JPG = ".jpg";
+  const std::string JPEG = ".jpeg";
+  const std::string GIF = ".gif";
+  const std::string ICO = ".ico";
+}
+
+/**
+ * @namespace content_types
+ * @brief MIME content type constants
+ */
+namespace content_types {
+  const std::string HTML = "text/html";
+  const std::string CSS = "text/css";
+  const std::string JAVASCRIPT = "application/javascript";
+  const std::string PLAIN_TEXT = "text/plain";
+  const std::string PNG = "image/png";
+  const std::string JPG = "image/jpeg";
+  const std::string GIF = "image/gif";
+  const std::string ICO = "image/x-icon";
 }
