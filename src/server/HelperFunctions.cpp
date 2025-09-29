@@ -26,6 +26,12 @@ void	setSocketToNonBlockingMode(int sock) {
 	}
 }
 
+void	setReuseAddress(int sock) {
+	int temp = 1;
+	if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &temp, sizeof(int)) == -1)
+		throw std::runtime_error("");
+}
+
 std::string	time_now() {
 	auto now = std::chrono::system_clock::now();
 	std::time_t t = std::chrono::system_clock::to_time_t(now);
