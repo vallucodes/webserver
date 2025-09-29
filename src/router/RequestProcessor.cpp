@@ -6,6 +6,8 @@
 #include "RequestProcessor.hpp"
 #include "utils/HttpResponseBuilder.hpp"
 #include "handlers/Handlers.hpp"
+#include "Router.hpp"
+#include "utils/StringUtils.hpp"
 #include <iostream> // for std::cout, std::endl
 #include <algorithm> // for std::find
 
@@ -44,6 +46,11 @@ void RequestProcessor::processRequest(const Request& req, const Handler* handler
     }
   }
 
+  // Check if path exists but method is not allowed (405 Method Not Allowed)
+  if (isPathExistsButMethodNotAllowed(req, server)) {
+    router::utils::HttpResponseBuilder::setErrorResponse(res, http::METHOD_NOT_ALLOWED_405, req);
+    return;
+  }
 
   // Fallback: try to serve as static file
   if (tryServeAsStaticFile(req, res, method, server)) {
@@ -90,5 +97,57 @@ bool RequestProcessor::tryServeAsStaticFile(const Request& req, Response& res,
     // Static file serving failed
     return false;
   }
+}
+
+/** Check if path exists but method is not allowed */
+bool RequestProcessor::isPathExistsButMethodNotAllowed(const Request& req, const Server& server) const {
+  std::string_view path_view = req.getPath();
+  std::string_view method_view = req.getMethod();
+
+  std::string path(path_view);
+  std::string method(method_view);
+
+  // Normalize path by collapsing multiple consecutive slashes
+  path = router::utils::StringUtils::normalizePath(path);
+
+  // Find matching location for this path
+  const Location* location = findLocationForPath(server, path);
+  if (!location) {
+    return false; // No location found, so path doesn't exist
+  }
+
+  // Check if the method is in the allowed methods for this location
+  const auto& allowed_methods = location->allowed_methods;
+  return std::find(allowed_methods.begin(), allowed_methods.end(), method) == allowed_methods.end();
+}
+
+/** Find matching location configuration for a path */
+const Location* RequestProcessor::findLocationForPath(const Server& server, const std::string& path) const {
+  const auto& locations = server.getLocations();
+  const Location* best_match = nullptr;
+  size_t best_match_length = 0;
+
+  for (const auto& location : locations) {
+    const std::string& location_path = location.location;
+
+    // Priority 1: Exact match - highest specificity
+    if (location_path == path) {
+      return &location; // Return immediately for exact match
+    }
+
+    // Priority 2: Prefix match - find longest matching prefix
+    // Example: location "/admin" matches path "/admin/page"
+    if (path.length() > location_path.length() &&
+        path.substr(0, location_path.length()) == location_path &&
+        (location_path.back() == '/' || path[location_path.length()] == '/')) {
+      // Keep track of the longest (most specific) prefix match
+      if (location_path.length() > best_match_length) {
+        best_match = &location;
+        best_match_length = location_path.length();
+      }
+    }
+  }
+
+  return best_match;
 }
 

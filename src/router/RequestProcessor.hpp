@@ -44,4 +44,10 @@ class RequestProcessor {
     bool tryServeAsStaticFile(const Request& req, Response& res,
                                const std::string& method, const Server& server) const;
 
+    /** Check if path exists but method is not allowed */
+    bool isPathExistsButMethodNotAllowed(const Request& req, const Server& server) const;
+
+    /** Find matching location configuration for a path */
+    const Location* findLocationForPath(const Server& server, const std::string& path) const;
+
 };
