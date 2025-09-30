@@ -58,7 +58,7 @@ void Router::setupRouter(const std::vector<Server>& configs) {
       }
     }
   }
-  listRoutes();
+  listRoutes(); // test
 }
 
 // ========================= ROUTES REGISTRATION =========================
@@ -68,7 +68,7 @@ void Router::addRoute(int server_id, std::string_view method, std::string_view p
   _routes[server_id][std::string(path)][std::string(method)] = std::move(handler);
 }
 
-// ========================= REQUEST HANDLING =========================
+// =========================  REQUEST  HANDLING  =========================
 
 /** Find handler */
 const Router::Handler* Router::findHandler(int server_id, const std::string& method, const std::string& path) const {

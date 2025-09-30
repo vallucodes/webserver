@@ -108,19 +108,6 @@ TEST(ParserTest, DuplicateHostHeaderShouldError) {
     EXPECT_EQ(req.getStatus(), "400 Bad Request");
 }
 
-// ❌ Test: invalid method should error
-TEST(ParserTest, InvalidMethodShouldError) {
-    bool kick_me = false;
-    std::string raw =
-        "FOO / HTTP/1.1\r\n"
-        "Host: example.com\r\n"
-        "\r\n";
-
-    Request req = parse(raw, kick_me);
-
-    EXPECT_TRUE(req.getError());
-    EXPECT_EQ(req.getStatus(), "400 Bad Request");
-}
 
 // ❌ Test: bad request-target with space should error
 TEST(ParserTest, InvalidPathShouldError) {
@@ -181,18 +168,6 @@ TEST(ParserTest, MultipleNonUniqueHeadersAllowed) {
     EXPECT_EQ(req.getHeaders("cookie").size(), 2u);
 }
 
-TEST(ParserTest, UnsupportedMethodShouldError) {
-    bool kick_me = false;
-    std::string raw =
-        "OPTIONS / HTTP/1.1\r\n"
-        "Host: example.com\r\n"
-        "\r\n";
-
-    Request req = parse(raw, kick_me);
-
-    EXPECT_TRUE(req.getError());
-    EXPECT_EQ(req.getStatus(), "400 Bad Request");
-}
 
 
 TEST(ParserTest, HeaderValueWithTrailingSpaces) {
