@@ -8,8 +8,6 @@ int	Server::create() {
 
 	setSocketToNonBlockingMode(fd);
 
-	setReuseAddress(fd); // REMOVE BEFORE EVAL, this allows now to bind same IP+port combos
-
 	struct sockaddr_in addr;
 	addr.sin_family = AF_INET;			// Use internet protocol IPv4
 	addr.sin_port = htons(_port);		// set port to listen to

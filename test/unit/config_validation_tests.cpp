@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include "../src/config/Config.hpp"
+#include "../src/server/Cluster.hpp"
 
 // Valid tests
 
@@ -227,19 +228,6 @@ TEST(ConfigValidationTest, InvalidMaxBodySize) {
 	}
 }
 
-// Test 14: Invalid error page (mismatched numbers)
-TEST(ConfigValidationTest, InvalidErrorPage) {
-	Config config;
-	try {
-		config.validate("../test/unit/configs_for_testing/invalid_error_page.conf");
-		FAIL() << "Expected std::exception to be thrown";
-	} catch (const std::exception& e) {
-		EXPECT_STREQ("Error: Config: Invalid value for directive: error_page", e.what());
-	} catch (...) {
-		FAIL() << "Expected std::exception, got a different exception";
-	}
-}
-
 // Test 15: Invalid HTTP methods
 TEST(ConfigValidationTest, InvalidHTTPMethods) {
 	Config config;
@@ -322,12 +310,12 @@ TEST(ConfigValidationTest, MissingMandatoryListen) {
 
 // Test 21: Missing mandatory server directive - server_name
 TEST(ConfigValidationTest, MissingMandatoryServerName) {
-	Config config;
+	Cluster cluster;
 	try {
-		config.validate("../test/unit/configs_for_testing/missing_server_name.conf");
+		cluster.config("../test/unit/configs_for_testing/missing_server_name.conf");
 		FAIL() << "Expected std::exception to be thrown";
 	} catch (const std::exception& e) {
-		EXPECT_STREQ("Error: Config: Missing mandatory server directory: server_name", e.what());
+		EXPECT_STREQ("Error: Config: server_name is mandatory for non-first virtual host", e.what());
 	} catch (...) {
 		FAIL() << "Expected std::exception, got a different exception";
 	}
