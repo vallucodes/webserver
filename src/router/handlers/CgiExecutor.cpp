@@ -6,7 +6,6 @@
 #include <sys/wait.h> // for waitpid, WNOHANG, WIFEXITED, WEXITSTATUS
 #include <signal.h> // for kill, SIGKILL
 #include <cstdlib> // for std::stoul
-// #include <fcntl.h> // for F_GETFL, F_SETFL, O_NONBLOCK
 #include <ostream> // for std::ostream
 #include <ctime> // for time, time_t
 #include <iostream> // for std::cout

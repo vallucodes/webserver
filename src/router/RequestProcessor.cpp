@@ -8,7 +8,6 @@
 #include "handlers/Handlers.hpp"
 #include "Router.hpp"
 #include "utils/StringUtils.hpp"
-#include <iostream> // for std::cout, std::endl
 #include <algorithm> // for std::find
 
 using namespace router::utils;

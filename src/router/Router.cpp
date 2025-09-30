@@ -9,7 +9,6 @@
 #include "utils/StringUtils.hpp"
 #include "HttpConstants.hpp"
 #include "handlers/Handlers.hpp"
-#include <algorithm> // for std::find
 
 using namespace router::utils;
 
