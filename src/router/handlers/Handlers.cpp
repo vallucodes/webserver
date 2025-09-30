@@ -192,8 +192,6 @@ void del(const Request& req, Response& res, const Server& server) {
       router::handlers::HandlerUtils::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req, server);
     }
 
-  } catch (const std::filesystem::filesystem_error&) {
-    router::handlers::HandlerUtils::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req, server);
   } catch (const std::exception&) {
     router::handlers::HandlerUtils::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req, server);
   }
@@ -309,6 +307,9 @@ void cgi(const Request& req, Response& res, const Server& server) {
 // ********************************************************************************************** //
 
 /** Handle HTTP redirection requests */
+
+// use curl -v -L http://localhost:8080/old/ -> will follow the redirect
+// use curl -v http://localhost:8080/old/ -> will not follow the redirect
 void redirect(const Request& req, Response& res, const Server& server) {
   try {
     // 1. Find redirect location
@@ -322,19 +323,16 @@ void redirect(const Request& req, Response& res, const Server& server) {
     // 2. Use location-configured redirect URL
     const std::string redirectUrl = location->return_url;
 
-    // 3. Log the redirect for debugging
-    std::cout << "REDIRECT: " << req.getPath() << " -> " << redirectUrl << std::endl;
-
-    // 4. Set redirect status code
+    // 3. Set redirect status code
     res.setStatus(http::STATUS_FOUND_302);
 
-    // 5. Set Location header for redirection
+    // 4. Set Location header for redirection
     res.setHeaders(http::LOCATION, redirectUrl);
 
-    // 6. Set connection headers
+    // 5. Set connection headers
     router::handlers::HandlerUtils::setConnectionHeaders(res, req);
 
-    // 7. Add HTML body for browsers that don't follow redirects automatically
+    // 6. Add HTML body for browsers that don't follow redirects automatically
     const std::string body = "<!DOCTYPE html><html><head><title>Redirecting...</title></head><body>"
                              "<p>If you are not redirected automatically, <a href=\"" + redirectUrl + "\">click here</a>.</p>"
                              "</body></html>";

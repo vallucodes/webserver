@@ -14,7 +14,7 @@ The Router module provides HTTP request routing functionality for the webserver.
 
 ### Route Storage Structure
 
-```
+```bash
 server_id → path → HTTP_method → Handler_function
 ```
 
@@ -29,6 +29,7 @@ server_id → path → HTTP_method → Handler_function
 ### Handler Types
 
 #### GET Handler
+
 - **Purpose**: Serve static files and handle directory requests
 - **Process**:
   1. Extract and validate file path from request
@@ -42,6 +43,7 @@ server_id → path → HTTP_method → Handler_function
   - Error handling for missing files/directories
 
 #### POST Handler
+
 - **Purpose**: Handle file uploads via multipart/form-data
 - **Process**:
   1. Find location with upload configuration
@@ -57,6 +59,7 @@ server_id → path → HTTP_method → Handler_function
   - Duplicate filename handling
 
 #### DELETE Handler
+
 - **Purpose**: Remove files from upload directories
 - **Process**:
   1. Find location with upload configuration
@@ -70,6 +73,7 @@ server_id → path → HTTP_method → Handler_function
   - Proper error responses
 
 #### CGI Handler
+
 - **Purpose**: Execute CGI scripts and return results
 - **Process**:
   1. **Validation Phase**: Validate location, path, and file
@@ -86,6 +90,7 @@ server_id → path → HTTP_method → Handler_function
   - Header parsing from CGI output
 
 #### Redirect Handler
+
 - **Purpose**: Handle HTTP redirects to configured URLs
 - **Process**:
   1. Find location with redirect configuration
