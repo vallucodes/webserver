@@ -17,9 +17,6 @@ class Server;
 
 /** Core HTTP Request Handler Functions */
 
-/** Resolve path relative to server root (nginx-style) */
-std::string resolvePath(const std::string& path, const std::string& server_root);
-
 /** Handle GET requests for static files and pages */
 void get(const Request& req, Response& res, const Server& server);
 

@@ -4,6 +4,8 @@
  */
 
 #include "Handlers.hpp"
+#include "HandlerUtils.hpp"
+#include "MultipartParser.hpp"
 #include "../utils/StringUtils.hpp"
 #include "../utils/FileUtils.hpp"
 #include "../utils/HttpResponseBuilder.hpp"
@@ -13,15 +15,7 @@
 #include "../HttpConstants.hpp"
 #include "../../server/Server.hpp"
 #include <sstream>
-
-#include <fstream> // for std::ifstream, std::ofstream
 #include <filesystem> // for std::filesystem::directory_iterator, std::filesystem::path, std::filesystem::exists, std::filesystem::is_directory, std::filesystem::is_regular_file, std::filesystem::create_directories, std::filesystem::remove, std::filesystem::file_size, std::filesystem::last_write_time
-#include <cctype> // for std::tolower, std::isspace
-#include <unistd.h> // for pipe, fork, dup2, close, write, read, chdir, execve, STDIN_FILENO, STDOUT_FILENO
-#include <ctime> // for time, time_t, strftime
-#include <sys/wait.h> // for waitpid, WNOHANG, WIFEXITED, WEXITSTATUS
-#include <algorithm> // for std::transform, std::find, std::remove_if
-#include <sstream> // for std::istringstream
 
 using namespace http;
 
@@ -33,58 +27,51 @@ using namespace http;
 /** Handle GET requests for static files */
 void get(const Request& req, Response& res, const Server& server) {
   try {
-    // Extract and validate file path
-    std::string_view filePathView = req.getPath();
-  if (filePathView.empty()) {
-       router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404, req, server);
-     return;
-  }
+    // 1. Extract and validate file path
+    const std::string_view filePathView = req.getPath();
+    if (filePathView.empty()) {
+      router::handlers::HandlerUtils::setErrorResponse(res, http::NOT_FOUND_404, req, server);
+      return;
+    }
 
-  std::string requestPath = std::string(filePathView);
-  // Use server's configured root directory instead of hardcoded www/
-  std::string filePath;
-  if (requestPath == page::ROOT_HTML || requestPath == page::INDEX_HTML_PATH) {
-    filePath = server.getRoot() + page::INDEX_HTML_PATH;
-  } else {
-    filePath = server.getRoot() + requestPath;
-  }
+    // 2. Build file path
+    const std::string requestPath = std::string(filePathView);
+    std::string filePath;
+    if (requestPath == page::ROOT_HTML || requestPath == page::INDEX_HTML_PATH) {
+      filePath = server.getRoot() + page::INDEX_HTML_PATH;
+    } else {
+      filePath = server.getRoot() + requestPath;
+    }
 
-  // Handle directory requests
-  if (std::filesystem::is_directory(filePath)) {
-       // Find matching location for autoindex configuration (most specific match)
-       const Location* location = nullptr;
-       size_t bestMatchLength = 0;
-       for (const auto& loc : server.getLocations()) {
-         if (requestPath.find(loc.location) == 0 && loc.location.length() > bestMatchLength) {
-           location = &loc;
-           bestMatchLength = loc.location.length();
-         }
-       }
-       if (router::utils::handleDirectoryRequest(filePath, requestPath, location, res, req, server.getRoot())) {
-       return;
-     }
-     // No index file found and autoindex disabled, or autoindex template loading failed
-     if (location && location->autoindex) {
-       // Autoindex was enabled but template loading failed
-       router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req, server);
-     } else {
-       // No index file found and autoindex disabled
-       router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404, req, server);
-     }
-     return;
-  }
+    // 3. Handle directory requests
+    if (std::filesystem::is_directory(filePath)) {
+      const Location* location = router::handlers::HandlerUtils::findBestMatchingLocation(requestPath, server);
 
-  // Serve static file
-  if (router::utils::serveStaticFile(filePath, res, req)) {
-       return;
-  }
+      if (router::utils::handleDirectoryRequest(filePath, requestPath, location, res, req, server.getRoot())) {
+        return;
+      }
 
-  // File not found
-  router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404, req, server);
+      // No index file found and autoindex disabled, or autoindex template loading failed
+      if (location && location->autoindex) {
+        router::handlers::HandlerUtils::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req, server);
+      } else {
+        router::handlers::HandlerUtils::setErrorResponse(res, http::NOT_FOUND_404, req, server);
+      }
+      return;
+    }
+
+    // 4. Serve static file
+    if (router::utils::serveStaticFile(filePath, res, req)) {
+      return;
+    }
+
+    // 5. File not found
+    router::handlers::HandlerUtils::setErrorResponse(res, http::NOT_FOUND_404, req, server);
+
   } catch (const std::runtime_error&) {
-     router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404, req, server);
+    router::handlers::HandlerUtils::setErrorResponse(res, http::NOT_FOUND_404, req, server);
   } catch (const std::exception&) {
-     router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req, server);
+    router::handlers::HandlerUtils::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req, server);
   }
 }
 
@@ -95,130 +82,65 @@ void get(const Request& req, Response& res, const Server& server) {
 /** Handle POST requests for file uploads */
 void post(const Request& req, Response& res, const Server& server) {
   try {
-     // Extract server root from server struct
-     const std::string& server_root = server.getRoot();
+    // 1. Find upload location
+    const std::string requestPath(req.getPath());
+    const Location* location = router::handlers::HandlerUtils::findUploadLocation(requestPath, server);
+    if (!location || location->upload_path.empty()) {
+      router::handlers::HandlerUtils::setErrorResponse(res, http::FORBIDDEN_403, req, server);
+      return;
+    }
 
-     // Find the appropriate location for this request
-     std::string_view requestPath = req.getPath();
-     const Location* location = nullptr;
-     for (const auto& loc : server.getLocations()) {
-       if (std::string(requestPath).find(loc.location) == 0 && !loc.upload_path.empty()) {
-         location = &loc;
-         break;
-       }
-     }
+    // 2. Process request body
+    const std::string processedBody = router::handlers::HandlerUtils::processRequestBody(req);
 
-     // Validate location configuration
-     if (!location || location->upload_path.empty()) {
-       router::utils::HttpResponseBuilder::setErrorResponse(res, http::FORBIDDEN_403, req, server);
-       return;
-     }
+    // 3. Validate content type
+    const auto& contentTypeKey = req.getHeaders("content-type");
+    if (!router::handlers::HandlerUtils::validateContentType(contentTypeKey, "multipart/form-data")) {
+      router::handlers::HandlerUtils::setErrorResponse(res, http::BAD_REQUEST_400, req, server);
+      return;
+    }
 
-     // Handle chunked request body if needed
-     std::string processedBody = std::string(req.getBody());
+    // 4. Extract boundary
+    const std::string contentType = contentTypeKey[0];
+    const std::string boundary = router::handlers::HandlerUtils::extractBoundary(contentType);
+    if (boundary.empty()) {
+      router::handlers::HandlerUtils::setErrorResponse(res, http::BAD_REQUEST_400, req, server);
+      return;
+    }
 
-     if (router::utils::isChunked(req)) {
-         processedBody = router::utils::parseChunkedRequestBody(processedBody);
-     }
+    // 5. Parse multipart data
+    const auto multipartData = router::handlers::MultipartParser::parseMultipartData(processedBody, boundary);
+    if (!multipartData.isValid) {
+      router::handlers::HandlerUtils::setErrorResponse(res, http::BAD_REQUEST_400, req, server);
+      return;
+    }
 
-     const auto& contentTypeKey = req.getHeaders("content-type");
+    // 6. Validate filename
+    if (!router::handlers::HandlerUtils::isValidFilename(multipartData.filename)) {
+      router::handlers::HandlerUtils::setErrorResponse(res, http::BAD_REQUEST_400, req, server);
+      return;
+    }
 
-     if (contentTypeKey.empty()) {
-         router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400, req, server);
-       // router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400, req, server);
-       return;
-     }
+    // 7. Validate file size
+    if (!router::handlers::HandlerUtils::isValidFileSize(multipartData.content.length())) {
+      router::handlers::HandlerUtils::setErrorResponse(res, http::PAYLOAD_TOO_LARGE_413, req, server);
+      return;
+    }
 
-     std::string contentType = contentTypeKey.front();
+    // 8. Write file to disk
+    const std::string server_root = server.getRoot();
+    const std::string filePath = router::handlers::HandlerUtils::resolveFilePath(multipartData.filename, location, server_root);
 
-     // Validate content type
-     if (contentType.find("multipart/form-data") == std::string::npos) {
-         router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400, req, server);
-       return;
-     }
+    if (!router::handlers::HandlerUtils::writeFileToDisk(filePath, multipartData.content)) {
+      router::handlers::HandlerUtils::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req, server);
+      return;
+    }
 
-     // Extract boundary
-     const size_t boundaryPos = contentType.find("boundary=");
-     if (boundaryPos == std::string::npos) {
-       router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400, req, server);
-       return;
-  }
-
-  const std::string boundary = "--" + contentType.substr(boundaryPos + 9);
-  const std::string bodyStr(processedBody);
-
-     // Find file boundaries
-     const size_t fileStart = bodyStr.find(boundary);
-     if (fileStart == std::string::npos) {
-         router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400, req, server);
-       return;
-     }
-
-     const size_t fileEnd = bodyStr.find(boundary, fileStart + boundary.length());
-     const std::string filePart = bodyStr.substr(fileStart, fileEnd - fileStart);
-
-     // Extract filename
-     const size_t filenamePos = filePart.find("filename=\"");
-     if (filenamePos == std::string::npos) {
-       router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400, req, server);
-       return;
-     }
-
-     const size_t filenameEnd = filePart.find("\"", filenamePos + 10);
-     if (filenameEnd == std::string::npos) {
-         router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400, req, server);
-       return;
-     }
-
-     std::string filename = filePart.substr(filenamePos + 10, filenameEnd - filenamePos - 10);
-     if (filename.empty()) {
-         router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400, req, server);
-       return;
-     }
-
-     // Extract file content
-     const size_t contentStart = filePart.find("\r\n\r\n");
-     if (contentStart == std::string::npos) {
-         router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400, req, server);
-       return;
-     }
-
-  std::string fileContent = filePart.substr(contentStart + 4);
-
-     // Remove trailing \r\n if present
-     if (fileContent.length() >= 2 && fileContent.substr(fileContent.length() - 2) == "\r\n") {
-         fileContent = fileContent.substr(0, fileContent.length() - 2);
-     }
-
-     // Validate file size
-     if (fileContent.length() > 1024 * 1024) {
-       router::utils::HttpResponseBuilder::setErrorResponse(res, http::PAYLOAD_TOO_LARGE_413, req, server);
-       return;
-     }
-
-     // Resolve upload path (nginx-style)
-     std::string uploadPath = router::utils::StringUtils::resolvePath(location->upload_path, server_root);
-
-     // Use resolved path
-     const std::string filePath = uploadPath + "/" + filename;
-
-     // Ensure upload directory exists
-     std::filesystem::create_directories(uploadPath);
-
-     std::ofstream outFile(filePath, std::ios::binary);
-     if (!outFile) {
-         router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req, server);
-       return;
-     }
-
-     outFile.write(fileContent.c_str(), fileContent.length());
-     outFile.close();
-
-     // Success response - use default success page
-     router::utils::HttpResponseBuilder::setSuccessResponseWithDefaultPage(res, http::CREATED_201, req);
+    // 9. Success response
+    router::handlers::HandlerUtils::setSuccessResponse(res, http::CREATED_201, req);
 
   } catch (const std::exception&) {
-     router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req, server);
+    router::handlers::HandlerUtils::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req, server);
   }
 }
 
@@ -229,65 +151,49 @@ void post(const Request& req, Response& res, const Server& server) {
 /** Handle DELETE requests for file removal */
 void del(const Request& req, Response& res, const Server& server) {
   try {
-     // Extract server root from server struct
-     const std::string& server_root = server.getRoot();
+    // 1. Find upload location
+    const std::string requestPath(req.getPath());
+    const Location* location = router::handlers::HandlerUtils::findUploadLocation(requestPath, server);
+    if (!location || location->upload_path.empty()) {
+      router::handlers::HandlerUtils::setErrorResponse(res, http::FORBIDDEN_403, req, server);
+      return;
+    }
 
-     // Find the appropriate location for this request
-     std::string_view requestPath = req.getPath();
-     const Location* location = nullptr;
-     for (const auto& loc : server.getLocations()) {
-       if (std::string(requestPath).find(loc.location) == 0 && !loc.upload_path.empty()) {
-         location = &loc;
-         break;
-       }
-     }
+    // 2. Extract filename from path
+    const std::string_view filePathView = req.getPath();
+    const std::string uploadPrefix = "/uploads";
 
-     // Validate location configuration
-     if (!location || location->upload_path.empty()) {
-       router::utils::HttpResponseBuilder::setErrorResponse(res, http::FORBIDDEN_403, req, server);
-       return;
-     }
+    if (filePathView.length() < uploadPrefix.length() + 1 ||
+        filePathView.substr(0, uploadPrefix.length() + 1) != uploadPrefix + "/") {
+      router::handlers::HandlerUtils::setErrorResponse(res, http::BAD_REQUEST_400, req, server);
+      return;
+    }
 
-     const std::string_view filePathView = req.getPath();
+    const std::string filename = std::string(filePathView.substr(uploadPrefix.length() + 1));
+    if (!router::handlers::HandlerUtils::isValidFilename(filename)) {
+      router::handlers::HandlerUtils::setErrorResponse(res, http::BAD_REQUEST_400, req, server);
+      return;
+    }
 
-     // Extract the expected upload path prefix from location
-     std::string uploadPrefix = "/uploads";
-     if (filePathView.length() < uploadPrefix.length() + 1 ||
-         filePathView.substr(0, uploadPrefix.length() + 1) != uploadPrefix + "/") {
-       router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400, req, server);
-       return;
-     }
+    // 3. Resolve file path
+    const std::string server_root = server.getRoot();
+    const std::string filePath = router::handlers::HandlerUtils::resolveFilePath(filename, location, server_root);
 
-     std::string filename = std::string(filePathView.substr(uploadPrefix.length() + 1));
-     if (filename.empty()) {
-       router::utils::HttpResponseBuilder::setErrorResponse(res, http::BAD_REQUEST_400, req, server);
-       return;
-     }
+    // 4. Check if file exists
+    if (!std::filesystem::exists(filePath)) {
+      router::handlers::HandlerUtils::setErrorResponse(res, http::NOT_FOUND_404, req, server);
+      return;
+    }
 
-     // Resolve upload path (nginx-style)
-     std::string uploadPath = router::utils::StringUtils::resolvePath(location->upload_path, server_root);
+    // 5. Attempt deletion
+    if (router::handlers::HandlerUtils::deleteFileFromDisk(filePath)) {
+      router::handlers::HandlerUtils::setSuccessResponse(res, http::OK_200, req);
+    } else {
+      router::handlers::HandlerUtils::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req, server);
+    }
 
-     // Use resolved path
-     const std::string filePath = uploadPath + "/" + filename;
-
-     // Check if file exists
-     if (!std::filesystem::exists(filePath)) {
-         router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404, req, server);
-       return;
-     }
-
-     // Attempt deletion
-     if (std::filesystem::remove(filePath)) {
-         // Success response - 200 OK with default success page
-         router::utils::HttpResponseBuilder::setSuccessResponseWithDefaultPage(res, http::OK_200, req);
-     } else {
-       router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req, server);
-     }
-
-  } catch (const std::filesystem::filesystem_error&) {
-     router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req, server);
   } catch (const std::exception&) {
-     router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req, server);
+    router::handlers::HandlerUtils::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req, server);
   }
 }
 
@@ -298,36 +204,27 @@ void del(const Request& req, Response& res, const Server& server) {
 /** Handle CGI requests for executable scripts */
 void cgi(const Request& req, Response& res, const Server& server) {
   try {
-     // Extract server root from server struct
-     const std::string& server_root = server.getRoot();
+    // 1. Find CGI location
+    const std::string requestPath(req.getPath());
+    const Location* location = router::handlers::HandlerUtils::findCgiLocation(requestPath, server);
 
-     // Find the appropriate location for this request
-     std::string_view requestPath = req.getPath();
-     const Location* location = nullptr;
-     for (const auto& loc : server.getLocations()) {
-       if (std::string(requestPath).find(loc.location) == 0 && !loc.cgi_path.empty() && !loc.cgi_ext.empty()) {
-         location = &loc;
-         break;
-       }
-     }
-
-     // 1. Server and config Validation Phase
+    // 2. Server and config Validation Phase
     if (!router::utils::isValidLocationServer(res, location, &server, req)) {
-         return;
-     }
+      return;
+    }
 
-     // 2. Path Resolution Phase
-     // Extract and validate file path
-     std::string_view filePathView = req.getPath();
-     if (!router::utils::isValidPath(filePathView, res, req, server)) {
-         return;
-     }
+    // 3. Path Resolution Phase
+    const std::string_view filePathView = req.getPath();
+    if (!router::utils::isValidPath(filePathView, res, req, server)) {
+      return;
+    }
 
-     // 3. File Existence and Executability Phase
-     std::string filePath = router::utils::StringUtils::determineFilePathCGI(filePathView, location, server_root);
-     if (!router::utils::isFileExistsAndExecutable(filePath, res, req, server)) {
-         return;
-     }
+    // 4. File Existence and Executability Phase
+    const std::string server_root = server.getRoot();
+    const std::string filePath = router::utils::StringUtils::determineFilePathCGI(filePathView, location, server_root);
+    if (!router::utils::isFileExistsAndExecutable(filePath, res, req, server)) {
+      return;
+    }
 
      // 4. File Validation Phase
      if (!router::utils::isCgiScriptWithLocation(filePath, location)) {
@@ -359,12 +256,7 @@ void cgi(const Request& req, Response& res, const Server& server) {
   // END DEBUG
 
   // 5.2. Get and process request body for CGI input
-  std::string body = std::string(req.getBody());
-
-     // 5.3. Unchunk the body if it's chunked
-     if (router::utils::isChunked(req)) {
-         body = router::utils::parseChunkedRequestBody(body);
-     }
+  const std::string body = router::handlers::HandlerUtils::processRequestBody(req);
 
      // 5.4. Execute CGI script and parse output
      CgiResult cgiResult = executeAndParseCgiScript(filePath, env, body);
@@ -394,11 +286,7 @@ void cgi(const Request& req, Response& res, const Server& server) {
      }
 
      // 6.4. Set connection header based on keep-alive logic
-     if (router::utils::shouldKeepAlive(req)) {
-         res.setHeaders(http::CONNECTION, http::CONNECTION_KEEP_ALIVE);
-     } else {
-       res.setHeaders(http::CONNECTION, http::CONNECTION_CLOSE);
-     }
+     router::handlers::HandlerUtils::setConnectionHeaders(res, req);
 
      // 6.5. Set response body
      res.setBody(cgiResult.body);
@@ -419,60 +307,42 @@ void cgi(const Request& req, Response& res, const Server& server) {
 // ********************************************************************************************** //
 
 /** Handle HTTP redirection requests */
+
+// use curl -v -L http://localhost:8080/old/ -> will follow the redirect
+// use curl -v http://localhost:8080/old/ -> will not follow the redirect
 void redirect(const Request& req, Response& res, const Server& server) {
   try {
-  // Find the appropriate location for this request
-  std::string_view requestPath = req.getPath();
-  const Location* location = nullptr;
-  for (const auto& loc : server.getLocations()) {
-    if (std::string(requestPath).find(loc.location) == 0 && !loc.return_url.empty()) {
-      location = &loc;
-      break;
+    // 1. Find redirect location
+    const std::string requestPath(req.getPath());
+    const Location* location = router::handlers::HandlerUtils::findRedirectLocation(requestPath, server);
+    if (!location || location->return_url.empty()) {
+      router::handlers::HandlerUtils::setErrorResponse(res, http::NOT_FOUND_404, req, server);
+      return;
     }
-  }
 
-  // Validate location configuration
-  if (!location || location->return_url.empty()) {
-       router::utils::HttpResponseBuilder::setErrorResponse(res, http::NOT_FOUND_404, req, server);
-     return;
-  }
+    // 2. Use location-configured redirect URL
+    const std::string redirectUrl = location->return_url;
 
-  // Use location-configured redirect URL
-  std::string redirectUrl = location->return_url;
+    // 3. Set redirect status code
+    res.setStatus(http::STATUS_FOUND_302);
 
-  // Log the redirect for debugging
-  std::cout << "REDIRECT: " << req.getPath() << " -> " << redirectUrl << std::endl;
+    // 4. Set Location header for redirection
+    res.setHeaders(http::LOCATION, redirectUrl);
 
-  // Set redirect status code
-  res.setStatus(http::STATUS_FOUND_302);
+    // 5. Set connection headers
+    router::handlers::HandlerUtils::setConnectionHeaders(res, req);
 
-  // Set Location header for redirection
-  res.setHeaders(http::LOCATION, redirectUrl);
+    // 6. Add HTML body for browsers that don't follow redirects automatically
+    const std::string body = "<!DOCTYPE html><html><head><title>Redirecting...</title></head><body>"
+                             "<p>If you are not redirected automatically, <a href=\"" + redirectUrl + "\">click here</a>.</p>"
+                             "</body></html>";
 
-     // Set connection header based on keep-alive logic
-     if (router::utils::shouldKeepAlive(req)) {
-         res.setHeaders(http::CONNECTION, http::CONNECTION_KEEP_ALIVE);
-     } else {
-       res.setHeaders(http::CONNECTION, http::CONNECTION_CLOSE);
-     }
+    res.setBody(body);
+    res.setHeaders(http::CONTENT_TYPE, http::CONTENT_TYPE_HTML);
+    res.setHeaders(http::CONTENT_LENGTH, std::to_string(body.length()));
 
-  // Optional: Add a simple HTML body for browsers that don't follow redirects automatically
-  std::string body = "<!DOCTYPE html><html><head><title>Redirecting...</title></head><body>";
-  body += "<p>If you are not redirected automatically, <a href=\"" + redirectUrl + "\">click here</a>.</p>";
-  body += "</body></html>";
-
-  res.setBody(body);
-
-  // Set Content-Type header
-  res.setHeaders(http::CONTENT_TYPE, http::CONTENT_TYPE_HTML);
-
-  // Set Content-Length header
-  res.setHeaders(http::CONTENT_LENGTH, std::to_string(body.length()));
-
-
-  } catch (const std::exception& e) {
-     // Unexpected error
-     router::utils::HttpResponseBuilder::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req, server);
+  } catch (const std::exception&) {
+    router::handlers::HandlerUtils::setErrorResponse(res, http::INTERNAL_SERVER_ERROR_500, req, server);
   }
 }
 

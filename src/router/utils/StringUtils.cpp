@@ -53,14 +53,6 @@ std::string StringUtils::determineFilePathCGI(const std::string_view& path, cons
   }
 }
 
-std::string StringUtils::determineFilePathBasic(const std::string& requestPath) {
-  if (requestPath == page::ROOT_HTML || requestPath == page::INDEX_HTML_PATH) {
-    return page::INDEX_HTML;
-  }
-
-  return page::WWW + requestPath;
-}
-
 std::string StringUtils::replacePlaceholder(std::string html, const std::string& placeholder, const std::string& replacement) {
   size_t pos = 0;
   while ((pos = html.find(placeholder, pos)) != std::string::npos) {

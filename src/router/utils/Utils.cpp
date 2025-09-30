@@ -4,12 +4,13 @@
 #include "HttpResponseBuilder.hpp"
 #include "StringUtils.hpp"
 #include "FileUtils.hpp"
+
 #include <algorithm> // for std::transform
 #include <cctype> // for std::tolower
 #include <filesystem> // for std::filesystem
 #include <iostream> // for std::cout
-#include <chrono> // for time handling
-#include <ctime> // for strftime, localtime
+#include <chrono> // for std::chrono::system_clock::to_time_t, std::chrono::file_clock::to_sys
+#include <ctime> // for std::strftime, std::localtime
 
 namespace router {
 namespace utils {
@@ -361,7 +362,7 @@ std::string generateDirectoryListing(const std::string& dirPath, const std::stri
         auto time = entry.last_write_time();
         auto time_t = std::chrono::system_clock::to_time_t(std::chrono::file_clock::to_sys(time));
         char buffer[20];
-        strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M", localtime(&time_t));
+        std::strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M", std::localtime(&time_t));
         dateStr = buffer;
       } catch (...) {}
 
@@ -419,11 +420,6 @@ bool handleDirectoryRequest(const std::string& dirPath, const std::string& reque
   }
 
   return false;
-}
-
-/** Create simple success message */
-std::string createSuccessMessage(const std::string& filename, const std::string& action) {
-  return "File '" + filename + "' " + action + " successfully!";
 }
 
 /**
