@@ -33,24 +33,24 @@ void Router::setupRouter(const std::vector<Server>& configs) {
         Handler handler;
 
         if (!location.return_url.empty()) {
-          handler = [&server](const Request& req, Response& res, const Server& /* srv */) {
-            redirect(req, res, server);
+          handler = [](const Request& req, Response& res, const Server& srv) {
+            redirect(req, res, srv);
           };
         } else if (!location.cgi_path.empty() && !location.cgi_ext.empty()) {
-          handler = [&server](const Request& req, Response& res, const Server& /* srv */) {
-            cgi(req, res, server);
+          handler = [](const Request& req, Response& res, const Server& srv) {
+            cgi(req, res, srv);
           };
         } else if (method == http::POST && !location.upload_path.empty()) {
-          handler = [&server](const Request& req, Response& res, const Server& /* srv */) {
-            post(req, res, server);
+          handler = [](const Request& req, Response& res, const Server& srv) {
+            post(req, res, srv);
           };
         } else if (method == http::DELETE && !location.upload_path.empty()) {
-          handler = [&server](const Request& req, Response& res, const Server& /* srv */) {
-            del(req, res, server);
+          handler = [](const Request& req, Response& res, const Server& srv) {
+            del(req, res, srv);
           };
         } else {
-          handler = [&server](const Request& req, Response& res, const Server& /* srv */) {
-            get(req, res, server);
+          handler = [](const Request& req, Response& res, const Server& srv) {
+            get(req, res, srv);
           };
         }
 
