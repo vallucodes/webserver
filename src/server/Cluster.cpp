@@ -167,6 +167,7 @@ void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 		client_state.request = client_state.clean_buffer.substr(0, client_state.request_size);
 		const Server& conf = findRelevantConfig(_fds[i].fd, client_state.clean_buffer);
 		Parser parse;
+		printServerConfig(conf);
 		Request req = parse.parseRequest(client_state.request, client_state.kick_me, false);
 		prepareResponse(client_state, conf, req, i);
 		setTimer(client_state);
@@ -273,8 +274,10 @@ const Server&	Cluster::findRelevantConfig(int client_fd, const std::string& buff
 
 	std::string host = match[1];
 	for (auto& conf : conf->configs) {
-		if (conf.getName() == host)
+		if (conf.getName() == host) {
+			std::cout << "non-default sent\n";
 			return conf;
+		}
 	}
 	return *conf->default_config;
 }

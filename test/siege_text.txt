@@ -1,1 +1,1 @@
-siege -b -f url.txt -T "text/plain" -i -t=20S      
+siege -b -f url.txt -T "multipart/form-data; boundary=MyBoundary123" -i --t=30S -c254

@@ -33,24 +33,24 @@ void Router::setupRouter(const std::vector<Server>& configs) {
         Handler handler;
 
         if (!location.return_url.empty()) {
-          handler = [&server](const Request& req, Response& res, const Server& /* srv */) {
-            redirect(req, res, server);
+          handler = [](const Request& req, Response& res, const Server& srv) {
+            redirect(req, res, srv);
           };
         } else if (!location.cgi_path.empty() && !location.cgi_ext.empty()) {
-          handler = [&server](const Request& req, Response& res, const Server& /* srv */) {
-            cgi(req, res, server);
+          handler = [](const Request& req, Response& res, const Server& srv) {
+            cgi(req, res, srv);
           };
         } else if (method == http::POST && !location.upload_path.empty()) {
-          handler = [&server](const Request& req, Response& res, const Server& /* srv */) {
-            post(req, res, server);
+          handler = [](const Request& req, Response& res, const Server& srv) {
+            post(req, res, srv);
           };
         } else if (method == http::DELETE && !location.upload_path.empty()) {
-          handler = [&server](const Request& req, Response& res, const Server& /* srv */) {
-            del(req, res, server);
+          handler = [](const Request& req, Response& res, const Server& srv) {
+            del(req, res, srv);
           };
         } else {
-          handler = [&server](const Request& req, Response& res, const Server& /* srv */) {
-            get(req, res, server);
+          handler = [](const Request& req, Response& res, const Server& srv) {
+            get(req, res, srv);
           };
         }
 
@@ -58,7 +58,7 @@ void Router::setupRouter(const std::vector<Server>& configs) {
       }
     }
   }
-  listRoutes();
+  listRoutes(); // test
 }
 
 // ========================= ROUTES REGISTRATION =========================
@@ -68,7 +68,7 @@ void Router::addRoute(int server_id, std::string_view method, std::string_view p
   _routes[server_id][std::string(path)][std::string(method)] = std::move(handler);
 }
 
-// ========================= REQUEST HANDLING =========================
+// =========================  REQUEST  HANDLING  =========================
 
 /** Find handler */
 const Router::Handler* Router::findHandler(int server_id, const std::string& method, const std::string& path) const {
