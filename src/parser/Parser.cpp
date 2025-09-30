@@ -77,11 +77,6 @@ bool isValidProtocol(std::string_view protocol){
 }
 
 bool isBadRequest(const Request& req){
-    // Don't reject unsupported methods at parsing level - let RequestProcessor handle with 405 and retur method not allowed
-    // if ( !isValidMethod(req.getMethod()) )
-    //     return true;
-    // if ( !isValidRequestTarget(req.getPath()))
-    //     return true;
     if ( !isValidProtocol(req.getHttpVersion()))
         return true;
     return false;
@@ -136,16 +131,11 @@ bool isBadHeader(Request& req) {
         "content-encoding",
         "content-location",
     };
-
     const auto& headers = req.getAllHeaders();
-
-    // Check if host is there, cause host is mandatory
     auto hostIt = headers.find("host");
     if (hostIt == headers.end() || hostIt->second.empty()) {
         return true;
     }
-
-    // Check for duplicate unique headers
     for (const auto& [key, values] : headers) {
         if (uniqueHeaders.count(key) && values.size() > 1) {
             return true;
@@ -163,14 +153,7 @@ bool isBadMethod(Request& req){
     if (req.getMethod() == "POST"){
         const auto& contentLength = req.getHeaders("content-length");
         const auto& transferEncoding = req.getHeaders("transfer-encoding");
-        // ILIA Added this
-        // Allow POST without Content-Length or Transfer-Encoding if body is empty
-        // This handles cases like POST with size 0 where Content-Length header is optional
         if (contentLength.empty() && transferEncoding.empty()) {
-            // Check if body is actually empty (no data after headers)
-            // For now, we'll be more lenient and allow POST without Content-Length
-            // The actual body validation will be handled by the handlers
-            // return true;
             const auto& bodySize = req.getBody();
             if (!bodySize.empty())
                 return true;
@@ -249,19 +232,5 @@ Request Parser::parseRequest(const std::string& httpString, bool& kick_me, bool 
     auto contentValues = req.getHeaders("content-length");
     req.setBody(std::string(body.substr(0)));
     req.setError(isBadMethod(req));
-    // if (req.getError()) {
-    //     return req;
-    // };
-
-    // ELSE IF content-type chunked parse the body
-    // else
-    //     req.setBody("");
-    // req.print();
     return req;
 }
-
-
-
-
-// std::string Parser::serializeResponse(const Response& response){
-// }
