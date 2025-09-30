@@ -10,7 +10,7 @@
 #include <signal.h>
 #include <unistd.h>
 
-#define DEFAULT_CONF		"configs/default.conf"
+#define DEFAULT_CONF		"configs/evaluation/default.conf"
 
 #define TIME_OUT_POLL		100
 #define TIME_OUT_REQUEST	5000
