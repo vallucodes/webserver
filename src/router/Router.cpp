@@ -58,7 +58,7 @@ void Router::setupRouter(const std::vector<Server>& configs) {
       }
     }
   }
-  listRoutes(); // test
+//   listRoutes(); // test
 }
 
 // ========================= ROUTES REGISTRATION =========================

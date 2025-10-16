@@ -167,7 +167,6 @@ void	Cluster::processReceivedData(size_t& i, const char* buffer, int bytes) {
 		client_state.request = client_state.clean_buffer.substr(0, client_state.request_size);
 		const Server& conf = findRelevantConfig(_fds[i].fd, client_state.clean_buffer);
 		Parser parse;
-		printServerConfig(conf);
 		Request req = parse.parseRequest(client_state.request, client_state.kick_me, false);
 		prepareResponse(client_state, conf, req, i);
 		setTimer(client_state);
@@ -235,7 +234,6 @@ void	Cluster::checkForTimeouts() {
 	}
 }
 
-// ILIA Added this function to send 408 Request Timeout response
 void	Cluster::send408Response(size_t i) {
 	// Create a minimal Request object for the 408 response
 	Request req;
@@ -248,19 +246,18 @@ void	Cluster::send408Response(size_t i) {
 	Response res;
 
 	// Use HttpResponseBuilder to create 408 response
-        router::utils::HttpResponseBuilder::setErrorResponse(res, http::REQUEST_TIMEOUT_408, req);
+	router::utils::HttpResponseBuilder::setErrorResponse(res, http::REQUEST_TIMEOUT_408, req);
 
 	// Convert response to HTTP string format
 	std::string responseStr = responseToString(res);
 
 	// Send the 408 response immediately
-	std::cout << RED << time_now() << "	Sending 408 Request Timeout to client " << _fds[i].fd << RESET << std::endl;
+	// std::cout << RED << time_now() << "	Sending 408 Request Timeout to client " << _fds[i].fd << RESET << std::endl;
 	ssize_t sent = send(_fds[i].fd, responseStr.c_str(), responseStr.size(), 0);
 	if (sent < 0) {
 		std::cout << "Failed to send 408 response" << std::endl;
 	}
 }
-// end of ILIA Added this function to send 408 Request Timeout response
 
 const Server&	Cluster::findRelevantConfig(int client_fd, const std::string& buffer) {
 	std::smatch		match;
